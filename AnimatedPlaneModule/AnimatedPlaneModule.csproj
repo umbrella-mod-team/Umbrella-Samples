@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../UGC.targets" />
+  <PropertyGroup>
+   <OutputType>Library</OutputType>
+      <AssemblyName>AnimatedPlaneModule</AssemblyName>
+      <TargetFramework>netstandard2.0</TargetFramework>
+      <RootNamespace>WIGU.Modules</RootNamespace>
+  </PropertyGroup>
+</Project>

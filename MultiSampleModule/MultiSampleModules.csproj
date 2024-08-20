@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../UGC.targets" />
+  <PropertyGroup>
+   <OutputType>Library</OutputType>
+      <AssemblyName>MultiSampleModule</AssemblyName>
+      <TargetFramework>netstandard2.0</TargetFramework>
+      <RootNamespace>WIGUx.Modules</RootNamespace>
+  </PropertyGroup>
+</Project>
