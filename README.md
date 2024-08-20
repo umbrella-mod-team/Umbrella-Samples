@@ -6,7 +6,7 @@ Module examples to use with WIGUx
 
 - **Visual Studio 2022**: Ensure that Visual Studio is installed before proceeding. You can download it from [Visual Studio](https://visualstudio.microsoft.com/).
 
-## Instructions for Cloning the Repository
+## Cloning the Repository
 
 Follow these steps to clone the repository and initialize the submodules:
 
@@ -18,10 +18,16 @@ Follow these steps to clone the repository and initialize the submodules:
    git clone https://github.com/WIGUx/WIGUx-Samples.git
    ```
 
-## Instructions for Build
+## Build
 
 1. Open WIGUx.Samples.sln file using Visual Studio 2022
 2. Open UGC.targets file and modify your EmuVR folder path
-3. Build the solution and ensure you get a successful build.
-  
+
+![Alt text](img/img1.PNG)
+
+4. Build the solution (F6) or the desired project(SHIFT+F6) and ensure you get a successful build.
+
+5. Once build is finished it will generate automatically your dll in EMUvr\WIGUx\Modules ready to go.
+
+![Alt text](img/img2.PNG)
 
