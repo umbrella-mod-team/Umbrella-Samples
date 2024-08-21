@@ -5,45 +5,74 @@ using System.Collections.Generic;
 using EmuVR.InputManager;
 using System.Collections;
 
-namespace WIGUx.Modules.hangonMotionSim
+namespace WIGUx.Modules.tbladeMotionSim
 {
-    public class hangonMotionSimController : MonoBehaviour
+    public class tbladeMotionSimController : MonoBehaviour
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        private readonly float keyboardVelocityX = 40.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 40.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 40.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 30.5f;        // Velocity for VR controller input
+        private readonly float keyboardVelocityX = 25.5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityY = 25.5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityZ = 25.5f;  // Velocity for keyboard input
+        private readonly float vrVelocity = 5.5f;        // Velocity for VR controller input
 
-        private readonly float centeringVelocityX = 20.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityX = 15.5f;  // Velocity for centering rotation
         private readonly float centeringVelocityY = 20.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityZ = 20.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityZ = 15.5f;  // Velocity for centering rotation
 
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
 
-        private float rotationLimitX = 15f;  // Rotation limit for X-axis
+        private float rotationLimitX = 0f;  // Rotation limit for X-axis
         private float rotationLimitY = 15f;  // Rotation limit for Y-axis
-        private float rotationLimitZ = 15f;  // Rotation limit for Z-axis
+        private float rotationLimitZ = 0f;  // Rotation limit for Z-axis
 
         private float currentRotationX = 0f;  // Current rotation for X-axis
         private float currentRotationY = 0f;  // Current rotation for Y-axis
         private float currentRotationZ = 0f;  // Current rotation for Z-axis
 
-        private Transform hangonXObject; // Reference to the main X object
-        private Transform hangonYObject; // Reference to the main Y object
-        private Transform hangonZObject; // Reference to the main Z object
+        private Transform tbladeXObject; // Reference to the main X object
+        private Transform tbladeYObject; // Reference to the main Y object
+        private Transform tbladeZObject; // Reference to the main Z object
         private GameObject cockpitCam;    // Reference to the cockpit camera
 
         // Initial positions and rotations for resetting
-        private Vector3 hangonXStartPosition;
-        private Quaternion hangonXStartRotation;
-        private Vector3 hangonYStartPosition;
-        private Quaternion hangonYStartRotation;
-        private Vector3 hangonZStartPosition;
-        private Quaternion hangonZStartRotation;
+        private Vector3 tbladeXStartPosition;
+        private Quaternion tbladeXStartRotation;
+        private Vector3 tbladeYStartPosition;
+        private Quaternion tbladeYStartRotation;
+        private Vector3 tbladeZStartPosition;
+        private Quaternion tbladeZStartRotation;
         private Vector3 cockpitCamStartPosition;
         private Quaternion cockpitCamStartRotation;
+
+        // Controller animation 
+        // Speeds for the animation of the in game flight stick or wheel
+        private readonly float keyboardControllerVelocityX = 35.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityY = 35.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityZ = 35.5f;  // Velocity for keyboard input
+        private readonly float vrControllerVelocity = 35.5f;        // Velocity for VR controller input
+
+        private float controllerrotationLimitX = 5f;  // Rotation limit for X-axis (stick or wheel)
+        private float controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
+        private float controllerrotationLimitZ = 5f;  // Rotation limit for Z-axis (stick or wheel)
+
+        private float currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
+        private float currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
+        private float currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
+
+        private readonly float centeringControllerVelocityX = 20.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityY = 20.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityZ = 20.5f;  // Velocity for centering rotation (stick or wheel)
+
+        private Transform tbladeControllerX; // Reference to the main animated controller (wheel)
+        private Vector3 tbladeControllerXStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion tbladeControllerXStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform tbladeControllerY; // Reference to the main animated controller (wheel)
+        private Vector3 tbladeControllerYStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion tbladeControllerYStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform tbladeControllerZ; // Reference to the main animated controller (wheel)
+        private Vector3 tbladeControllerZStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion tbladeControllerZStartRotation; // Initial controlller positions and rotations for resetting
 
         // Initial positions and rotations for VR setup
         private Vector3 playerCameraStartPosition;
@@ -56,9 +85,7 @@ namespace WIGUx.Modules.hangonMotionSim
         // GameObject references for PlayerCamera and VR setup
         private GameObject playerCamera;
         private GameObject playerVRSetup;
-        private Transform centerEyeAnchor;
 
-        //lights
         private Transform fireemissiveObject;
         private Transform fireemissive2Object;
         public string fire1Button = "Fire1"; // Name of the fire button
@@ -68,17 +95,15 @@ namespace WIGUx.Modules.hangonMotionSim
         public Light fire1_light;
         public Light fire2_light;
         public float lightDuration = 0.35f; // Duration during which the lights will be on
+        private bool inFocusMode = false;  // Flag to track focus mode state
         private Light[] lights;
 
-        private bool inFocusMode = false;  // Flag to track focus mode state
-
-        private readonly string[] compatibleGames = { "hangon.zip", "hangonjr.zip", "shangon.zip" };
+        private readonly string[] compatibleGames = { "thndrbld.zip" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
         void Start()
         {
-
             // Find references to PlayerCamera and VR setup objects
             playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
             playerVRSetup = PlayerVRSetup.PlayerRig.gameObject;
@@ -88,37 +113,75 @@ namespace WIGUx.Modules.hangonMotionSim
             CheckObject(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
             GameObject cameraObject = GameObject.Find("OVRCameraRig");
-            if (cameraObject != null)
-            {
-                centerEyeAnchor = cameraObject.transform;
-            }
 
             // Find gfpce2X object in hierarchy
-            hangonXObject = transform.Find("hangonX");
-            if (hangonXObject != null)
+            tbladeXObject = transform.Find("tbladeX");
+            if (tbladeXObject != null)
             {
-                logger.Info("hangonX object found.");
-                hangonXStartPosition = hangonXObject.position;
-                hangonXStartRotation = hangonXObject.rotation;
+                logger.Info("tbladeX object found.");
+                tbladeXStartPosition = tbladeXObject.position;
+                tbladeXStartRotation = tbladeXObject.rotation;
 
-                // Find hangonY object under hangonX
-                hangonYObject = hangonXObject.Find("hangonY");
-                if (hangonYObject != null)
+                // Find tbladeY object under tbladeX
+                tbladeYObject = tbladeXObject.Find("tbladeY");
+                if (tbladeYObject != null)
                 {
-                    logger.Info("hangonY object found.");
-                    hangonYStartPosition = hangonYObject.position;
-                    hangonYStartRotation = hangonYObject.rotation;
+                    logger.Info("tbladeY object found.");
+                    tbladeYStartPosition = tbladeYObject.position;
+                    tbladeYStartRotation = tbladeYObject.rotation;
 
-                    // Find hangonZ object under hangonX
-                    hangonZObject = hangonYObject.Find("hangonZ");
-                    if (hangonZObject != null)
+                    // Find tbladeZ object under tbladeY
+                    tbladeZObject = tbladeYObject.Find("tbladeZ");
+                    if (tbladeZObject != null)
                     {
-                        logger.Info("hangonZ object found.");
-                        hangonZStartPosition = hangonZObject.position;
-                        hangonZStartRotation = hangonZObject.rotation;
+                        logger.Info("tbladeZ object found.");
+                        tbladeZStartPosition = tbladeZObject.position;
+                        tbladeZStartRotation = tbladeZObject.rotation;
+
+                        // Find tbladeControllerX under tbladeZ
+                        tbladeControllerX = tbladeZObject.Find("tbladeControllerX");
+                        if (tbladeControllerX != null)
+                        {
+                            logger.Info("tbladeControllerX object found.");
+                            // Store initial position and rotation of the stick
+                            tbladeControllerXStartPosition = tbladeControllerX.transform.position; // these could cause the controller to mess up
+                            tbladeControllerXStartRotation = tbladeControllerX.transform.rotation;
+
+                            // Find tbladeControllerY under tbladeControllerX
+                            tbladeControllerY = tbladeControllerX.Find("tbladeControllerY");
+                            if (tbladeControllerY != null)
+                            {
+                                logger.Info("tbladeControllerY object found.");
+                                // Store initial position and rotation of the stick
+                                tbladeControllerYStartPosition = tbladeControllerY.transform.position;
+                                tbladeControllerYStartRotation = tbladeControllerY.transform.rotation;
+
+                                // Find tbladeControllerZ under tbladeControllerY
+                                tbladeControllerZ = tbladeControllerY.Find("tbladeControllerZ");
+                                if (tbladeControllerZ != null)
+                                {
+                                    logger.Info("tbladeControllerZ object found.");
+                                    // Store initial position and rotation of the stick
+                                    tbladeControllerZStartPosition = tbladeControllerZ.transform.position;
+                                    tbladeControllerZStartRotation = tbladeControllerZ.transform.rotation;
+                                }
+                                else
+                                {
+                                    logger.Error("tbladeControllerZ object not found under tbladeControllerY!");
+                                }
+                            }
+                            else
+                            {
+                                logger.Error("tbladeControllerY object not found under tbladeControllerX!");
+                            }
+                        }
+                        else
+                        {
+                            logger.Error("tbladeControllerX object not found under tbladeZ!");
+                        }
 
                         // Find cockpit camera under cockpit
-                        cockpitCam = hangonZObject.Find("eyes/cockpitcam")?.gameObject;
+                        cockpitCam = tbladeZObject.Find("eyes/cockpitcam")?.gameObject;
                         if (cockpitCam != null)
                         {
                             logger.Info("Cockpitcam object found.");
@@ -129,29 +192,92 @@ namespace WIGUx.Modules.hangonMotionSim
                         }
                         else
                         {
-                            logger.Error("Cockpitcam object not found under hangonZ!");
+                            logger.Error("Cockpitcam object not found under tbladeZ!");
                         }
                     }
                     else
                     {
-                        logger.Error("hangonZ object not found under hangonY!");
+                        logger.Error("tbladeZ object not found under tbladeY!");
                     }
                 }
 
                 else
                 {
-                    logger.Error("hangonY object not found under hangonX!");
+                    logger.Error("tbladeY object not found under tbladeX!");
                 }
             }
             else
             {
-                logger.Error("hangonX object not found!");
+                logger.Error("tbladeX object not found!");
+            }
+
+            // Find fireemissive object under gforce2Z
+            fireemissiveObject = tbladeZObject.Find("fireemissive");
+            if (fireemissiveObject != null)
+            {
+                logger.Info("fireemissive object found.");
+                // Ensure the fireemissive object is initially off
+                Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on fireemissive object.");
+                }
+            }
+            else
+            {
+                logger.Debug("fireemissive object not found under tbladeZZ.");
+            }
+
+            // Find fireemissive2 object under tbladeZ2Z
+            fireemissive2Object = tbladeZObject.Find("fireemissive2");
+            if (fireemissive2Object != null)
+            {
+                logger.Info("fireemissive2 object found.");
+                // Ensure the fireemissive2 object is initially off
+                Renderer renderer = fireemissive2Object.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on fireemissive2 object.");
+                }
+            }
+            else
+            {
+                logger.Debug("fireemissive2 object not found under tbladeZZ.");
+            }
+
+            // Find fire1_light object
+            fire1_light = tbladeZObject.Find("fire1_light").GetComponent<Light>();
+            if (fire1_light != null)
+            {
+                logger.Info("fire1_light object found.");
+            }
+            else
+            {
+                logger.Debug("fire1_light object not found.");
+            }
+
+            // Find fire2_light object
+            fire2_light = tbladeZObject.Find("fire2_light").GetComponent<Light>();
+            if (fire2_light != null)
+            {
+                logger.Info("fire2_light object found.");
+            }
+            else
+            {
+                logger.Debug("fire2_light object not found.");
             }
         }
-
         void Update()
         {
-            bool inputDetected = false;  // Initialize at the beginning of the Update method
+            bool inputDetected = false; // Initialize at the beginning of the Update method
 
             if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
@@ -177,27 +303,22 @@ namespace WIGUx.Modules.hangonMotionSim
             {
                 EndFocusMode();
             }
-
             if (inFocusMode)
             {
                 HandleTransformAdjustment();
-                HandleVRInput(ref inputDetected);  // Pass by reference
-                HandleKeyboardInput(ref inputDetected);  // Pass by reference
-                HandleTransformAdjustment();            
+                HandleInput(ref inputDetected);  // Pass by reference
             }
         }
-
 
         void StartFocusMode()
         {
             string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
             logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Greetings Kazuma Kiryu...");
-            logger.Info("Sega Hang On DX Motion Sim starting...");
-            logger.Info("HANG ON!!..");
+            logger.Info("Compatible Rom Dectected, ... Rotors Spinning Up");
+            logger.Info("Sega Thunder Blade Delxue Motion Sim starting...");
+            logger.Info("Wait isn't that Blue Thunder?...");
             cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
             cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
-
             // Set objects as children of cockpit cam for focus mode
             if (cockpitCam != null)
             {
@@ -233,7 +354,7 @@ namespace WIGUx.Modules.hangonMotionSim
             }
             else
             {
-                logger.Error("CockpitCam object not found under Chair!");
+                logger.Error("CockpitCam object not found under gforceZ!");
             }
 
             // Reset rotation allowances and current rotation values
@@ -251,24 +372,24 @@ namespace WIGUx.Modules.hangonMotionSim
             RestoreOriginalParent(playerCamera, "PlayerCamera");
             RestoreOriginalParent(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
-            // Reset hangonX to initial positions and rotations
-            if (hangonXObject != null)
+            // Reset tbladeX to initial positions and rotations
+            if (tbladeXObject != null)
             {
-                hangonXObject.position = hangonXStartPosition;
-                hangonXObject.rotation = hangonXStartRotation;
+                tbladeXObject.position = tbladeXStartPosition;
+                tbladeXObject.rotation = tbladeXStartRotation;
             }
 
-            // Reset hangonY object to initial position and rotation
-            if (hangonYObject != null)
+            // Reset tbladeY object to initial position and rotation
+            if (tbladeYObject != null)
             {
-                hangonYObject.position = hangonYStartPosition;
-                hangonYObject.rotation = hangonYStartRotation;
+                tbladeYObject.position = tbladeYStartPosition;
+                tbladeYObject.rotation = tbladeYStartRotation;
             }
-            // Reset hangonZ object to initial position and rotation
-            if (hangonZObject != null)
+            // Reset tbladeZ object to initial position and rotation
+            if (tbladeZObject != null)
             {
-                hangonZObject.position = hangonZStartPosition;
-                hangonZObject.rotation = hangonZStartRotation;
+                tbladeZObject.position = tbladeZStartPosition;
+                tbladeZObject.rotation = tbladeZStartRotation;
             }
 
             // Reset cockpit cam to initial position and rotation
@@ -289,69 +410,7 @@ namespace WIGUx.Modules.hangonMotionSim
             inFocusMode = false;  // Clear focus mode flag
         }
 
-        void HandleKeyboardInput(ref bool inputDetected)
-        {
-            if (!inFocusMode) return;
-
-            /*
-            // Handle keyboard input for pitch and roll
-            if (Input.GetKey(KeyCode.LeftArrow) && currentRotationX > -rotationLimitX)
-            {
-                float rotateX = keyboardVelocityX * Time.deltaTime;
-                hangonYObject.Rotate(rotateX, 0, 0);
-                currentRotationX -= rotateX;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.RightArrow) && currentRotationX < rotationLimitX)
-            {
-                float rotateX = keyboardVelocityX * Time.deltaTime;
-                hangonYObject.Rotate(-rotateX, 0, 0);
-                currentRotationX += rotateX;
-                inputDetected = true;
-            }
-            */
-            /*
-            if (Input.GetKey(KeyCode.RightArrow) && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = keyboardVelocityY * Time.deltaTime;
-                hangonYObject.Rotate(0, rotateY, 0);
-                currentRotationY -= rotateY;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.LeftArrow) && currentRotationY < rotationLimitY)
-            {
-                float rotateY = keyboardVelocityY * Time.deltaTime;
-                hangonYObject.Rotate(0, -rotateY, 0);
-                currentRotationY += rotateY;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.DownArrow) && currentRotationZ > -rotationLimitZ)
-            {
-                float rotateZ = keyboardVelocityZ * Time.deltaTime;
-                hangonXObject.Rotate(0, 0, rotateZ);
-                currentRotationZ -= rotateZ;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.UpArrow) && currentRotationZ < rotationLimitZ)
-            {
-                float rotateZ = keyboardVelocityZ * Time.deltaTime;
-                hangonXObject.Rotate(0, 0, -rotateZ);
-                currentRotationZ += rotateZ;
-                inputDetected = true;
-            }
-            */
-            // Center the rotation if no input is detected
-            if (!inputDetected)
-            {
-                CenterRotation();
-            }
-        }
-
-        void HandleVRInput(ref bool inputDetected)
+        void HandleInput(ref bool inputDetected)
         {
             if (!inFocusMode) return;
 
@@ -359,7 +418,10 @@ namespace WIGUx.Modules.hangonMotionSim
             Vector2 secondaryThumbstick = Vector2.zero;
 
             //maybe add a check for xinput? not right now.
-            // XInput.IsConnected
+            if (XInput.IsConnected)
+            {
+                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
+            }
 
             // VR controller input
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
@@ -471,25 +533,18 @@ namespace WIGUx.Modules.hangonMotionSim
                 // LeftTrigger
                 if (XInput.GetDown(XInput.Button.LIndexTrigger))
                 {
-                    ToggleFireEmissive1(true);
-                    ToggleLight1(true);
-                    ToggleLight2(true);
                     inputDetected = true;
                 }
 
                 // Reset position on button release
                 if (XInput.GetUp(XInput.Button.LIndexTrigger))
                 {
-                    ToggleFireEmissive1(false);
-                    ToggleLight1(false);
-                    ToggleLight2(false);
                     inputDetected = true;
                 }
 
                 // Handle RB button press for plunger position
                 if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
                 {
-
                     inputDetected = true;
                 }
 
@@ -512,67 +567,152 @@ namespace WIGUx.Modules.hangonMotionSim
                 }
             }
 
-            // Handle X rotation for hangonYObject and hangonControllerX (Right Arrow or primaryThumbstick.x > 0)
-            // Thumbstick direction: right
-            if ((Input.GetKey(KeyCode.RightArrow) || primaryThumbstick.x > 0))
+            // Fire1
+            if (Input.GetButtonDown("Fire1"))
             {
-                if (currentRotationX < rotationLimitX)
+                ToggleFireEmissive1(true);
+                ToggleLight1(true);
+                inputDetected = true;
+            }
+
+            // Reset position on button release
+            if (Input.GetButtonUp("Fire1"))
+            {
+                ToggleFireEmissive1(false);
+                ToggleLight1(false);
+                inputDetected = true;
+            }
+
+            // Fire2
+            if (Input.GetButtonDown("Fire2"))
+            {
+                ToggleFireEmissive2(true);
+                ToggleLight2(true);
+                inputDetected = true;
+            }
+
+            // Reset position on button release
+            if (Input.GetButtonUp("Fire2"))
+            {
+                ToggleFireEmissive2(false);
+                ToggleLight2(false);
+                inputDetected = true;
+            }
+
+            // Fire3
+            if (Input.GetButtonDown("Fire3"))
+            {
+                inputDetected = true;
+            }
+
+            // Reset position on button release
+            if (Input.GetButtonUp("Fire3"))
+            {
+                inputDetected = true;
+            }
+
+            // Jump
+            if (Input.GetButtonDown("Jump"))
+            {
+                inputDetected = true;
+            }
+
+            // Reset position on button release
+            if (Input.GetButtonUp("Jump"))
+            {
+
+                inputDetected = true;
+            }
+
+            // Thumbstick direction: down
+            if (Input.GetKey(KeyCode.DownArrow) || primaryThumbstick.y > 0 || XInput.Get(XInput.Button.DpadDown))
+            {
+                if (currentControllerRotationZ < controllerrotationLimitZ)
                 {
-                    float rotateX = (Input.GetKey(KeyCode.RightArrow) ? keyboardVelocityX : primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    hangonYObject.Rotate(-rotateX, 0, 0);
-                    currentRotationX += rotateX;
+                    float controllerRotateZ = (Input.GetKey(KeyCode.DownArrow) || XInput.Get(XInput.Button.DpadDown) ? keyboardControllerVelocityZ : primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
+                    tbladeControllerZ.Rotate(0, 0, -controllerRotateZ); // Maintain original direction
+                    currentControllerRotationZ += controllerRotateZ;
                     inputDetected = true;
                 }
             }
 
-            // Handle X rotation for aburnerYObject and aburnerControllerX (Left Arrow or primaryThumbstick.x < 0)
-            // Thumbstick direction: left
-            if ((Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0))
+            // Thumbstick direction: up
+            if (Input.GetKey(KeyCode.UpArrow) || primaryThumbstick.y < 0 || XInput.Get(XInput.Button.DpadUp))
             {
-                if (currentRotationX > -rotationLimitX)
+                if (currentControllerRotationZ > -controllerrotationLimitZ)
                 {
-                    float rotateX = (Input.GetKey(KeyCode.LeftArrow) ? keyboardVelocityX : -primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    hangonYObject.Rotate(rotateX, 0, 0);
-                    currentRotationX -= rotateX;
+                    float controllerRotateZ = (Input.GetKey(KeyCode.UpArrow) || XInput.Get(XInput.Button.DpadUp) ? keyboardControllerVelocityZ : -primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
+                    tbladeControllerZ.Rotate(0, 0, controllerRotateZ); // Maintain original direction
+                    currentControllerRotationZ -= controllerRotateZ;
                     inputDetected = true;
                 }
+            }
+
+            // Handle Z rotation for tbladeXObject and tbladeControllerZ (Left Arrow or primaryThumbstick.x < 0)
+            // Thumbstick direction: left
+            if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0 || XInput.Get(XInput.Button.DpadLeft))
+            {
+                if (primaryThumbstick.x < 0 && currentRotationY < rotationLimitY)
+                {
+                    float rotateY = (Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) ? keyboardVelocityZ : -primaryThumbstick.x * vrVelocity) * Time.deltaTime;
+                    tbladeYObject.Rotate(0, -rotateY, 0);  
+                    currentRotationY += rotateY;  
+                    inputDetected = true;
+                }
+                if (currentControllerRotationX > -controllerrotationLimitX)
+                {
+                    float controllerRotateX = (Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) ? keyboardControllerVelocityX : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
+                    tbladeControllerX.Rotate(controllerRotateX, 0, 0);
+                    currentControllerRotationX -= controllerRotateX;
+                    inputDetected = true;
+                }
+            }
+
+            // Handle Z rotation for tbladeXObject and tbladeControllerZ (Right Arrow or primaryThumbstick.x > 0)
+            // Thumbstick direction: right
+            if (Input.GetKey(KeyCode.RightArrow) || primaryThumbstick.x > 0 || XInput.Get(XInput.Button.DpadRight))
+            {
+                if (primaryThumbstick.x > 0 && currentRotationY > -rotationLimitY)
+                {
+                    float rotateY = (Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) ? keyboardVelocityZ : primaryThumbstick.x * vrVelocity) * Time.deltaTime;
+                    tbladeYObject.Rotate(0, rotateY, 0);  
+                    currentRotationY -= rotateY;  
+                    inputDetected = true;
+                }
+                if (currentControllerRotationX < controllerrotationLimitX)
+                {
+                    float controllerRotateX = (Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) ? keyboardControllerVelocityX : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
+                    tbladeControllerX.Rotate(-controllerRotateX, 0, 0);
+                    currentControllerRotationX += controllerRotateX;
+                    inputDetected = true;
+                }
+
             }
 
             /*
-// Handle X rotation for hangonYObject(Right Arrow or primaryThumbstick.x > 0)
-if (Input.GetKey(KeyCode.RightArrow) || primaryThumbstick.x > 0)
-{
-        if (currentRotationX < rotationLimitX)
-        {
-            float inputVelocityX = Input.GetKey(KeyCode.RightArrow) ? keyboardVelocityX : primaryThumbstick.x * vrVelocity;
-            float targetRotationX = currentRotationX + inputVelocityX * Time.deltaTime;
-            targetRotationX = Mathf.Clamp(targetRotationX, -rotationLimitX, rotationLimitX); // Ensure we don't exceed the limits
-            float rotateX = Mathf.Lerp(currentRotationX, targetRotationX, 0.1f); // Smooth the rotation
-            hangonYObject.Rotate(-rotateX, 0, 0);
-            currentRotationX = targetRotationX;
-            inputDetected = true;
-        }
-    }
+            // Handle left rotation (Thumbstick left)
+            if (secondaryThumbstick.x < 0 && currentRotationY > -rotationLimitY)
+            {
+                float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
+                tbladeYObject.Rotate(0, rotateY, 0);  // Rotate Y
+                currentRotationY += rotateY;  // Update current rotation (more positive)
+                inputDetected = true;
+            }
 
-// Handle X rotation for hangonYObject (Left Arrow or primaryThumbstick.x < 0)
-if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
-{
-    if (currentRotationX > -rotationLimitX)
-    {
-        float inputVelocityX = Input.GetKey(KeyCode.LeftArrow) ? keyboardVelocityX : -primaryThumbstick.x * vrVelocity;
-        float targetRotationX = currentRotationX + inputVelocityX * Time.deltaTime;
-        targetRotationX = Mathf.Clamp(targetRotationX, -rotationLimitX, rotationLimitX); // Ensure we don't exceed the limits
-        float rotateX = Mathf.Lerp(currentRotationX, targetRotationX, 0.1f); // Smooth the rotation
-        hangonYObject.Rotate(rotateX, 0, 0);
-        currentRotationX = targetRotationX;
-        inputDetected = true;
-    }
-}
-// Center the rotation if no input is detected (i think this is redundant)
+            // Handle right rotation (Thumbstick right)
+            if (secondaryThumbstick.x > 0 && currentRotationY < rotationLimitY)
+            {
+                float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
+                tbladeYObject.Rotate(0, rotateY, 0);  // Rotate Y
+                currentRotationY += rotateY;  // Update current rotation (more negative)
+                inputDetected = true;
+            }
             */
+            // Center the rotation if no input is detected (i think this is redundant)
+
             if (!inputDetected)
             {
-                // CenterRotation();
+                CenterRotation();
             }
         }
 
@@ -596,13 +736,13 @@ if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
             if (currentRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, currentRotationX);
-                hangonYObject.Rotate(unrotateX, 0, 0);
+                tbladeYObject.Rotate(unrotateX, 0, 0);
                 currentRotationX -= unrotateX;
             }
             else if (currentRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, -currentRotationX);
-                hangonYObject.Rotate(-unrotateX, 0, 0);
+                tbladeYObject.Rotate(-unrotateX, 0, 0);
                 currentRotationX += unrotateX;
             }
 
@@ -610,13 +750,13 @@ if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
             if (currentRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, currentRotationY);
-                hangonXObject.Rotate(0, unrotateY, 0);
+                tbladeXObject.Rotate(0, unrotateY, 0);
                 currentRotationY -= unrotateY;
             }
             else if (currentRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, -currentRotationY);
-                hangonXObject.Rotate(0, -unrotateY, 0);
+                tbladeXObject.Rotate(0, -unrotateY, 0);
                 currentRotationY += unrotateY;
             }
 
@@ -624,16 +764,58 @@ if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
             if (currentRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, currentRotationZ);
-                hangonXObject.Rotate(0, 0, unrotateZ);
+                tbladeXObject.Rotate(0, 0, unrotateZ);
                 currentRotationZ -= unrotateZ;
             }
             else if (currentRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, -currentRotationZ);
-                hangonXObject.Rotate(0, 0, -unrotateZ);
+                tbladeXObject.Rotate(0, 0, -unrotateZ);
                 currentRotationZ += unrotateZ;
             }
+            //Centering for contoller
 
+            // Center Y-axis Controller rotation
+            if (currentControllerRotationY > 0)
+            {
+                float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, currentControllerRotationY);
+                tbladeControllerY.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
+                currentControllerRotationY -= unrotateY;    // Reducing the positive rotation
+            }
+            else if (currentControllerRotationY < 0)
+            {
+                float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, -currentControllerRotationY);
+                tbladeControllerY.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
+                currentControllerRotationY += unrotateY;    // Reducing the negative rotation
+            }
+
+            // Center X-Axis Controller rotation
+            if (currentControllerRotationX > 0)
+            {
+                float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, currentControllerRotationX);
+                tbladeControllerX.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
+                currentControllerRotationX -= unrotateX;    // Reducing the positive rotation
+            }
+            else if (currentControllerRotationX < 0)
+            {
+                float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, -currentControllerRotationX);
+                tbladeControllerX.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
+                currentControllerRotationX += unrotateX;    // Reducing the positive rotation
+            }
+
+            // Center Z-axis Controller rotation
+            if (currentControllerRotationZ > 0)
+            {
+                float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, currentControllerRotationZ);
+                tbladeControllerZ.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
+                currentControllerRotationZ -= unrotateZ;    // Reducing the positive rotation
+            }
+            else if (currentControllerRotationZ < 0)
+            {
+                float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, -currentControllerRotationZ);
+                tbladeControllerZ.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
+                currentControllerRotationZ += unrotateZ;    // Reducing the positive rotation
+            }
         }
 
         void HandleTransformAdjustment()
@@ -722,6 +904,7 @@ if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
                 logger.Info($"{name} unset from parent.");
             }
         }
+
         // Method to toggle the fire1 emissive object
         void ToggleFireEmissive1(bool isActive)
         {
@@ -738,7 +921,7 @@ if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
                     {
                         renderer.material.DisableKeyword("_EMISSION");
                     }
-                    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
+         //           logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
                 }
                 else
                 {
@@ -767,7 +950,7 @@ if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
                     {
                         renderer.material.DisableKeyword("_EMISSION");
                     }
-                    //    logger.Info($"fireemissive2 object emission turned {(isActive ? "on" : "off")}.");
+             //       logger.Info($"fireemissive2 object emission turned {(isActive ? "on" : "off")}.");
                 }
                 else
                 {
@@ -786,7 +969,7 @@ if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
             if (fire1_light != null)
             {
                 fire1_light.enabled = isActive;
-                //     logger.Info($"{fire1_light.name} light turned {(isActive ? "on" : "off")}.");
+      //          logger.Info($"{fire1_light.name} light turned {(isActive ? "on" : "off")}.");
             }
             else
             {
@@ -800,13 +983,14 @@ if (Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0)
             if (fire2_light != null)
             {
                 fire2_light.enabled = isActive;
-                //     logger.Info($"{fire2_light.name} light turned {(isActive ? "on" : "off")}.");
+         //       logger.Info($"{fire2_light.name} light turned {(isActive ? "on" : "off")}.");
             }
             else
             {
                 logger.Debug("Fire2 light component is not found.");
             }
         }
+
         // Method to check if VR input is active
         bool VRInputActive()
         {

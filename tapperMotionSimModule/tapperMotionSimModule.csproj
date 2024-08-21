@@ -2,7 +2,7 @@
   <Import Project="../UGC.targets" />
   <PropertyGroup>
    <OutputType>Library</OutputType>
-      <AssemblyName>MonkeyIslandWheelModule</AssemblyName>
+      <AssemblyName>tapperMotionSimModule</AssemblyName>
       <TargetFramework>netstandard2.0</TargetFramework>
       <RootNamespace>WIGUx.Modules</RootNamespace>
   </PropertyGroup>

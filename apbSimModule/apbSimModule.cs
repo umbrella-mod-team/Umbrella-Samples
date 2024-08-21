@@ -8,16 +8,16 @@ using static XInput;
 using static SteamVR_Utils;
 using System.IO;
 
-namespace WIGUx.Modules.arcadeControllerMotionSim
+namespace WIGUx.Modules.apbSim
 {
-    public class arcadeControllerSimController : MonoBehaviour
+    public class apbSimController : MonoBehaviour
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
         private readonly float keyboardVelocityX = 25.5f;  // Velocity for keyboard input
         private readonly float keyboardVelocityY = 25.5f;  // Velocity for keyboard input
         private readonly float keyboardVelocityZ = 25.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 30.5f;        // Velocity for VR controller input
+        private readonly float vrVelocity = 20.5f;        // Velocity for VR controller input
 
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
 
@@ -25,26 +25,26 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
 
 
         // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 150.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 150.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 150.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 200.5f;        // Velocity for VR/Controller input
+        private readonly float keyboardControllerVelocityX = 400.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityY = 400.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityZ = 400.5f;  // Velocity for keyboard input
+        private readonly float vrControllerVelocity = 400.5f;        // Velocity for VR/Controller input
 
         // player 1
 
         //p1 sticks
 
-        private float p1controllerrotationLimitX = 10f;  // Rotation limit for X-axis (stick or wheel)
+        private float p1controllerrotationLimitX = 270f;  // Rotation limit for X-axis (stick or wheel)
         private float p1controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
-        private float p1controllerrotationLimitZ = 10f;  // Rotation limit for Z-axis (stick or wheel)
+        private float p1controllerrotationLimitZ = 0f;  // Rotation limit for Z-axis (stick or wheel)
 
         private float p1currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
         private float p1currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
         private float p1currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
 
-        private readonly float p1centeringControllerVelocityX = 50.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float p1centeringControllerVelocityY = 50.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float p1centeringControllerVelocityZ = 50.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float p1centeringControllerVelocityX = 400.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float p1centeringControllerVelocityY = 400.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float p1centeringControllerVelocityZ = 400.5f;  // Velocity for centering rotation (stick or wheel)
 
         private Transform p1controllerX; // Reference to the main animated controller (wheel)
         private Vector3 p1controllerXStartPosition; // Initial controller positions and rotations for resetting
@@ -227,23 +227,16 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
 
         //lights
         private Transform lightsObject;
-        public Light fire1_light;
-        public Light fire2_light;
-        public Light fire3_light;
-        public Light fire4_light;
-        public Light fire5_light;
-        public Light fire6_light;
-        private Transform fireemissiveObject;
-        private Transform fireemissive2Object;
-        public Light strobe1_light;
-        public Light strobe2_light;
-        public Light strobe3_light;
-        public Light strobe4_light;
-        private float flashDuration = 0.01f;
-        private float flashInterval = 0.05f;
-        public float lightDuration = 0.35f; // Duration during which the lights will be on
-        private bool areStrobesOn = false; // track strobe lights
-        private Coroutine strobeCoroutine; // Coroutine variable to control the strobe flashing
+        public Light[] apbLights = new Light[2]; // Array to store lights
+        public Light apb1_light;
+        public Light apb2_light;
+        public Light apb3_light;
+        public Light apb4_light;
+        private float flashDuration = 0.15f;
+        private float flashInterval = 0.15f;
+        private float lightDuration = 0.5f; // Duration during which the lights will be on
+        private bool areapbLightsOn = false; // track strobe lights
+        private Coroutine apbCoroutine; // Coroutine variable to control the strobe flashing
         public string fire1Button = "Fire1"; // Name of the fire button
         public string fire2Button = "Fire2"; // Name of the fire button 
         public string fire3Button = "Fire3"; // Name of the fire button 
@@ -251,18 +244,13 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
         public string LBButton = "LB"; // Name of the fire button 
         public string RBButton = "RB"; // Name of the fire button 
         public string StartButton = "Start"; // Name of the fire button 
-        public GameObject targetGameObject; // Assign the target GameObject in the Inspector
         private Light[] lights;
-        private List<Light> strobeLights = new List<Light>();
-
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private readonly string[] compatibleGames = { "agnakjdf;ajdfkghajkfdlglk" };
+        private readonly string[] compatibleGames = { "apb" };
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
                                                                                                               // Public property to access the Game instance
         void Start()
         {
-            /*
-            logger.Info("Looking For Lights");
             lightsObject = transform.Find("lights");
             if (lightsObject != null)
             {
@@ -271,50 +259,47 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
             else
             {
                 logger.Error("lightsObject object not found!");
+                return; // Early exit if lightsObject is not found
             }
-            */
+
             // Gets all Light components in the target object and its children
             Light[] allLights = lightsObject.GetComponentsInChildren<Light>();
 
             // Log the names of the objects containing the Light components and filter out unwanted lights
             foreach (Light light in allLights)
             {
-                if (light.gameObject.name == "fire1_light")
+                logger.Info($"Light found: {light.gameObject.name}");
+                switch (light.gameObject.name)
                 {
-                    fire1_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
+                    case "apb1_light":
+                        apb1_light = light;
+                        apbLights[0] = light;
+                        logger.Info("Included Light found in object: " + light.gameObject.name);
+                        break;
+                    case "apb2_light":
+                        apb2_light = light;
+                        apbLights[1] = light;
+                        logger.Info("Included Light found in object: " + light.gameObject.name);
+                        break;
+                    default:
+                        logger.Info("Excluded Light found in object: " + light.gameObject.name);
+                        break;
                 }
-                else if (light.gameObject.name == "fire2_light")
+            }
+
+            // Log the assigned lights for verification
+            for (int i = 0; i < apbLights.Length; i++)
+            {
+                if (apbLights[i] != null)
                 {
-                    fire2_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else if (light.gameObject.name == "strobe1_light")
-                {
-                    strobe1_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else if (light.gameObject.name == "strobe2_light")
-                {
-                    strobe2_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else if (light.gameObject.name == "strobe3_light")
-                {
-                    strobe3_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else if (light.gameObject.name == "strobe4_light")
-                {
-                    strobe4_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
+                    logger.Info($"apbLights[{i}] assigned to: {apbLights[i].name}");
                 }
                 else
                 {
-                    logger.Info("Excluded Light found in object: " + light.gameObject.name);
+                    logger.Error($"apbLights[{i}] is not assigned!");
                 }
             }
-            /*
+
             // Find controllerX for player 1
             p1controllerX = transform.Find("p1controllerX");
             if (p1controllerX != null)
@@ -357,230 +342,230 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 logger.Error("p1controllerX object not found!!");
             }
 
-
+            /*
             // Find controller2X for player 2
             p2controllerX = transform.Find("p2controllerX");
             if (p2controllerX != null)
             {
-                logger.Info("p2controllerX object found.");
+            logger.Info("p2controllerX object found.");
+            // Store initial position and rotation of the stick
+            p2controllerXStartPosition = p2controllerX.transform.position;
+            p2controllerXStartRotation = p2controllerX.transform.rotation;
+
+            // Find p2controllerY under p2controllerX
+            p2controllerY = p2controllerX.Find("p2controllerY");
+            if (p2controllerY != null)
+            {
+            logger.Info("p2controllerY object found.");
+            // Store initial position and rotation of the stick
+            p2controllerYStartPosition = p2controllerY.transform.position;
+            p2controllerYStartRotation = p2controllerY.transform.rotation;
+
+            // Find p2controllerZ under p2controllerY
+            p2controllerZ = p2controllerY.Find("p2controllerZ");
+            if (p2controllerZ != null)
+            {
+                logger.Info("p2controllerZ object found.");
                 // Store initial position and rotation of the stick
-                p2controllerXStartPosition = p2controllerX.transform.position;
-                p2controllerXStartRotation = p2controllerX.transform.rotation;
-
-                // Find p2controllerY under p2controllerX
-                p2controllerY = p2controllerX.Find("p2controllerY");
-                if (p2controllerY != null)
-                {
-                    logger.Info("p2controllerY object found.");
-                    // Store initial position and rotation of the stick
-                    p2controllerYStartPosition = p2controllerY.transform.position;
-                    p2controllerYStartRotation = p2controllerY.transform.rotation;
-
-                    // Find p2controllerZ under p2controllerY
-                    p2controllerZ = p2controllerY.Find("p2controllerZ");
-                    if (p2controllerZ != null)
-                    {
-                        logger.Info("p2controllerZ object found.");
-                        // Store initial position and rotation of the stick
-                        p2controllerZStartPosition = p2controllerZ.transform.position;
-                        p2controllerZStartRotation = p2controllerZ.transform.rotation;
-                    }
-                    else
-                    {
-                        logger.Error("p2controllerZ object not found under p2controllerY!");
-                    }
-                }
-                else
-                {
-                    logger.Error("p2controllerY object not found under p2controllerX!");
-                }
+                p2controllerZStartPosition = p2controllerZ.transform.position;
+                p2controllerZStartRotation = p2controllerZ.transform.rotation;
             }
             else
             {
-                logger.Error("p2controllerX object not found!!");
+                logger.Error("p2controllerZ object not found under p2controllerY!");
+            }
+            }
+            else
+            {
+            logger.Error("p2controllerY object not found under p2controllerX!");
+            }
+            }
+            else
+            {
+            logger.Error("p2controllerX object not found!!");
             }
             // Find p1 start button object in hierarchy
             p1startObject = transform.Find("start");
             if (p1button1Object != null)
             {
-                logger.Info("p1startObject found.");
-                p1startObjectStartPosition = p1startObject.position;
-                p1startObjectStartRotation = p1startObject.rotation;
+            logger.Info("p1startObject found.");
+            p1startObjectStartPosition = p1startObject.position;
+            p1startObjectStartRotation = p1startObject.rotation;
 
-                // Find plunger1 object under button1
-                p1startPlunger = p1button1Object.Find("p1startplunger");
-                if (p1startPlunger != null)
-                {
-                    logger.Info("p1startplunger found.");
-                    p2startPlungerStartPosition = p1startPlunger.position;
-                    p2startPlungerStartRotation = p1startPlunger.rotation;
-                }
-                else
-                {
-                    logger.Error("p1startplunger object not found under p1startObject!");
-                }
+            // Find plunger1 object under button1
+            p1startPlunger = p1button1Object.Find("p1startplunger");
+            if (p1startPlunger != null)
+            {
+            logger.Info("p1startplunger found.");
+            p2startPlungerStartPosition = p1startPlunger.position;
+            p2startPlungerStartRotation = p1startPlunger.rotation;
             }
             else
             {
-                logger.Error("p1startplunger object not found!");
+            logger.Error("p1startplunger object not found under p1startObject!");
+            }
+            }
+            else
+            {
+            logger.Error("p1startplunger object not found!");
             }
 
             // Find p1 button1 object in hierarchy
             p1button1Object = transform.Find("p1button1");
             if (p1button1Object != null)
             {
-                logger.Info("p1button1Object found.");
-                p1button1ObjectStartPosition = p1button1Object.position;
-                p1button1ObjectStartRotation = p1button1Object.rotation;
+            logger.Info("p1button1Object found.");
+            p1button1ObjectStartPosition = p1button1Object.position;
+            p1button1ObjectStartRotation = p1button1Object.rotation;
 
-                // Find plunger1 object under button1
-                p1plunger1Object = p1button1Object.Find("p1plunger1");
-                if (p1plunger1Object != null)
-                {
-                    logger.Info("plungerObject1 found.");
-                    p1plunger1ObjectStartPosition = p1plunger1Object.position;
-                    p1plunger1ObjectStartRotation = p1plunger1Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger1Object object not found under p1button1Object!");
-                }
+            // Find plunger1 object under button1
+            p1plunger1Object = p1button1Object.Find("p1plunger1");
+            if (p1plunger1Object != null)
+            {
+            logger.Info("plungerObject1 found.");
+            p1plunger1ObjectStartPosition = p1plunger1Object.position;
+            p1plunger1ObjectStartRotation = p1plunger1Object.rotation;
             }
             else
             {
-                logger.Error("p1plunger1Object object not found!");
+            logger.Error("p1plunger1Object object not found under p1button1Object!");
+            }
+            }
+            else
+            {
+            logger.Error("p1plunger1Object object not found!");
             }
 
             // Find p1 button2 object in hierarchy
             p1button2Object = transform.Find("p1button2");
             if (p1button2Object != null)
             {
-                logger.Info("p1button2Object found.");
-                p1button2ObjectStartPosition = p1button2Object.position;
-                p1button2ObjectStartRotation = p1button2Object.rotation;
+            logger.Info("p1button2Object found.");
+            p1button2ObjectStartPosition = p1button2Object.position;
+            p1button2ObjectStartRotation = p1button2Object.rotation;
 
-                // Find plunger2 object under button2
-                p1plunger2Object = p1button2Object.Find("p1plunger2");
-                if (p1plunger2Object != null)
-                {
-                    logger.Info("plungerObject2 found.");
-                    p1plunger2ObjectStartPosition = p1plunger2Object.position;
-                    p1plunger2ObjectStartRotation = p1plunger2Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger2Object object not found under p1button2Object!");
-                }
+            // Find plunger2 object under button2
+            p1plunger2Object = p1button2Object.Find("p1plunger2");
+            if (p1plunger2Object != null)
+            {
+            logger.Info("plungerObject2 found.");
+            p1plunger2ObjectStartPosition = p1plunger2Object.position;
+            p1plunger2ObjectStartRotation = p1plunger2Object.rotation;
             }
             else
             {
-                logger.Error("p1plunger2Object object not found!");
+            logger.Error("p1plunger2Object object not found under p1button2Object!");
+            }
+            }
+            else
+            {
+            logger.Error("p1plunger2Object object not found!");
             }
 
             // Find p1 button3 object in hierarchy
             p1button3Object = transform.Find("p1button3");
             if (p1button3Object != null)
             {
-                logger.Info("p1button3Object found.");
-                p1button3ObjectStartPosition = p1button3Object.position;
-                p1button3ObjectStartRotation = p1button3Object.rotation;
+            logger.Info("p1button3Object found.");
+            p1button3ObjectStartPosition = p1button3Object.position;
+            p1button3ObjectStartRotation = p1button3Object.rotation;
 
-                // Find plunger3 object under button3
-                p1plunger3Object = p1button3Object.Find("p1plunger3");
-                if (p1plunger3Object != null)
-                {
-                    logger.Info("plungerObject3 found.");
-                    p1plunger3ObjectStartPosition = p1plunger3Object.position;
-                    p1plunger3ObjectStartRotation = p1plunger3Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger3Object object not found under p1button3Object!");
-                }
+            // Find plunger3 object under button3
+            p1plunger3Object = p1button3Object.Find("p1plunger3");
+            if (p1plunger3Object != null)
+            {
+            logger.Info("plungerObject3 found.");
+            p1plunger3ObjectStartPosition = p1plunger3Object.position;
+            p1plunger3ObjectStartRotation = p1plunger3Object.rotation;
             }
             else
             {
-                logger.Error("p1plunger3Object object not found!");
+            logger.Error("p1plunger3Object object not found under p1button3Object!");
+            }
+            }
+            else
+            {
+            logger.Error("p1plunger3Object object not found!");
             }
 
             // Find p1 button4 object in hierarchy
             p1button4Object = transform.Find("p1button4");
             if (p1button4Object != null)
             {
-                logger.Info("p1button4Object found.");
-                p1button4ObjectStartPosition = p1button4Object.position;
-                p1button4ObjectStartRotation = p1button4Object.rotation;
+            logger.Info("p1button4Object found.");
+            p1button4ObjectStartPosition = p1button4Object.position;
+            p1button4ObjectStartRotation = p1button4Object.rotation;
 
-                // Find plunger4 object under button4
-                p1plunger4Object = p1button4Object.Find("p1plunger4");
-                if (p1plunger4Object != null)
-                {
-                    logger.Info("plungerObject4 found.");
-                    p1plunger4ObjectStartPosition = p1plunger4Object.position;
-                    p1plunger4ObjectStartRotation = p1plunger4Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger4Object object not found under p1button4Object!");
-                }
+            // Find plunger4 object under button4
+            p1plunger4Object = p1button4Object.Find("p1plunger4");
+            if (p1plunger4Object != null)
+            {
+            logger.Info("plungerObject4 found.");
+            p1plunger4ObjectStartPosition = p1plunger4Object.position;
+            p1plunger4ObjectStartRotation = p1plunger4Object.rotation;
             }
             else
             {
-                logger.Error("p1plunger4Object object not found!");
+            logger.Error("p1plunger4Object object not found under p1button4Object!");
+            }
+            }
+            else
+            {
+            logger.Error("p1plunger4Object object not found!");
             }
 
             // Find p1 button5 object in hierarchy
             p1button5Object = transform.Find("p1button5");
             if (p1button5Object != null)
             {
-                logger.Info("p1button5Object found.");
-                p1button5ObjectStartPosition = p1button5Object.position;
-                p1button5ObjectStartRotation = p1button5Object.rotation;
+            logger.Info("p1button5Object found.");
+            p1button5ObjectStartPosition = p1button5Object.position;
+            p1button5ObjectStartRotation = p1button5Object.rotation;
 
-                // Find plunger5 object under button5
-                p1plunger5Object = p1button5Object.Find("p1plunger5");
-                if (p1plunger5Object != null)
-                {
-                    logger.Info("plungerObject5 found.");
-                    p1plunger5ObjectStartPosition = p1plunger5Object.position;
-                    p1plunger5ObjectStartRotation = p1plunger5Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger5Object object not found under p1button5Object!");
-                }
+            // Find plunger5 object under button5
+            p1plunger5Object = p1button5Object.Find("p1plunger5");
+            if (p1plunger5Object != null)
+            {
+            logger.Info("plungerObject5 found.");
+            p1plunger5ObjectStartPosition = p1plunger5Object.position;
+            p1plunger5ObjectStartRotation = p1plunger5Object.rotation;
             }
             else
             {
-                logger.Error("p1plunger5Object object not found!");
+            logger.Error("p1plunger5Object object not found under p1button5Object!");
+            }
+            }
+            else
+            {
+            logger.Error("p1plunger5Object object not found!");
             }
 
             // Find p1 button6 object in hierarchy
             p1button6Object = transform.Find("p1button6");
             if (p1button6Object != null)
             {
-                logger.Info("p1button6Object found.");
-                p1button6ObjectStartPosition = p1button6Object.position;
-                p1button6ObjectStartRotation = p1button6Object.rotation;
+            logger.Info("p1button6Object found.");
+            p1button6ObjectStartPosition = p1button6Object.position;
+            p1button6ObjectStartRotation = p1button6Object.rotation;
 
-                // Find plunger6 object under button6
-                p1plunger6Object = p1button6Object.Find("p1plunger6");
-                if (p1plunger6Object != null)
-                {
-                    logger.Info("plungerObject6 found.");
-                    p1plunger6ObjectStartPosition = p1plunger6Object.position;
-                    p1plunger6ObjectStartRotation = p1plunger6Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger6Object object not found under p1button6Object!");
-                }
+            // Find plunger6 object under button6
+            p1plunger6Object = p1button6Object.Find("p1plunger6");
+            if (p1plunger6Object != null)
+            {
+            logger.Info("plungerObject6 found.");
+            p1plunger6ObjectStartPosition = p1plunger6Object.position;
+            p1plunger6ObjectStartRotation = p1plunger6Object.rotation;
             }
             else
             {
-                logger.Error("p1plunger6Object object not found!");
+            logger.Error("p1plunger6Object object not found under p1button6Object!");
             }
-                */
+            }
+            else
+            {
+            logger.Error("p1plunger6Object object not found!");
+            }
+            */
         }
 
         void Update()
@@ -618,11 +603,42 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 HandleInput(ref inputDetected);  // Pass by reference
             }
         }
-
         void StartFocusMode()
         {
             logger.Info("Module starting...");
 
+            // Reset controllers to initial positions and rotations
+            if (p1controllerX != null)
+            {
+                p1controllerX.position = p1controllerXStartPosition;
+                p1controllerX.rotation = p1controllerXStartRotation;
+            }
+            if (p1controllerY != null)
+            {
+                p1controllerY.position = p1controllerYStartPosition;
+                p1controllerY.rotation = p1controllerYStartRotation;
+            }
+            if (p1controllerZ != null)
+            {
+                p1controllerZ.position = p1controllerZStartPosition;
+                p1controllerZ.rotation = p1controllerZStartRotation;
+            }
+            // Reset controller2 to initial positions and rotations
+            if (p2controllerX != null)
+            {
+                p2controllerX.position = p2controllerXStartPosition;
+                p2controllerX.rotation = p2controllerXStartRotation;
+            }
+            if (p2controllerY != null)
+            {
+                p2controllerY.position = p2controllerYStartPosition;
+                p2controllerY.rotation = p2controllerYStartRotation;
+            }
+            if (p2controllerZ != null)
+            {
+                p2controllerZ.position = p2controllerZStartPosition;
+                p2controllerZ.rotation = p2controllerZStartRotation;
+            }
             //Buttons
 
             // Reset ps1startObject object to initial position and rotation
@@ -742,18 +758,149 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
 
         void EndFocusMode()
         {
-            logger.Info("Exiting Focus Mode...");
-            //player 1
-            p1currentControllerRotationX = 0f;
-            p1currentControllerRotationY = 0f;
-            p1currentControllerRotationZ = 0f;
-            //player 2
-            p2currentControllerRotationX = 0f;
-            p2currentControllerRotationY = 0f;
-            p2currentControllerRotationZ = 0f;
+            // Reset controllers to initial positions and rotations
+            if (p1controllerX != null)
+            {
+                p1controllerX.position = p1controllerXStartPosition;
+                p1controllerX.rotation = p1controllerXStartRotation;
+            }
+            if (p1controllerY != null)
+            {
+                p1controllerY.position = p1controllerYStartPosition;
+                p1controllerY.rotation = p1controllerYStartRotation;
+            }
+            if (p1controllerZ != null)
+            {
+                p1controllerZ.position = p1controllerZStartPosition;
+                p1controllerZ.rotation = p1controllerZStartRotation;
+            }
+            // Reset controller2 to initial positions and rotations
+            if (p2controllerX != null)
+            {
+                p2controllerX.position = p2controllerXStartPosition;
+                p2controllerX.rotation = p2controllerXStartRotation;
+            }
+            if (p2controllerY != null)
+            {
+                p2controllerY.position = p2controllerYStartPosition;
+                p2controllerY.rotation = p2controllerYStartRotation;
+            }
+            if (p2controllerZ != null)
+            {
+                p2controllerZ.position = p2controllerZStartPosition;
+                p2controllerZ.rotation = p2controllerZStartRotation;
+            }
+            //Buttons
+
+            // Reset ps1startObject object to initial position and rotation
+            if (p1startObject != null)
+            {
+                p1startObject.position = p1startObjectStartPosition;
+                p1startObject.rotation = p1startObjectStartRotation;
+            }
+            // Reset p1button1Object to initial positions and rotations
+            if (p1button1Object != null)
+            {
+                p1button1Object.position = p1button1ObjectStartPosition;
+                p1button1Object.rotation = p1button1ObjectStartRotation;
+            }
+            // Reset p1button2Object to initial positions and rotations
+            if (p1button1Object != null)
+            {
+                p1button2Object.position = p1button2ObjectStartPosition;
+                p1button2Object.rotation = p1button2ObjectStartRotation;
+            }
+            // Reset p1button3Object to initial positions and rotations
+            if (p1button3Object != null)
+            {
+                p1button3Object.position = p1button3ObjectStartPosition;
+                p1button3Object.rotation = p1button3ObjectStartRotation;
+            }
+            // Reset p1button4Object to initial positions and rotations
+            if (p1button4Object != null)
+            {
+                p1button4Object.position = p1button4ObjectStartPosition;
+                p1button4Object.rotation = p1button4ObjectStartRotation;
+            }
+            // Reset p1button5Object to initial positions and rotations
+            if (p1button5Object != null)
+            {
+                p1button5Object.position = p1button5ObjectStartPosition;
+                p1button5Object.rotation = p1button5ObjectStartRotation;
+            }
+            // Reset p1button6Object to initial positions and rotations
+            if (p1button6Object != null)
+            {
+                p1button6Object.position = p1button6ObjectStartPosition;
+                p1button6Object.rotation = p1button6ObjectStartRotation;
+            }
+
+            // Reset ps2startObject object to initial position and rotation
+            if (p2startObject != null)
+            {
+                p2startObject.position = p2startObjectStartPosition;
+                p2startObject.rotation = p2startObjectStartRotation;
+            }
+            // Reset p1button1Object to initial positions and rotations
+            if (p2button1Object != null)
+            {
+                p2button1Object.position = p2button1ObjectStartPosition;
+                p2button1Object.rotation = p2button1ObjectStartRotation;
+            }
+            // Reset p1button2Object to initial positions and rotations
+            if (p2button2Object != null)
+            {
+                p2button2Object.position = p2button2ObjectStartPosition;
+                p2button2Object.rotation = p2button2ObjectStartRotation;
+            }
+            // Reset p1button3Object to initial positions and rotations
+            if (p2button3Object != null)
+            {
+                p2button3Object.position = p2button3ObjectStartPosition;
+                p2button3Object.rotation = p2button3ObjectStartRotation;
+            }
+            // Reset p1button4Object to initial positions and rotations
+            if (p2button4Object != null)
+            {
+                p2button4Object.position = p2button4ObjectStartPosition;
+                p2button4Object.rotation = p2button4ObjectStartRotation;
+            }
+            // Reset p1button5Object to initial positions and rotations
+            if (p2button5Object != null)
+            {
+                p2button5Object.position = p2button5ObjectStartPosition;
+                p2button5Object.rotation = p2button5ObjectStartRotation;
+            }
+            // Reset p1button6Object to initial positions and rotations
+            if (p2button6Object != null)
+            {
+                p2button6Object.position = p2button6ObjectStartPosition;
+                p2button6Object.rotation = p2button6ObjectStartRotation;
+            }
+
+            // Reset buttons current values
+            p1currentStartPosition = 0f;
+            p1currentButton1Position = 0f;
+            p1currentButton2Position = 0f;
+            p1currentButton3Position = 0f;
+            p1currentButton4Position = 0f;
+            p1currentButton5Position = 0f;
+            p1currentButton6Position = 0f;
+            p1currentStartPosition = 0f;
+            p2currentButton1Position = 0f;
+            p2currentButton2Position = 0f;
+            p2currentButton3Position = 0f;
+            p2currentButton4Position = 0f;
+            p2currentButton5Position = 0f;
+            p2currentButton6Position = 0f;
+
+            StopCoroutine(apbCoroutine);
+            ToggleapbLight1(false);
+            ToggleapbLight2(false);
 
             inFocusMode = false;  // Clear focus mode flag
         }
+
 
         //sexy new combined input handler
         void HandleInput(ref bool inputDetected)
@@ -761,7 +908,7 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
-            Vector2 secondaryThumbstick = Vector2.zero; ;
+            Vector2 secondaryThumbstick = Vector2.zero;
 
             // VR controller input
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
@@ -775,37 +922,56 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 float ovrPrimaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
                 float ovrSecondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
-                /*
+
                 // Check if the A button on the right controller is pressed
                 if (OVRInput.GetDown(OVRInput.Button.One))
                 {
-                    logger.Info("OVR A button pressed");
+                //    logger.Info("OVR A button pressed");
                 }
 
                 // Check if the B button on the right controller is pressed
                 if (OVRInput.GetDown(OVRInput.Button.Two))
                 {
-                    logger.Info("OVR B button pressed");
+                //    logger.Info("OVR B button pressed");
                 }
 
                 // Check if the X button on the left controller is pressed
                 if (OVRInput.GetDown(OVRInput.Button.Three))
                 {
-                    logger.Info("OVR X button pressed");
+              //      logger.Info("OVR X button pressed");
                 }
 
                 // Check if the Y button on the left controller is pressed
                 if (OVRInput.GetDown(OVRInput.Button.Four))
                 {
-                    logger.Info("OVR Y button pressed");
+                  //  logger.Info("OVR Y button pressed");
                 }
 
                 // Check if the primary index trigger on the right controller is pressed
-                if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger))
+             
+                if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger))
                 {
-                    logger.Info("OVR Primary index trigger pressed");
+                    if (!areapbLightsOn)
+                    {
+                        // Start the flashing if not already flashing
+                        apbCoroutine = StartCoroutine(FlashapbLights());
+                        areapbLightsOn = true;
+                    }
+                    inputDetected = true;
                 }
-
+                if (OVRInput.GetUp(OVRInput.Button.PrimaryIndexTrigger))
+                {
+                    if (apbCoroutine != null)
+                    {
+                        StopCoroutine(apbCoroutine);
+                        apbCoroutine = null;
+                    }
+                    ToggleapbLight1(false);
+                    ToggleapbLight2(false);
+                    areapbLightsOn = false;
+                    inputDetected = true;
+                }
+                /*
                 // Check if the secondary index trigger on the left controller is pressed
                 if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger))
                 {
@@ -880,11 +1046,10 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 {
                     inputDetected = true;
                 }
-
+                /*
                 // Handle RB button press for plunger position
                 if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
                 {
-
                     inputDetected = true;
                 }
 
@@ -905,8 +1070,11 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 {
                     inputDetected = true;
                 }
+                */
             }
 
+
+            /*
             // Thumbstick direction: Y
             // Thumbstick direction: Right
             if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && p1currentControllerRotationY < p1controllerrotationLimitY)
@@ -924,7 +1092,7 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 p1currentControllerRotationY -= p1controllerRotateY;
                 inputDetected = true;
             }
-
+            */
 
             // Thumbstick direction: X
             // Thumbstick direction: right
@@ -943,7 +1111,7 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 p1currentControllerRotationX -= p1controllerRotateX;
                 inputDetected = true;
             }
-
+            /*
             // Thumbstick direction: Z
             // Thumbstick or D-pad direction: Up
             if ((primaryThumbstick.y > 0 || XInput.Get(XInput.Button.DpadUp)) && p1currentControllerRotationZ < p1controllerrotationLimitZ)
@@ -961,64 +1129,9 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 p1controllerZ.Rotate(0, 0, p1controllerRotateZ);
                 p1currentControllerRotationZ -= p1controllerRotateZ;
                 inputDetected = true;
-            }
-
-            // This can be mapped to secondaryThumbstick for p2 tests
-            // Thumbstick direction: X
-            // Thumbstick direction: right
-            if (secondaryThumbstick.x > 0 && p2currentControllerRotationX < p2controllerrotationLimitX)
-            {
-                float p2controllerRotateX = (Input.GetKey(KeyCode.RightArrow) ? keyboardControllerVelocityX : secondaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                p2controllerX.Rotate(-p2controllerRotateX, 0, 0);
-                p2currentControllerRotationX += p2controllerRotateX;
-                inputDetected = true;
-            }
-            // Thumbstick direction: left
-            if (secondaryThumbstick.x < 0 && p2currentControllerRotationX > -p2controllerrotationLimitX)
-            {
-                float p2controllerRotateX = (Input.GetKey(KeyCode.LeftArrow) ? keyboardControllerVelocityX : -secondaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                p2controllerX.Rotate(p2controllerRotateX, 0, 0);
-                p2currentControllerRotationX -= p2controllerRotateX;
-                inputDetected = true;
-            }
-
-            // Thumbstick direction: Z
-            // Thumbstick direction: Up
-            if (secondaryThumbstick.y > 0 && p2currentControllerRotationZ < p2controllerrotationLimitZ)
-            {
-                float p2controllerRotateZ = (Input.GetKey(KeyCode.UpArrow) ? keyboardControllerVelocityZ : secondaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p2controllerZ.Rotate(0, 0, -p2controllerRotateZ);
-                p2currentControllerRotationZ += p2controllerRotateZ;
-                inputDetected = true;
-            }
-            // Thumbstick direction: Down
-            if (secondaryThumbstick.y < 0 && p2currentControllerRotationZ > -p2controllerrotationLimitZ)
-            {
-                float p2controllerRotateZ = (Input.GetKey(KeyCode.DownArrow) ? keyboardControllerVelocityZ : -secondaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p2controllerZ.Rotate(0, 0, p2controllerRotateZ);
-                p2currentControllerRotationZ -= p2controllerRotateZ;
-                inputDetected = true;
-            }
-
+            */
+            
             /*
-            // Thumbstick direction: up 
-            if (secondaryThumbstick.y > 0 && p2currentControllerRotationY < p2controllerrotationLimitY)
-            {
-                float p2controllerRotateY = (Input.GetKey(KeyCode.UpArrow) ? keyboardControllerVelocityY : secondaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p2controllerY.Rotate(0, p2controllerRotateY, 0);
-                p2currentControllerRotationY += p2controllerRotateY;
-                inputDetected = true;
-            }
-            // Thumbstick direction: down
-            if (secondaryThumbstick.y < 0 && p2currentControllerRotationY > -p2controllerrotationLimitY)
-            {
-                float p2controllerRotateY = (Input.GetKey(KeyCode.DownArrow) ? keyboardControllerVelocityY : -secondaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p2controllerY.Rotate(0, p2controllerRotateY, 0);
-                p2currentControllerRotationY -= p2controllerRotateY;
-                inputDetected = true;
-            }
-
-
             // Check if the primary index trigger on the right controller is pressed
             if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger))
             {
@@ -1062,23 +1175,31 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 inputDetected = true;
             }
 
-            // Fire2
-            if (Input.GetButtonDown("Fire2") && p1currentPlunger2Position < p2positionLimit1)
+            if (Input.GetButtonDown("Fire2"))
             {
-                float p1plunger2ObjectPosition = (Input.GetKey(KeyCode.X) ? keyboardControllerVelocityX : vrControllerVelocity) * Time.deltaTime;
-                p1plunger2Object.position += new Vector3(0, -0.003f, 0);
-                p1currentPlunger2Position += p1plunger2ObjectPosition;
+                if (!areapbLightsOn)
+                {
+                    // Start the flashing if not already flashing
+                    apbCoroutine = StartCoroutine(FlashapbLights());
+                    areapbLightsOn = true;
+                }
                 inputDetected = true;
             }
 
-            // Reset position on button release
+            // Fire2 button released
             if (Input.GetButtonUp("Fire2"))
             {
-                p1plunger2Object.position = p1plunger2ObjectStartPosition;
-                p1currentPlunger2Position = 0f; // Reset the current position
+                if (apbCoroutine != null)
+                {
+                    StopCoroutine(apbCoroutine);
+                    apbCoroutine = null;
+                }
+                ToggleapbLight1(false);
+                ToggleapbLight2(false);
+                areapbLightsOn = false;
                 inputDetected = true;
             }
-
+            /*
             // Fire3
             if (Input.GetButtonDown("Fire3") && p1currentPlunger3Position < p1positionLimit3)
             {
@@ -1095,7 +1216,7 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 p1currentPlunger3Position = 0f; // Reset the current position
                 inputDetected = true;
             }
-
+            */
             // Jump
             if (Input.GetButtonDown("Jump") && p1currentPlunger4Position < p1positionLimit4)
             {
@@ -1352,7 +1473,7 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
         }
 
         // Method to toggle the lights
-        void ToggleLights(bool isActive)
+        void ToggleapbLights(bool isActive)
         {
             for (int i = 0; i < lights.Length; i++)
             {
@@ -1362,158 +1483,65 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
             logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
         }
 
-        // Method to toggle the fire1 light
-        void ToggleLight1(bool isActive)
+        IEnumerator FlashapbLights()
         {
-            if (fire1_light != null)
-            {
-                fire1_light.enabled = isActive;
-                //          logger.Info($"{fire1_light.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug("Fire1 light component is not found.");
-            }
-        }
+            int currentIndex = 0; // Start with the first light in the array
 
-        // Method to toggle the fire2 light
-        void ToggleLight2(bool isActive)
-        {
-            if (fire2_light != null)
-            {
-                fire2_light.enabled = isActive;
-                //       logger.Info($"{fire2_light.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug("Fire2 light component is not found.");
-            }
-        }
-
-        IEnumerator FlashStrobes()
-        {
             while (true)
             {
-                // Choose a random strobe light to flash
-                int randomIndex = Random.Range(0, 4);
-                Light strobeLight = null;
+                // Select the current light
+                Light light = apbLights[currentIndex];
 
-                switch (randomIndex)
+                // Check if the light is not null
+                if (light != null)
                 {
-                    case 0:
-                        strobeLight = strobe1_light;
-                        break;
-                    case 1:
-                        strobeLight = strobe2_light;
-                        break;
-                    case 2:
-                        strobeLight = strobe3_light;
-                        break;
-                    case 3:
-                        strobeLight = strobe4_light;
-                        break;
-                }
+                    // Log the chosen light
+                    // logger.Debug($"Flashing {light.name}");
 
-                // Log the chosen strobe light
-                logger.Debug($"Flashing {strobeLight?.name}");
+                    // Turn on the chosen light
+                    ToggleapbLight(light, true);
 
-                // Turn on the chosen strobe light
-                ToggleStrobeLight(strobeLight, true);
+                    // Wait for the flash duration
+                    yield return new WaitForSeconds(flashDuration);
 
-                // Wait for the flash duration
-                yield return new WaitForSeconds(flashDuration);
+                    // Turn off the chosen light
+                    ToggleapbLight(light, false);
 
-                // Turn off the chosen strobe light
-                ToggleStrobeLight(strobeLight, false);
-
-                // Wait for the next flash interval
-                yield return new WaitForSeconds(flashInterval - flashDuration);
-            }
-        }
-
-        void ToggleStrobeLight(Light strobeLight, bool isActive)
-        {
-            if (strobeLight != null)
-            {
-                strobeLight.enabled = isActive;
-                // logger.Info($"{strobeLight.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug($"{strobeLight?.name} light component is not found.");
-            }
-        }
-
-        void ToggleStrobe1(bool isActive)
-        {
-            ToggleStrobeLight(strobe1_light, isActive);
-        }
-
-        void ToggleStrobe2(bool isActive)
-        {
-            ToggleStrobeLight(strobe2_light, isActive);
-        }
-
-        void ToggleStrobe3(bool isActive)
-        {
-            ToggleStrobeLight(strobe3_light, isActive);
-        }
-
-        void ToggleStrobe4(bool isActive)
-        {
-            ToggleStrobeLight(strobe4_light, isActive);
-        }
-        // Method to toggle the fireemissive object
-        void ToggleFireEmissive(bool isActive)
-        {
-            if (fireemissiveObject != null)
-            {
-                Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    if (isActive)
-                    {
-                        renderer.material.EnableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    //    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
+                    // Wait for the next flash interval
+                    yield return new WaitForSeconds(flashInterval - flashDuration);
                 }
                 else
                 {
-                    logger.Debug("Renderer component is not found on fireemissive object.");
+                    logger.Debug("Light is null.");
                 }
-            }
-            else
-            {
-                logger.Debug("fireemissive object is not assigned.");
-            }
-            if (fireemissive2Object != null)
-            {
-                Renderer renderer = fireemissive2Object.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    if (isActive)
-                    {
-                        renderer.material.EnableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    //           logger.Info($"fireemissive2 object emission turned {(isActive ? "on" : "off")}.");
-                }
-                else
-                {
-                    logger.Debug("Renderer component is not found on fireemissive2 object.");
-                }
-            }
-            else
-            {
-                logger.Debug("fireemissive2 object is not assigned.");
+
+                // Move to the next light in the array
+                currentIndex = (currentIndex + 1) % apbLights.Length;
             }
         }
+
+        void ToggleapbLight(Light light, bool isActive)
+        {
+            if (light != null)
+            {
+                light.enabled = isActive;
+                // logger.Info($"{light.name} light turned {(isActive ? "on" : "off")}.");
+            }
+            else
+            {
+                logger.Debug($"{light?.name} light component is not found.");
+            }
+        }
+
+        void ToggleapbLight1(bool isActive)
+        {
+            ToggleapbLight(apb1_light, isActive);
+        }
+
+        void ToggleapbLight2(bool isActive)
+        {
+            ToggleapbLight(apb2_light, isActive);
+        }
+
     }
 }

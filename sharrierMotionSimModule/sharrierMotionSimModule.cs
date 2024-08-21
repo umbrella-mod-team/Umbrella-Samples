@@ -52,7 +52,7 @@ namespace WIGUx.Modules.sharrierMotionSim
         private readonly float keyboardControllerVelocityZ = 50.5f;  // Velocity for keyboard input
         private readonly float vrControllerVelocity = 100.5f;        // Velocity for VR controller input
 
-        private float controllerRotationLimitX = 15f;  // Rotation limit for X-axis (stick or wheel)
+        private float controllerRotationLimitX = 10f;  // Rotation limit for X-axis (stick or wheel)
         private float controllerRotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
         private float controllerRotationLimitZ = 10f;  // Rotation limit for Z-axis (stick or wheel)
 
@@ -85,7 +85,6 @@ namespace WIGUx.Modules.sharrierMotionSim
         // GameObject references for PlayerCamera and VR setup
         private GameObject playerCamera;
         private GameObject playerVRSetup;
-        private Transform centerEyeAnchor;
 
         //lights
         private Transform fireemissiveObject;
@@ -98,7 +97,7 @@ namespace WIGUx.Modules.sharrierMotionSim
 
         private bool inFocusMode = false;  // Flag to track focus mode state
 
-        private readonly string[] compatibleGames = { "sharrier", "Space Harrier", "Planet Harrier", "sharrier.zip", "sharrierdx.zip" };
+        private readonly string[] compatibleGames = { "sharrier.zip", "sharrierdx.zip" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -113,10 +112,6 @@ namespace WIGUx.Modules.sharrierMotionSim
             CheckObject(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
             GameObject cameraObject = GameObject.Find("OVRCameraRig");
-            if (cameraObject != null)
-            {
-                centerEyeAnchor = cameraObject.transform;
-            }
 
             // Find sharrierX object in hierarchy
             sharrierXObject = transform.Find("sharrierX");
@@ -263,20 +258,14 @@ namespace WIGUx.Modules.sharrierMotionSim
         {
             bool inputDetected = false;  // Initialize at the beginning of the Update method
 
-            if (Input.GetKey(KeyCode.O))
-            {
-                logger.Info("Resetting Positions");
-                ResetPositions();
-            }
-
             if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
-                string controlledSystemGameString = GameSystem.ControlledSystem.Game != null ? GameSystem.ControlledSystem.Game.ToString() : null;
+                string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
                 bool containsString = false;
 
                 foreach (var gameString in compatibleGames)
                 {
-                    if (controlledSystemGameString != null && controlledSystemGameString.Contains(gameString))
+                    if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
                     {
                         containsString = true;
                         break;
@@ -318,6 +307,8 @@ namespace WIGUx.Modules.sharrierMotionSim
 
         void StartFocusMode()
         {
+            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
+            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
             logger.Info("Compatible Rom Dectected, Welcome To The Fantasy Zone...");
             logger.Info("Sega Space Harrier DX Motion Sim starting...");
             logger.Info("Get Ready!!..");
@@ -486,8 +477,10 @@ namespace WIGUx.Modules.sharrierMotionSim
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
 
-            //maybe add a check for xinput? not right now.
-            // XInput.IsConnected
+            if (XInput.IsConnected)
+            {
+                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
+            }
 
             // VR controller input
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
@@ -573,15 +566,66 @@ namespace WIGUx.Modules.sharrierMotionSim
             }
 
             // Ximput controller input
-            Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-            Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+            if (XInput.IsConnected)
+            {
+                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
+                Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+                // Combine VR and Xbox inputs
+                primaryThumbstick += xboxPrimaryThumbstick;
+                secondaryThumbstick += xboxSecondaryThumbstick;
+                // Get the trigger axis values
+                // Detect input from Xbox triggers
 
-            // Combine VR and Xbox inputs
-            primaryThumbstick += xboxPrimaryThumbstick;
-            secondaryThumbstick += xboxSecondaryThumbstick;
-            // Get the trigger axis values
-            float xboxLeftTrigger = Input.GetAxis("LeftTrigger");
-            float xboxRightTrigger = Input.GetAxis("RightTrigger");
+                // Handle RT press (assuming RT is mapped to a button in your XInput class)
+                if (XInput.GetDown(XInput.Button.RIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on RT release
+                if (XInput.GetUp(XInput.Button.RIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // LeftTrigger
+                if (XInput.GetDown(XInput.Button.LIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on button release
+                if (XInput.GetUp(XInput.Button.LIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Handle RB button press for plunger position
+                if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
+                {
+
+                    inputDetected = true;
+                }
+
+                // Reset position on RB button release
+                if (XInput.GetUp(XInput.Button.RShoulder) || Input.GetKeyUp(KeyCode.JoystickButton5))
+                {
+                    inputDetected = true;
+                }
+
+                // Handle LB button press for plunger position
+                if (XInput.GetDown(XInput.Button.LShoulder) || Input.GetKeyDown(KeyCode.JoystickButton4))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on LB button release
+                if (XInput.GetUp(XInput.Button.LShoulder) || Input.GetKeyUp(KeyCode.JoystickButton4))
+                {
+                    inputDetected = true;
+                }
+            }
 
             // Handle left rotation (Thumbstick left)
             if (primaryThumbstick.x < 0)

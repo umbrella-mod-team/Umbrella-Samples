@@ -8,9 +8,9 @@ using static XInput;
 using static SteamVR_Utils;
 using System.IO;
 
-namespace WIGUx.Modules.arcadeControllerMotionSim
+namespace WIGUx.Modules.aliensymSim
 {
-    public class arcadeControllerSimController : MonoBehaviour
+    public class aliensymSimController : MonoBehaviour
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
@@ -227,21 +227,14 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
 
         //lights
         private Transform lightsObject;
-        public Light fire1_light;
-        public Light fire2_light;
-        public Light fire3_light;
-        public Light fire4_light;
-        public Light fire5_light;
-        public Light fire6_light;
-        private Transform fireemissiveObject;
-        private Transform fireemissive2Object;
-        public Light strobe1_light;
-        public Light strobe2_light;
-        public Light strobe3_light;
-        public Light strobe4_light;
-        private float flashDuration = 0.01f;
-        private float flashInterval = 0.05f;
-        public float lightDuration = 0.35f; // Duration during which the lights will be on
+        public Light[] AlienSymLights = new Light[4]; // Array to store lights
+        public Light aliensym1_light;
+        public Light aliensym2_light;
+        public Light aliensym3_light;
+        public Light aliensym4_light;
+        private float flashDuration = 0.15f;
+        private float flashInterval = 0.15f;
+        private float lightDuration = 0.5f; // Duration during which the lights will be on
         private bool areStrobesOn = false; // track strobe lights
         private Coroutine strobeCoroutine; // Coroutine variable to control the strobe flashing
         public string fire1Button = "Fire1"; // Name of the fire button
@@ -251,18 +244,13 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
         public string LBButton = "LB"; // Name of the fire button 
         public string RBButton = "RB"; // Name of the fire button 
         public string StartButton = "Start"; // Name of the fire button 
-        public GameObject targetGameObject; // Assign the target GameObject in the Inspector
         private Light[] lights;
-        private List<Light> strobeLights = new List<Light>();
-
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private readonly string[] compatibleGames = { "agnakjdf;ajdfkghajkfdlglk" };
+        private readonly string[] compatibleGames = { "aliensym" };
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
                                                                                                               // Public property to access the Game instance
         void Start()
         {
-            /*
-            logger.Info("Looking For Lights");
             lightsObject = transform.Find("lights");
             if (lightsObject != null)
             {
@@ -271,322 +259,351 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
             else
             {
                 logger.Error("lightsObject object not found!");
+                return; // Early exit if lightsObject is not found
             }
-            */
+
             // Gets all Light components in the target object and its children
             Light[] allLights = lightsObject.GetComponentsInChildren<Light>();
 
             // Log the names of the objects containing the Light components and filter out unwanted lights
             foreach (Light light in allLights)
             {
-                if (light.gameObject.name == "fire1_light")
+                logger.Info($"Light found: {light.gameObject.name}");
+                switch (light.gameObject.name)
                 {
-                    fire1_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
+                    case "aliensym1_light":
+                        aliensym1_light = light;
+                        AlienSymLights[0] = light;
+                        logger.Info("Included Light found in object: " + light.gameObject.name);
+                        break;
+                    case "aliensym2_light":
+                        aliensym2_light = light;
+                        AlienSymLights[1] = light;
+                        logger.Info("Included Light found in object: " + light.gameObject.name);
+                        break;
+                    case "aliensym3_light":
+                        aliensym3_light = light;
+                        AlienSymLights[2] = light;
+                        logger.Info("Included Light found in object: " + light.gameObject.name);
+                        break;
+                    case "aliensym4_light":
+                        aliensym4_light = light;
+                        AlienSymLights[3] = light;
+                        logger.Info("Included Light found in object: " + light.gameObject.name);
+                        break;
+                    default:
+                        logger.Info("Excluded Light found in object: " + light.gameObject.name);
+                        break;
                 }
-                else if (light.gameObject.name == "fire2_light")
+            }
+
+            // Log the assigned lights for verification
+            for (int i = 0; i < AlienSymLights.Length; i++)
+            {
+                if (AlienSymLights[i] != null)
                 {
-                    fire2_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else if (light.gameObject.name == "strobe1_light")
-                {
-                    strobe1_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else if (light.gameObject.name == "strobe2_light")
-                {
-                    strobe2_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else if (light.gameObject.name == "strobe3_light")
-                {
-                    strobe3_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else if (light.gameObject.name == "strobe4_light")
-                {
-                    strobe4_light = light;
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
+                    logger.Info($"AlienSymLights[{i}] assigned to: {AlienSymLights[i].name}");
                 }
                 else
                 {
-                    logger.Info("Excluded Light found in object: " + light.gameObject.name);
+                    logger.Error($"AlienSymLights[{i}] is not assigned!");
                 }
             }
-            /*
-            // Find controllerX for player 1
-            p1controllerX = transform.Find("p1controllerX");
-            if (p1controllerX != null)
-            {
-                logger.Info("p1controllerX object found.");
-                // Store initial position and rotation of the stick
-                p1controllerXStartPosition = p1controllerX.transform.position;
-                p1controllerXStartRotation = p1controllerX.transform.rotation;
-
-                // Find p1controllerY under p1controllerX
-                p1controllerY = p1controllerX.Find("p1controllerY");
-                if (p1controllerY != null)
-                {
-                    logger.Info("p1controllerY object found.");
-                    // Store initial position and rotation of the stick
-                    p1controllerYStartPosition = p1controllerY.transform.position;
-                    p1controllerYStartRotation = p1controllerY.transform.rotation;
-
-                    // Find p1controllerZ under p1controllerY
-                    p1controllerZ = p1controllerY.Find("p1controllerZ");
-                    if (p1controllerZ != null)
-                    {
-                        logger.Info("p1controllerZ object found.");
-                        // Store initial position and rotation of the stick
-                        p1controllerZStartPosition = p1controllerZ.transform.position;
-                        p1controllerZStartRotation = p1controllerZ.transform.rotation;
-                    }
-                    else
-                    {
-                        logger.Error("p1controllerZ object not found under controllerY!");
-                    }
-                }
-                else
-                {
-                    logger.Error("p1controllerY object not found under controllerX!");
-                }
-            }
-            else
-            {
-                logger.Error("p1controllerX object not found!!");
-            }
-
-
-            // Find controller2X for player 2
-            p2controllerX = transform.Find("p2controllerX");
-            if (p2controllerX != null)
-            {
-                logger.Info("p2controllerX object found.");
-                // Store initial position and rotation of the stick
-                p2controllerXStartPosition = p2controllerX.transform.position;
-                p2controllerXStartRotation = p2controllerX.transform.rotation;
-
-                // Find p2controllerY under p2controllerX
-                p2controllerY = p2controllerX.Find("p2controllerY");
-                if (p2controllerY != null)
-                {
-                    logger.Info("p2controllerY object found.");
-                    // Store initial position and rotation of the stick
-                    p2controllerYStartPosition = p2controllerY.transform.position;
-                    p2controllerYStartRotation = p2controllerY.transform.rotation;
-
-                    // Find p2controllerZ under p2controllerY
-                    p2controllerZ = p2controllerY.Find("p2controllerZ");
-                    if (p2controllerZ != null)
-                    {
-                        logger.Info("p2controllerZ object found.");
-                        // Store initial position and rotation of the stick
-                        p2controllerZStartPosition = p2controllerZ.transform.position;
-                        p2controllerZStartRotation = p2controllerZ.transform.rotation;
-                    }
-                    else
-                    {
-                        logger.Error("p2controllerZ object not found under p2controllerY!");
-                    }
-                }
-                else
-                {
-                    logger.Error("p2controllerY object not found under p2controllerX!");
-                }
-            }
-            else
-            {
-                logger.Error("p2controllerX object not found!!");
-            }
-            // Find p1 start button object in hierarchy
-            p1startObject = transform.Find("start");
-            if (p1button1Object != null)
-            {
-                logger.Info("p1startObject found.");
-                p1startObjectStartPosition = p1startObject.position;
-                p1startObjectStartRotation = p1startObject.rotation;
-
-                // Find plunger1 object under button1
-                p1startPlunger = p1button1Object.Find("p1startplunger");
-                if (p1startPlunger != null)
-                {
-                    logger.Info("p1startplunger found.");
-                    p2startPlungerStartPosition = p1startPlunger.position;
-                    p2startPlungerStartRotation = p1startPlunger.rotation;
-                }
-                else
-                {
-                    logger.Error("p1startplunger object not found under p1startObject!");
-                }
-            }
-            else
-            {
-                logger.Error("p1startplunger object not found!");
-            }
-
-            // Find p1 button1 object in hierarchy
-            p1button1Object = transform.Find("p1button1");
-            if (p1button1Object != null)
-            {
-                logger.Info("p1button1Object found.");
-                p1button1ObjectStartPosition = p1button1Object.position;
-                p1button1ObjectStartRotation = p1button1Object.rotation;
-
-                // Find plunger1 object under button1
-                p1plunger1Object = p1button1Object.Find("p1plunger1");
-                if (p1plunger1Object != null)
-                {
-                    logger.Info("plungerObject1 found.");
-                    p1plunger1ObjectStartPosition = p1plunger1Object.position;
-                    p1plunger1ObjectStartRotation = p1plunger1Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger1Object object not found under p1button1Object!");
-                }
-            }
-            else
-            {
-                logger.Error("p1plunger1Object object not found!");
-            }
-
-            // Find p1 button2 object in hierarchy
-            p1button2Object = transform.Find("p1button2");
-            if (p1button2Object != null)
-            {
-                logger.Info("p1button2Object found.");
-                p1button2ObjectStartPosition = p1button2Object.position;
-                p1button2ObjectStartRotation = p1button2Object.rotation;
-
-                // Find plunger2 object under button2
-                p1plunger2Object = p1button2Object.Find("p1plunger2");
-                if (p1plunger2Object != null)
-                {
-                    logger.Info("plungerObject2 found.");
-                    p1plunger2ObjectStartPosition = p1plunger2Object.position;
-                    p1plunger2ObjectStartRotation = p1plunger2Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger2Object object not found under p1button2Object!");
-                }
-            }
-            else
-            {
-                logger.Error("p1plunger2Object object not found!");
-            }
-
-            // Find p1 button3 object in hierarchy
-            p1button3Object = transform.Find("p1button3");
-            if (p1button3Object != null)
-            {
-                logger.Info("p1button3Object found.");
-                p1button3ObjectStartPosition = p1button3Object.position;
-                p1button3ObjectStartRotation = p1button3Object.rotation;
-
-                // Find plunger3 object under button3
-                p1plunger3Object = p1button3Object.Find("p1plunger3");
-                if (p1plunger3Object != null)
-                {
-                    logger.Info("plungerObject3 found.");
-                    p1plunger3ObjectStartPosition = p1plunger3Object.position;
-                    p1plunger3ObjectStartRotation = p1plunger3Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger3Object object not found under p1button3Object!");
-                }
-            }
-            else
-            {
-                logger.Error("p1plunger3Object object not found!");
-            }
-
-            // Find p1 button4 object in hierarchy
-            p1button4Object = transform.Find("p1button4");
-            if (p1button4Object != null)
-            {
-                logger.Info("p1button4Object found.");
-                p1button4ObjectStartPosition = p1button4Object.position;
-                p1button4ObjectStartRotation = p1button4Object.rotation;
-
-                // Find plunger4 object under button4
-                p1plunger4Object = p1button4Object.Find("p1plunger4");
-                if (p1plunger4Object != null)
-                {
-                    logger.Info("plungerObject4 found.");
-                    p1plunger4ObjectStartPosition = p1plunger4Object.position;
-                    p1plunger4ObjectStartRotation = p1plunger4Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger4Object object not found under p1button4Object!");
-                }
-            }
-            else
-            {
-                logger.Error("p1plunger4Object object not found!");
-            }
-
-            // Find p1 button5 object in hierarchy
-            p1button5Object = transform.Find("p1button5");
-            if (p1button5Object != null)
-            {
-                logger.Info("p1button5Object found.");
-                p1button5ObjectStartPosition = p1button5Object.position;
-                p1button5ObjectStartRotation = p1button5Object.rotation;
-
-                // Find plunger5 object under button5
-                p1plunger5Object = p1button5Object.Find("p1plunger5");
-                if (p1plunger5Object != null)
-                {
-                    logger.Info("plungerObject5 found.");
-                    p1plunger5ObjectStartPosition = p1plunger5Object.position;
-                    p1plunger5ObjectStartRotation = p1plunger5Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger5Object object not found under p1button5Object!");
-                }
-            }
-            else
-            {
-                logger.Error("p1plunger5Object object not found!");
-            }
-
-            // Find p1 button6 object in hierarchy
-            p1button6Object = transform.Find("p1button6");
-            if (p1button6Object != null)
-            {
-                logger.Info("p1button6Object found.");
-                p1button6ObjectStartPosition = p1button6Object.position;
-                p1button6ObjectStartRotation = p1button6Object.rotation;
-
-                // Find plunger6 object under button6
-                p1plunger6Object = p1button6Object.Find("p1plunger6");
-                if (p1plunger6Object != null)
-                {
-                    logger.Info("plungerObject6 found.");
-                    p1plunger6ObjectStartPosition = p1plunger6Object.position;
-                    p1plunger6ObjectStartRotation = p1plunger6Object.rotation;
-                }
-                else
-                {
-                    logger.Error("p1plunger6Object object not found under p1button6Object!");
-                }
-            }
-            else
-            {
-                logger.Error("p1plunger6Object object not found!");
-            }
-                */
         }
+        /*
+        // Find controllerX for player 1
+        p1controllerX = transform.Find("p1controllerX");
+        if (p1controllerX != null)
+        {
+            logger.Info("p1controllerX object found.");
+            // Store initial position and rotation of the stick
+            p1controllerXStartPosition = p1controllerX.transform.position;
+            p1controllerXStartRotation = p1controllerX.transform.rotation;
+
+            // Find p1controllerY under p1controllerX
+            p1controllerY = p1controllerX.Find("p1controllerY");
+            if (p1controllerY != null)
+            {
+                logger.Info("p1controllerY object found.");
+                // Store initial position and rotation of the stick
+                p1controllerYStartPosition = p1controllerY.transform.position;
+                p1controllerYStartRotation = p1controllerY.transform.rotation;
+
+                // Find p1controllerZ under p1controllerY
+                p1controllerZ = p1controllerY.Find("p1controllerZ");
+                if (p1controllerZ != null)
+                {
+                    logger.Info("p1controllerZ object found.");
+                    // Store initial position and rotation of the stick
+                    p1controllerZStartPosition = p1controllerZ.transform.position;
+                    p1controllerZStartRotation = p1controllerZ.transform.rotation;
+                }
+                else
+                {
+                    logger.Error("p1controllerZ object not found under controllerY!");
+                }
+            }
+            else
+            {
+                logger.Error("p1controllerY object not found under controllerX!");
+            }
+        }
+        else
+        {
+            logger.Error("p1controllerX object not found!!");
+        }
+
+
+        // Find controller2X for player 2
+        p2controllerX = transform.Find("p2controllerX");
+        if (p2controllerX != null)
+        {
+            logger.Info("p2controllerX object found.");
+            // Store initial position and rotation of the stick
+            p2controllerXStartPosition = p2controllerX.transform.position;
+            p2controllerXStartRotation = p2controllerX.transform.rotation;
+
+            // Find p2controllerY under p2controllerX
+            p2controllerY = p2controllerX.Find("p2controllerY");
+            if (p2controllerY != null)
+            {
+                logger.Info("p2controllerY object found.");
+                // Store initial position and rotation of the stick
+                p2controllerYStartPosition = p2controllerY.transform.position;
+                p2controllerYStartRotation = p2controllerY.transform.rotation;
+
+                // Find p2controllerZ under p2controllerY
+                p2controllerZ = p2controllerY.Find("p2controllerZ");
+                if (p2controllerZ != null)
+                {
+                    logger.Info("p2controllerZ object found.");
+                    // Store initial position and rotation of the stick
+                    p2controllerZStartPosition = p2controllerZ.transform.position;
+                    p2controllerZStartRotation = p2controllerZ.transform.rotation;
+                }
+                else
+                {
+                    logger.Error("p2controllerZ object not found under p2controllerY!");
+                }
+            }
+            else
+            {
+                logger.Error("p2controllerY object not found under p2controllerX!");
+            }
+        }
+        else
+        {
+            logger.Error("p2controllerX object not found!!");
+        }
+        // Find p1 start button object in hierarchy
+        p1startObject = transform.Find("start");
+        if (p1button1Object != null)
+        {
+            logger.Info("p1startObject found.");
+            p1startObjectStartPosition = p1startObject.position;
+            p1startObjectStartRotation = p1startObject.rotation;
+
+            // Find plunger1 object under button1
+            p1startPlunger = p1button1Object.Find("p1startplunger");
+            if (p1startPlunger != null)
+            {
+                logger.Info("p1startplunger found.");
+                p2startPlungerStartPosition = p1startPlunger.position;
+                p2startPlungerStartRotation = p1startPlunger.rotation;
+            }
+            else
+            {
+                logger.Error("p1startplunger object not found under p1startObject!");
+            }
+        }
+        else
+        {
+            logger.Error("p1startplunger object not found!");
+        }
+
+        // Find p1 button1 object in hierarchy
+        p1button1Object = transform.Find("p1button1");
+        if (p1button1Object != null)
+        {
+            logger.Info("p1button1Object found.");
+            p1button1ObjectStartPosition = p1button1Object.position;
+            p1button1ObjectStartRotation = p1button1Object.rotation;
+
+            // Find plunger1 object under button1
+            p1plunger1Object = p1button1Object.Find("p1plunger1");
+            if (p1plunger1Object != null)
+            {
+                logger.Info("plungerObject1 found.");
+                p1plunger1ObjectStartPosition = p1plunger1Object.position;
+                p1plunger1ObjectStartRotation = p1plunger1Object.rotation;
+            }
+            else
+            {
+                logger.Error("p1plunger1Object object not found under p1button1Object!");
+            }
+        }
+        else
+        {
+            logger.Error("p1plunger1Object object not found!");
+        }
+
+        // Find p1 button2 object in hierarchy
+        p1button2Object = transform.Find("p1button2");
+        if (p1button2Object != null)
+        {
+            logger.Info("p1button2Object found.");
+            p1button2ObjectStartPosition = p1button2Object.position;
+            p1button2ObjectStartRotation = p1button2Object.rotation;
+
+            // Find plunger2 object under button2
+            p1plunger2Object = p1button2Object.Find("p1plunger2");
+            if (p1plunger2Object != null)
+            {
+                logger.Info("plungerObject2 found.");
+                p1plunger2ObjectStartPosition = p1plunger2Object.position;
+                p1plunger2ObjectStartRotation = p1plunger2Object.rotation;
+            }
+            else
+            {
+                logger.Error("p1plunger2Object object not found under p1button2Object!");
+            }
+        }
+        else
+        {
+            logger.Error("p1plunger2Object object not found!");
+        }
+
+        // Find p1 button3 object in hierarchy
+        p1button3Object = transform.Find("p1button3");
+        if (p1button3Object != null)
+        {
+            logger.Info("p1button3Object found.");
+            p1button3ObjectStartPosition = p1button3Object.position;
+            p1button3ObjectStartRotation = p1button3Object.rotation;
+
+            // Find plunger3 object under button3
+            p1plunger3Object = p1button3Object.Find("p1plunger3");
+            if (p1plunger3Object != null)
+            {
+                logger.Info("plungerObject3 found.");
+                p1plunger3ObjectStartPosition = p1plunger3Object.position;
+                p1plunger3ObjectStartRotation = p1plunger3Object.rotation;
+            }
+            else
+            {
+                logger.Error("p1plunger3Object object not found under p1button3Object!");
+            }
+        }
+        else
+        {
+            logger.Error("p1plunger3Object object not found!");
+        }
+
+        // Find p1 button4 object in hierarchy
+        p1button4Object = transform.Find("p1button4");
+        if (p1button4Object != null)
+        {
+            logger.Info("p1button4Object found.");
+            p1button4ObjectStartPosition = p1button4Object.position;
+            p1button4ObjectStartRotation = p1button4Object.rotation;
+
+            // Find plunger4 object under button4
+            p1plunger4Object = p1button4Object.Find("p1plunger4");
+            if (p1plunger4Object != null)
+            {
+                logger.Info("plungerObject4 found.");
+                p1plunger4ObjectStartPosition = p1plunger4Object.position;
+                p1plunger4ObjectStartRotation = p1plunger4Object.rotation;
+            }
+            else
+            {
+                logger.Error("p1plunger4Object object not found under p1button4Object!");
+            }
+        }
+        else
+        {
+            logger.Error("p1plunger4Object object not found!");
+        }
+
+        // Find p1 button5 object in hierarchy
+        p1button5Object = transform.Find("p1button5");
+        if (p1button5Object != null)
+        {
+            logger.Info("p1button5Object found.");
+            p1button5ObjectStartPosition = p1button5Object.position;
+            p1button5ObjectStartRotation = p1button5Object.rotation;
+
+            // Find plunger5 object under button5
+            p1plunger5Object = p1button5Object.Find("p1plunger5");
+            if (p1plunger5Object != null)
+            {
+                logger.Info("plungerObject5 found.");
+                p1plunger5ObjectStartPosition = p1plunger5Object.position;
+                p1plunger5ObjectStartRotation = p1plunger5Object.rotation;
+            }
+            else
+            {
+                logger.Error("p1plunger5Object object not found under p1button5Object!");
+            }
+        }
+        else
+        {
+            logger.Error("p1plunger5Object object not found!");
+        }
+
+        // Find p1 button6 object in hierarchy
+        p1button6Object = transform.Find("p1button6");
+        if (p1button6Object != null)
+        {
+            logger.Info("p1button6Object found.");
+            p1button6ObjectStartPosition = p1button6Object.position;
+            p1button6ObjectStartRotation = p1button6Object.rotation;
+
+            // Find plunger6 object under button6
+            p1plunger6Object = p1button6Object.Find("p1plunger6");
+            if (p1plunger6Object != null)
+            {
+                logger.Info("plungerObject6 found.");
+                p1plunger6ObjectStartPosition = p1plunger6Object.position;
+                p1plunger6ObjectStartRotation = p1plunger6Object.rotation;
+            }
+            else
+            {
+                logger.Error("p1plunger6Object object not found under p1button6Object!");
+            }
+        }
+        else
+        {
+            logger.Error("p1plunger6Object object not found!");
+        }
+        */
+
 
         void Update()
         {
 
             bool inputDetected = false;  // Initialize at the beginning of the Update method
+
+            // Check if the "L" key is pressed
+            if (Input.GetKeyDown(KeyCode.L))
+            {
+                if (areStrobesOn)
+                {
+                    // Strobe lights are currently on, stop the coroutine to turn them off
+                    logger.Info("Stopping lights");
+                    StopCoroutine(strobeCoroutine);
+                    strobeCoroutine = null;
+                }
+                else
+                {
+                    // Strobe lights are currently off, start the coroutine to flash them
+                    logger.Info("Starting strobes");
+                    strobeCoroutine = StartCoroutine(FlashLights());
+                }
+
+                // Toggle the strobe state
+                areStrobesOn = !areStrobesOn;
+            }
 
             if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
@@ -621,7 +638,7 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
 
         void StartFocusMode()
         {
-            logger.Info("Module starting...");
+            logger.Info("Alien Syndrome Module starting...");
 
             //Buttons
 
@@ -761,7 +778,7 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
-            Vector2 secondaryThumbstick = Vector2.zero; ;
+            Vector2 secondaryThumbstick = Vector2.zero;
 
             // VR controller input
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
@@ -907,20 +924,21 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
                 }
             }
 
+
             // Thumbstick direction: Y
-            // Thumbstick direction: Right
-            if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && p1currentControllerRotationY < p1controllerrotationLimitY)
+            // Thumbstick direction: up
+            if ((Input.GetKey(KeyCode.UpArrow) || XInput.Get(XInput.Button.DpadUp) || primaryThumbstick.y > 0) && p1currentControllerRotationY < p1controllerrotationLimitY)
             {
-                float p1controllerRotateY = (Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) ? keyboardControllerVelocityY : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                p1controllerY.Rotate(0, -p1controllerRotateY, 0);
+                float p1controllerRotateY = (Input.GetKey(KeyCode.UpArrow) || XInput.Get(XInput.Button.DpadUp) ? keyboardControllerVelocityY : primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
+                p1controllerY.Rotate(0, 0, -p1controllerRotateY);
                 p1currentControllerRotationY += p1controllerRotateY;
                 inputDetected = true;
             }
-            // Thumbstick direction: Left
-            if ((Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) || primaryThumbstick.x < 0) && p1currentControllerRotationY > -p1controllerrotationLimitY)
+            // Thumbstick direction: down
+            if ((Input.GetKey(KeyCode.DownArrow) || XInput.Get(XInput.Button.DpadDown) || primaryThumbstick.y < 0) && p1currentControllerRotationY > -p1controllerrotationLimitY)
             {
-                float p1controllerRotateY = (Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) ? keyboardControllerVelocityY : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                p1controllerY.Rotate(0, p1controllerRotateY, 0);
+                float p1controllerRotateY = (Input.GetKey(KeyCode.DownArrow) || XInput.Get(XInput.Button.DpadDown) ? keyboardControllerVelocityY : -primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
+                p1controllerY.Rotate(0, 0, p1controllerRotateY);
                 p1currentControllerRotationY -= p1controllerRotateY;
                 inputDetected = true;
             }
@@ -1362,158 +1380,73 @@ namespace WIGUx.Modules.arcadeControllerMotionSim
             logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
         }
 
-        // Method to toggle the fire1 light
-        void ToggleLight1(bool isActive)
-        {
-            if (fire1_light != null)
-            {
-                fire1_light.enabled = isActive;
-                //          logger.Info($"{fire1_light.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug("Fire1 light component is not found.");
-            }
-        }
-
-        // Method to toggle the fire2 light
-        void ToggleLight2(bool isActive)
-        {
-            if (fire2_light != null)
-            {
-                fire2_light.enabled = isActive;
-                //       logger.Info($"{fire2_light.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug("Fire2 light component is not found.");
-            }
-        }
-
-        IEnumerator FlashStrobes()
+        IEnumerator FlashLights()
         {
             while (true)
             {
-                // Choose a random strobe light to flash
-                int randomIndex = Random.Range(0, 4);
-                Light strobeLight = null;
+                // Choose a random light to flash
+                int randomIndex = Random.Range(0, AlienSymLights.Length);
+                Light light = AlienSymLights[randomIndex];
 
-                switch (randomIndex)
+                // Check if the light is not null
+                if (light != null)
                 {
-                    case 0:
-                        strobeLight = strobe1_light;
-                        break;
-                    case 1:
-                        strobeLight = strobe2_light;
-                        break;
-                    case 2:
-                        strobeLight = strobe3_light;
-                        break;
-                    case 3:
-                        strobeLight = strobe4_light;
-                        break;
-                }
+                    // Log the chosen light
+                    // logger.Debug($"Flashing {light.name}");
 
-                // Log the chosen strobe light
-                logger.Debug($"Flashing {strobeLight?.name}");
+                    // Turn on the chosen light
+                    ToggleLight(light, true);
 
-                // Turn on the chosen strobe light
-                ToggleStrobeLight(strobeLight, true);
+                    // Wait for a random flash duration
+                    float randomFlashDuration = Random.Range(flashDuration * 0.01f, flashDuration * 0.5f);
+                    yield return new WaitForSeconds(randomFlashDuration);
 
-                // Wait for the flash duration
-                yield return new WaitForSeconds(flashDuration);
+                    // Turn off the chosen light
+                    ToggleLight(light, false);
 
-                // Turn off the chosen strobe light
-                ToggleStrobeLight(strobeLight, false);
-
-                // Wait for the next flash interval
-                yield return new WaitForSeconds(flashInterval - flashDuration);
-            }
-        }
-
-        void ToggleStrobeLight(Light strobeLight, bool isActive)
-        {
-            if (strobeLight != null)
-            {
-                strobeLight.enabled = isActive;
-                // logger.Info($"{strobeLight.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug($"{strobeLight?.name} light component is not found.");
-            }
-        }
-
-        void ToggleStrobe1(bool isActive)
-        {
-            ToggleStrobeLight(strobe1_light, isActive);
-        }
-
-        void ToggleStrobe2(bool isActive)
-        {
-            ToggleStrobeLight(strobe2_light, isActive);
-        }
-
-        void ToggleStrobe3(bool isActive)
-        {
-            ToggleStrobeLight(strobe3_light, isActive);
-        }
-
-        void ToggleStrobe4(bool isActive)
-        {
-            ToggleStrobeLight(strobe4_light, isActive);
-        }
-        // Method to toggle the fireemissive object
-        void ToggleFireEmissive(bool isActive)
-        {
-            if (fireemissiveObject != null)
-            {
-                Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    if (isActive)
-                    {
-                        renderer.material.EnableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    //    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
+                    // Wait for a random interval before the next flash
+                    float randomFlashInterval = Random.Range(flashInterval * 0.3f, flashInterval * 0.01f);
+                    yield return new WaitForSeconds(randomFlashInterval - randomFlashDuration);
                 }
                 else
                 {
-                    logger.Debug("Renderer component is not found on fireemissive object.");
+                    logger.Debug("Light is null.");
                 }
-            }
-            else
-            {
-                logger.Debug("fireemissive object is not assigned.");
-            }
-            if (fireemissive2Object != null)
-            {
-                Renderer renderer = fireemissive2Object.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    if (isActive)
-                    {
-                        renderer.material.EnableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    //           logger.Info($"fireemissive2 object emission turned {(isActive ? "on" : "off")}.");
-                }
-                else
-                {
-                    logger.Debug("Renderer component is not found on fireemissive2 object.");
-                }
-            }
-            else
-            {
-                logger.Debug("fireemissive2 object is not assigned.");
             }
         }
+
+        void ToggleLight(Light light, bool isActive)
+        {
+            if (light != null)
+            {
+                light.enabled = isActive;
+                // logger.Info($"{light.name} light turned {(isActive ? "on" : "off")}.");
+            }
+            else
+            {
+                logger.Debug($"{light?.name} light component is not found.");
+            }
+        }
+
+        void ToggleLight1(bool isActive)
+        {
+            ToggleLight(aliensym1_light, isActive);
+        }
+
+        void ToggleLight2(bool isActive)
+        {
+            ToggleLight(aliensym2_light, isActive);
+        }
+
+        void ToggleLight3(bool isActive)
+        {
+            ToggleLight(aliensym3_light, isActive);
+        }
+
+        void ToggleLight4(bool isActive)
+        {
+            ToggleLight(aliensym4_light, isActive);
+        }
+
     }
 }

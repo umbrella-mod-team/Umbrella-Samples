@@ -11,20 +11,20 @@ namespace WIGUx.Modules.gforce2MotionSim
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        private readonly float keyboardVelocityX = 35.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 30.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 30.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 30.5f;        // Velocity for VR controller input
+        private readonly float keyboardVelocityX = 10.5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityY = 20.5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityZ = 10.5f;  // Velocity for keyboard input
+        private readonly float vrVelocity = 10.5f;        // Velocity for VR controller input
 
-        private readonly float centeringVelocityX = 20.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityY = 20.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityZ = 20.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityX = 10.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityY = 30.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityZ = 10.5f;  // Velocity for centering rotation
 
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
 
-        private float rotationLimitX = 10f;  // Rotation limit for X-axis
-        private float rotationLimitY = 10f;  // Rotation limit for Y-axis
-        private float rotationLimitZ = 10f;  // Rotation limit for Z-axis
+        private float rotationLimitX = 12f;  // Rotation limit for X-axis
+        private float rotationLimitY = 60f;  // Rotation limit for Y-axis
+        private float rotationLimitZ = 12f;  // Rotation limit for Z-axis
 
         private float currentRotationX = 0f;  // Current rotation for X-axis
         private float currentRotationY = 0f;  // Current rotation for Y-axis
@@ -47,10 +47,10 @@ namespace WIGUx.Modules.gforce2MotionSim
 
         // Controller animation 
         // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 150.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 150.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 150.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 200.5f;        // Velocity for VR controller input
+        private readonly float keyboardControllerVelocityX = 50.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityY = 50.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityZ = 50.5f;  // Velocity for keyboard input
+        private readonly float vrControllerVelocity = 50.5f;        // Velocity for VR controller input
 
         private float controllerrotationLimitX = 15f;  // Rotation limit for X-axis (stick or wheel)
         private float controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
@@ -85,21 +85,51 @@ namespace WIGUx.Modules.gforce2MotionSim
         // GameObject references for PlayerCamera and VR setup
         private GameObject playerCamera;
         private GameObject playerVRSetup;
-        private Transform centerEyeAnchor;
 
+
+        //Lights and Emissives
         private Transform fireemissiveObject;
         private Transform fireemissive2Object;
+        public float brightIntensity = 5.0f; // Set the brightness intensity level
+        public float dimIntensity = 1.0f;    // Set the dim intensity level
         public string fire1Button = "Fire1"; // Name of the fire button
         public string fire2Button = "Fire2"; // Name of the fire button 
         public string fire3Button = "Fire3"; // Name of the fire button 
         public string JumpButton = "Jump"; // Name of the fire button 
         public Light fire1_light;
         public Light fire2_light;
+        public Light strobe1_light;
+        public Light strobe2_light;
+        public Light strobe3_light;
+        public Light strobe4_light;
+        private float flashDuration = 0.01f;
+        private float flashInterval = 0.05f;
+
+        private Renderer[] frontEmissiveObjects;
+        private Renderer[] leftEmissiveObjects;
+        private Renderer[] rightEmissiveObjects;
+        public float frontFlashDuration = 0.7f;
+        public float frontFlashDelay = 0.7f;
+        public float sideFlashDuration = 0.5f;
+        public float sideFlashDelay = 0.5f;
+        public float frontDangerDuration = 0.7f;
+        public float frontDangerDelay = 0.7f;
+        public float sideDangerDuration = 0.25f;
+        public float sideDangerDelay = 0.25f;
+        private Coroutine frontCoroutine;
+        private Coroutine leftCoroutine;
+        private Coroutine rightCoroutine;
         public float lightDuration = 0.35f; // Duration during which the lights will be on
         private bool inFocusMode = false;  // Flag to track focus mode state
+        private bool areStrobesOn = false; // track strobe lights
+        private Coroutine strobeCoroutine; // Coroutine variable to control the strobe flashing
+        //array of lights
         private Light[] lights;
 
-        private readonly string[] compatibleGames = { "gforce2", "gforce2sd.zip", "Galaxy Force II", "gforce2.zip", "Galaxy Force" };
+        // Array of strobe lights
+        private List<Light> strobeLights = new List<Light>();
+
+        private readonly string[] compatibleGames = { "gforce2sd", "gforce2" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -114,10 +144,6 @@ namespace WIGUx.Modules.gforce2MotionSim
             CheckObject(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
             GameObject cameraObject = GameObject.Find("OVRCameraRig");
-            if (cameraObject != null)
-            {
-                centerEyeAnchor = cameraObject.transform;
-            }
 
             // Find gfpce2X object in hierarchy
             gforce2XObject = transform.Find("gforce2X");
@@ -227,19 +253,40 @@ namespace WIGUx.Modules.gforce2MotionSim
                         {
                             logger.Error("gforce2ControllerX object not found under gforce2Z!");
                         }
-
                         // Gets all Light components in the target object and its children
                         Light[] allLights = gforce2ZObject.GetComponentsInChildren<Light>();
-
-                        // Initialize a new list to store filtered lights
-                        List<Light> filteredLights = new List<Light>();
 
                         // Log the names of the objects containing the Light components and filter out unwanted lights
                         foreach (Light light in allLights)
                         {
-                            if (light.gameObject.name != "screen_light(Clone)" && light.gameObject.name != "ambient_light")
+                            if (light.gameObject.name == "fire1_light")
                             {
-                                filteredLights.Add(light);
+                                fire1_light = light;
+                                logger.Info("Included Light found in object: " + light.gameObject.name);
+                            }
+                            else if (light.gameObject.name == "fire2_light")
+                            {
+                                fire2_light = light;
+                                logger.Info("Included Light found in object: " + light.gameObject.name);
+                            }
+                            else if (light.gameObject.name == "strobe1_light")
+                            {
+                                strobe1_light = light;
+                                logger.Info("Included Light found in object: " + light.gameObject.name);
+                            }
+                            else if (light.gameObject.name == "strobe2_light")
+                            {
+                                strobe2_light = light;
+                                logger.Info("Included Light found in object: " + light.gameObject.name);
+                            }
+                            else if (light.gameObject.name == "strobe3_light")
+                            {
+                                strobe3_light = light;
+                                logger.Info("Included Light found in object: " + light.gameObject.name);
+                            }
+                            else if (light.gameObject.name == "strobe4_light")
+                            {
+                                strobe4_light = light;
                                 logger.Info("Included Light found in object: " + light.gameObject.name);
                             }
                             else
@@ -247,11 +294,6 @@ namespace WIGUx.Modules.gforce2MotionSim
                                 logger.Info("Excluded Light found in object: " + light.gameObject.name);
                             }
                         }
-
-                        // Store the filtered lights
-                        lights = filteredLights.ToArray();
-
-
                         // Find cockpit camera under cockpit
                         cockpitCam = gforce2ZObject.Find("eyes/cockpitcam")?.gameObject;
                         if (cockpitCam != null)
@@ -272,7 +314,6 @@ namespace WIGUx.Modules.gforce2MotionSim
                         logger.Error("gforce2Z object not found under gforce2Y!");
                     }
                 }
-
                 else
                 {
                     logger.Error("gforce2Y object not found under gforce2X!");
@@ -282,26 +323,64 @@ namespace WIGUx.Modules.gforce2MotionSim
             {
                 logger.Error("gforce2X object not found!");
             }
+            frontEmissiveObjects = new Renderer[2];
+            leftEmissiveObjects = new Renderer[3];
+            rightEmissiveObjects = new Renderer[3];
+
+            frontEmissiveObjects[0] = gforce2ZObject.Find("frontleft")?.GetComponent<Renderer>();
+            frontEmissiveObjects[1] = gforce2ZObject.Find("frontright")?.GetComponent<Renderer>();
+
+            leftEmissiveObjects[0] = gforce2ZObject.Find("left1")?.GetComponent<Renderer>();
+            leftEmissiveObjects[1] = gforce2ZObject.Find("left2")?.GetComponent<Renderer>();
+            leftEmissiveObjects[2] = gforce2ZObject.Find("left3")?.GetComponent<Renderer>();
+
+            rightEmissiveObjects[0] = gforce2ZObject.Find("right1")?.GetComponent<Renderer>();
+            rightEmissiveObjects[1] = gforce2ZObject.Find("right2")?.GetComponent<Renderer>();
+            rightEmissiveObjects[2] = gforce2ZObject.Find("right3")?.GetComponent<Renderer>();
+            // Set lights to start
+
+            StartAttractPattern();
+            ToggleLight1(true);
+            ToggleLight2(true);
+            ToggleBrightness1(false);
+            ToggleBrightness2(false);
         }
 
         void Update()
         {
             bool inputDetected = false; // Initialize at the beginning of the Update method
-
-            if (Input.GetKey(KeyCode.O))
+            /*
+            // Check if the "L" key is pressed
+            if (Input.GetKeyDown(KeyCode.L))
             {
-                logger.Info("Resetting Positions");
-                ResetPositions();
-            }
+                if (areStrobesOn)
+                {
+                    // Strobe lights are currently on, stop the coroutine to turn them off
+                    logger.Info("Stopping strobes");
+                    StopCoroutine(strobeCoroutine);
+                    strobeCoroutine = null;
+                    TurnAllOff(); // Turn all emissives off
+                    TurnOffAllStrobes();
+                }
+                else
+                {
+                    // Strobe lights are currently off, start the coroutine to flash them
+                    logger.Info("Starting strobes");
+                    strobeCoroutine = StartCoroutine(FlashStrobes());
+                }
 
+                // Toggle the strobe state
+                areStrobesOn = !areStrobesOn;
+            }
+            */
             if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
-                string controlledSystemGameString = GameSystem.ControlledSystem.Game != null ? GameSystem.ControlledSystem.Game.ToString() : null;
+                string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
                 bool containsString = false;
 
                 foreach (var gameString in compatibleGames)
                 {
-                    if (controlledSystemGameString != null && controlledSystemGameString.Contains(gameString))
+                    if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
                     {
                         containsString = true;
                         break;
@@ -327,11 +406,15 @@ namespace WIGUx.Modules.gforce2MotionSim
 
         void StartFocusMode()
         {
+            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
+            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
             logger.Info("Compatible Rom Dectected, Booting Whte rbt.obj...");
-            logger.Info("Sega Galaxy Force II Motion Sim starting...");
-            logger.Info("Like the first except this exists...");
+            logger.Info("Sega Galaxy Force II Motion Sim starting...Please Work");
+            logger.Info("Magic Word Used! Hold on your Butts!...");
             cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
             cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
+            strobeCoroutine = StartCoroutine(FlashStrobes());
+            StartDangerPattern();
             // Set objects as children of cockpit cam for focus mode
             if (cockpitCam != null)
             {
@@ -369,12 +452,6 @@ namespace WIGUx.Modules.gforce2MotionSim
             {
                 logger.Error("CockpitCam object not found under gforceZ!");
             }
-
-            // Reset rotation allowances and current rotation values
-            currentRotationX = 0f;
-            currentRotationY = 0f;
-            currentRotationZ = 0f;
-
             inFocusMode = true;  // Set focus mode flag
         }
 
@@ -384,6 +461,9 @@ namespace WIGUx.Modules.gforce2MotionSim
             // Restore original parents of objects
             RestoreOriginalParent(playerCamera, "PlayerCamera");
             RestoreOriginalParent(playerVRSetup, "PlayerVRSetup.PlayerRig");
+            StopCoroutine(strobeCoroutine);
+            TurnOffAllStrobes();
+            StartAttractPattern();
 
             // Reset gforce2X to initial positions and rotations
             if (gforce2XObject != null)
@@ -411,12 +491,6 @@ namespace WIGUx.Modules.gforce2MotionSim
                 cockpitCam.transform.position = cockpitCamStartPosition;
                 cockpitCam.transform.rotation = cockpitCamStartRotation;
             }
-
-            // Reset rotation allowances and current rotation values
-            currentRotationX = 0f;
-            currentRotationY = 0f;
-            currentRotationZ = 0f;
-
             logger.Info("Resetting Positions");
             ResetPositions();
 
@@ -517,57 +591,71 @@ namespace WIGUx.Modules.gforce2MotionSim
             }
 
             // Ximput controller input
-            Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-            Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
-
-            // Combine VR and Xbox inputs
-            primaryThumbstick += xboxPrimaryThumbstick;
-            secondaryThumbstick += xboxSecondaryThumbstick;
-            // Get the trigger axis values
-            float xboxLeftTrigger = Input.GetAxis("LeftTrigger");
-            float xboxRightTrigger = Input.GetAxis("RightTrigger");
-
-
-            // Check if the Left Bumper is pressed
-            if (Input.GetButtonDown("LB"))
+            if (XInput.IsConnected)
             {
-                Debug.Log("Xbox Left Bumper pressed");
+                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
+                Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+
+                // Combine VR and Xbox inputs
+                primaryThumbstick += xboxPrimaryThumbstick;
+                secondaryThumbstick += xboxSecondaryThumbstick;
+
+                // Get the trigger axis values
+                // Detect input from Xbox triggers
+
+                // Handle RT press (assuming RT is mapped to a button in your XInput class)
+                if (XInput.GetDown(XInput.Button.RIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on RT release
+                if (XInput.GetUp(XInput.Button.RIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // LeftTrigger
+                if (XInput.GetDown(XInput.Button.LIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on button release
+                if (XInput.GetUp(XInput.Button.LIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Handle RB button press for plunger position
+                if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
+                {
+
+                    inputDetected = true;
+                }
+
+                // Reset position on RB button release
+                if (XInput.GetUp(XInput.Button.RShoulder) || Input.GetKeyUp(KeyCode.JoystickButton5))
+                {
+                    inputDetected = true;
+                }
+
+                // Handle LB button press for plunger position
+                if (XInput.GetDown(XInput.Button.LShoulder) || Input.GetKeyDown(KeyCode.JoystickButton4))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on LB button release
+                if (XInput.GetUp(XInput.Button.LShoulder) || Input.GetKeyUp(KeyCode.JoystickButton4))
+                {
+                    inputDetected = true;
+                }
             }
 
-            // Check if the Right Bumper is pressed
-            if (Input.GetButtonDown("RB"))
-            {
-                Debug.Log("Xbox Right Bumper pressed");
-            }
-
-            // Check if the Back button is pressed
-            if (Input.GetButtonDown("Back"))
-            {
-                Debug.Log("Xbox Back button pressed");
-            }
-
-            // Check if the Start button is pressed
-            if (Input.GetButtonDown("Start"))
-            {
-                Debug.Log("Xbox Start button pressed");
-            }
-
-            /* 
-            // Check if the Left Thumbstick is clicked
-            if (Input.GetButtonDown("LThumb"))
-            {
-                Debug.Log("Xbox Left Thumbstick clicked");
-            }
-
-            // Check if the Right Thumbstick is clicked
-            if (Input.GetButtonDown("RThumb"))
-            {
-                Debug.Log("Xbox Right Thumbstick clicked");
-            }
-            */
-
-            // Fire1
-            if (Input.GetButtonDown("Fire1"))
+                // Fire1
+                if (Input.GetButtonDown("Fire1"))
             {
                 inputDetected = true;
             }
@@ -581,8 +669,12 @@ namespace WIGUx.Modules.gforce2MotionSim
             // Fire2
             if (Input.GetButtonDown("Fire2"))
             {
+                // Set lights to bright
+                ToggleBrightness1(true);
+                ToggleBrightness2(true);
                 ToggleFireEmissive(true);
-                ToggleLights(true);
+               // ToggleLight1(true);
+               // ToggleLight2(true);
                 inputDetected = true;
             }
 
@@ -590,7 +682,11 @@ namespace WIGUx.Modules.gforce2MotionSim
             if (Input.GetButtonUp("Fire2"))
             {
                 ToggleFireEmissive(false);
-                ToggleLights(false);
+                ToggleBrightness1(false);
+                ToggleBrightness2(false);
+                // ToggleLight1(false);
+                // ToggleLight2(false);
+                // ToggleBrightness(false);
                 inputDetected = true;
             }
 
@@ -626,7 +722,7 @@ namespace WIGUx.Modules.gforce2MotionSim
                 if (currentRotationX > -rotationLimitX)
                 {
                     float rotateX = (Input.GetKey(KeyCode.DownArrow) ? keyboardVelocityX : primaryThumbstick.y * vrVelocity) * Time.deltaTime;
-                    gforce2YObject.Rotate(rotateX, 0, 0);
+                    gforce2XObject.Rotate(rotateX, 0, 0);
                     currentRotationX -= rotateX;
                     inputDetected = true;
                 }
@@ -646,7 +742,7 @@ namespace WIGUx.Modules.gforce2MotionSim
                 if (currentRotationX < rotationLimitX)
                 {
                     float rotateX = (Input.GetKey(KeyCode.UpArrow) ? keyboardVelocityX : -primaryThumbstick.y * vrVelocity) * Time.deltaTime;
-                    gforce2YObject.Rotate(-rotateX, 0, 0);
+                    gforce2XObject.Rotate(-rotateX, 0, 0);
                     currentRotationX += rotateX;
                     inputDetected = true;
                 }
@@ -666,7 +762,7 @@ namespace WIGUx.Modules.gforce2MotionSim
                 if (currentRotationZ > -rotationLimitZ)
                 {
                     float rotateZ = (Input.GetKey(KeyCode.LeftArrow) ? keyboardVelocityZ : -primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    gforce2XObject.Rotate(0, 0, rotateZ);
+                    gforce2ZObject.Rotate(0, 0, rotateZ);
                     currentRotationZ -= rotateZ;
                     inputDetected = true;
                 }
@@ -686,7 +782,7 @@ namespace WIGUx.Modules.gforce2MotionSim
                 if (currentRotationZ < rotationLimitZ)
                 {
                     float rotateZ = (Input.GetKey(KeyCode.RightArrow) ? keyboardVelocityZ : primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    gforce2XObject.Rotate(0, 0, -rotateZ);
+                    gforce2ZObject.Rotate(0, 0, -rotateZ);
                     currentRotationZ += rotateZ;
                     inputDetected = true;
                 }
@@ -700,22 +796,23 @@ namespace WIGUx.Modules.gforce2MotionSim
             }
 
             // Handle left rotation (Thumbstick left)
-            if (secondaryThumbstick.x < 0 && currentRotationY > -rotationLimitY)
+            if (primaryThumbstick.x < 0 && currentRotationY < rotationLimitY) // Note the change in condition
             {
-                float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                gforce2YObject.Rotate(0, rotateY, 0);  // Rotate Y
-                currentRotationY += rotateY;  // Update current rotation (more positive)
+                float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
+                gforce2YObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
+                currentRotationY -= rotateY;  // Update current rotation (subtracting because the direction is swapped)
                 inputDetected = true;
             }
 
             // Handle right rotation (Thumbstick right)
-            if (secondaryThumbstick.x > 0 && currentRotationY < rotationLimitY)
+            if (primaryThumbstick.x > 0 && currentRotationY > -rotationLimitY) // Note the change in condition
             {
-                float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                gforce2YObject.Rotate(0, rotateY, 0);  // Rotate Y
-                currentRotationY += rotateY;  // Update current rotation (more negative)
+                float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
+                gforce2YObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
+                currentRotationY -= rotateY;  // Update current rotation (subtracting because the direction is swapped)
                 inputDetected = true;
             }
+
 
             // Center the rotation if no input is detected (i think this is redundant)
 
@@ -737,6 +834,10 @@ namespace WIGUx.Modules.gforce2MotionSim
             playerCamera.transform.rotation = playerCameraStartRotation;
             //playerCamera.transform.localScale = new Vector3(1f, 1f, 1f);
             playerCamera.transform.localScale = playerCameraStartScale;
+            // Reset rotation allowances and current rotation values
+            currentRotationX = 0f;
+            currentRotationY = 0f;
+            currentRotationZ = 0f;
         }
 
         void CenterRotation()
@@ -745,13 +846,13 @@ namespace WIGUx.Modules.gforce2MotionSim
             if (currentRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, currentRotationX);
-                gforce2YObject.Rotate(unrotateX, 0, 0);
+                gforce2XObject.Rotate(unrotateX, 0, 0);
                 currentRotationX -= unrotateX;
             }
             else if (currentRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, -currentRotationX);
-                gforce2YObject.Rotate(-unrotateX, 0, 0);
+                gforce2XObject.Rotate(-unrotateX, 0, 0);
                 currentRotationX += unrotateX;
             }
 
@@ -759,13 +860,13 @@ namespace WIGUx.Modules.gforce2MotionSim
             if (currentRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, currentRotationY);
-                gforce2XObject.Rotate(0, unrotateY, 0);
+                gforce2YObject.Rotate(0, unrotateY, 0);
                 currentRotationY -= unrotateY;
             }
             else if (currentRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, -currentRotationY);
-                gforce2XObject.Rotate(0, -unrotateY, 0);
+                gforce2YObject.Rotate(0, -unrotateY, 0);
                 currentRotationY += unrotateY;
             }
 
@@ -773,13 +874,13 @@ namespace WIGUx.Modules.gforce2MotionSim
             if (currentRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, currentRotationZ);
-                gforce2XObject.Rotate(0, 0, unrotateZ);
+                gforce2ZObject.Rotate(0, 0, unrotateZ);
                 currentRotationZ -= unrotateZ;
             }
             else if (currentRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, -currentRotationZ);
-                gforce2XObject.Rotate(0, 0, -unrotateZ);
+                gforce2ZObject.Rotate(0, 0, -unrotateZ);
                 currentRotationZ += unrotateZ;
             }
             //Centering for contoller
@@ -914,6 +1015,45 @@ namespace WIGUx.Modules.gforce2MotionSim
             }
         }
 
+        // Method to change the brightness of the lights
+        void ToggleBrightness(bool isBright)
+        {
+            for (int i = 0; i < lights.Length; i++)
+            {
+                lights[i].intensity = isBright ? brightIntensity : dimIntensity;
+            }
+
+            logger.Info($"Lights set to {(isBright ? "bright" : "dim")}.");
+        }
+
+        // Method to change the brightness of fire1 light
+        void ToggleBrightness1(bool isBright)
+        {
+            if (fire1_light != null)
+            {
+                fire1_light.intensity = isBright ? brightIntensity : dimIntensity;
+                // logger.Info($"{fire1_light.name} light set to {(isBright ? "bright" : "dim")}.");
+            }
+            else
+            {
+                logger.Debug("Fire1 light component is not found.");
+            }
+        }
+
+        // Method to change the brightness of fire2 light
+        void ToggleBrightness2(bool isBright)
+        {
+            if (fire2_light != null)
+            {
+                fire2_light.intensity = isBright ? brightIntensity : dimIntensity;
+                // logger.Info($"{fire2_light.name} light set to {(isBright ? "bright" : "dim")}.");
+            }
+            else
+            {
+                logger.Debug("Fire2 light component is not found.");
+            }
+        }
+
         // Method to toggle the lights
         void ToggleLights(bool isActive)
         {
@@ -925,6 +1065,111 @@ namespace WIGUx.Modules.gforce2MotionSim
             logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
         }
 
+        // Method to toggle the fire1 light
+        void ToggleLight1(bool isActive)
+        {
+            if (fire1_light != null)
+            {
+                fire1_light.enabled = isActive;
+                //          logger.Info($"{fire1_light.name} light turned {(isActive ? "on" : "off")}.");
+            }
+            else
+            {
+                logger.Debug("Fire1 light component is not found.");
+            }
+        }
+
+        // Method to toggle the fire2 light
+        void ToggleLight2(bool isActive)
+        {
+            if (fire2_light != null)
+            {
+                fire2_light.enabled = isActive;
+                //       logger.Info($"{fire2_light.name} light turned {(isActive ? "on" : "off")}.");
+            }
+            else
+            {
+                logger.Debug("Fire2 light component is not found.");
+            }
+        }
+
+        IEnumerator FlashStrobes()
+        {
+            while (true)
+            {
+                // Choose a random strobe light to flash
+                int randomIndex = Random.Range(0, 4);
+                Light strobeLight = null;
+
+                switch (randomIndex)
+                {
+                    case 0:
+                        strobeLight = strobe1_light;
+                        break;
+                    case 1:
+                        strobeLight = strobe2_light;
+                        break;
+                    case 2:
+                        strobeLight = strobe3_light;
+                        break;
+                    case 3:
+                        strobeLight = strobe4_light;
+                        break;
+                }
+
+                // Turn on the chosen strobe light
+                ToggleStrobeLight(strobeLight, true);
+
+                // Wait for the flash duration
+                yield return new WaitForSeconds(flashDuration);
+
+                // Turn off the chosen strobe light
+                ToggleStrobeLight(strobeLight, false);
+
+                // Wait for the next flash interval
+                yield return new WaitForSeconds(flashInterval - flashDuration);
+            }
+        }
+
+        void ToggleStrobeLight(Light strobeLight, bool isActive)
+        {
+            if (strobeLight != null)
+            {
+                strobeLight.enabled = isActive;
+                // logger.Info($"{strobeLight.name} light turned {(isActive ? "on" : "off")}.");
+            }
+            else
+            {
+                logger.Debug($"{strobeLight?.name} light component is not found.");
+            }
+        }
+        void TurnOffAllStrobes()
+        {
+            ToggleStrobeLight(strobe1_light, false);
+            ToggleStrobeLight(strobe2_light, false);
+            ToggleStrobeLight(strobe3_light, false);
+            ToggleStrobeLight(strobe4_light, false);
+        }
+
+        void ToggleStrobe1(bool isActive)
+        {
+            ToggleStrobeLight(strobe1_light, isActive);
+        }
+
+        void ToggleStrobe2(bool isActive)
+        {
+            ToggleStrobeLight(strobe2_light, isActive);
+        }
+
+        void ToggleStrobe3(bool isActive)
+        {
+            ToggleStrobeLight(strobe3_light, isActive);
+        }
+
+        void ToggleStrobe4(bool isActive)
+        {
+            ToggleStrobeLight(strobe4_light, isActive);
+        }
         // Method to toggle the fireemissive object
         void ToggleFireEmissive(bool isActive)
         {
@@ -941,7 +1186,7 @@ namespace WIGUx.Modules.gforce2MotionSim
                     {
                         renderer.material.DisableKeyword("_EMISSION");
                     }
-                    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
+                //    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
                 }
                 else
                 {
@@ -965,7 +1210,7 @@ namespace WIGUx.Modules.gforce2MotionSim
                     {
                         renderer.material.DisableKeyword("_EMISSION");
                     }
-                    logger.Info($"fireemissive2 object emission turned {(isActive ? "on" : "off")}.");
+         //           logger.Info($"fireemissive2 object emission turned {(isActive ? "on" : "off")}.");
                 }
                 else
                 {
@@ -975,6 +1220,172 @@ namespace WIGUx.Modules.gforce2MotionSim
             else
             {
                 logger.Debug("fireemissive2 object is not assigned.");
+            }
+        }
+
+        // Method to disable emission
+        void DisableEmission(Renderer[] emissiveObjects)
+        {
+            foreach (var renderer in emissiveObjects)
+            {
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component not found on one of the emissive objects.");
+                }
+            }
+        }
+
+        // Method to log missing objects
+        void LogMissingObject(Renderer[] emissiveObjects, string arrayName)
+        {
+            for (int i = 0; i < emissiveObjects.Length; i++)
+            {
+                if (emissiveObjects[i] == null)
+                {
+                    logger.Debug($"{arrayName} object at index {i} not found under gforce2Z.");
+                }
+            }
+        }
+
+        IEnumerator FrontAttractPattern()
+        {
+            while (true)
+            {
+                ToggleEmissive(frontEmissiveObjects[0], true);
+                ToggleEmissive(frontEmissiveObjects[1], false);
+                yield return new WaitForSeconds(frontFlashDuration);
+
+                ToggleEmissive(frontEmissiveObjects[0], false);
+                ToggleEmissive(frontEmissiveObjects[1], true);
+                yield return new WaitForSeconds(frontFlashDuration);
+            }
+        }
+
+        IEnumerator SideAttractPattern(Renderer[] emissiveObjects)
+        {
+            while (true)
+            {
+                ToggleEmissive(emissiveObjects[0], true);
+                ToggleEmissive(emissiveObjects[1], false);
+                ToggleEmissive(emissiveObjects[2], false);
+                yield return new WaitForSeconds(sideFlashDuration);
+
+                ToggleEmissive(emissiveObjects[0], false);
+                ToggleEmissive(emissiveObjects[1], true);
+                ToggleEmissive(emissiveObjects[2], false);
+                yield return new WaitForSeconds(sideFlashDuration);
+
+                ToggleEmissive(emissiveObjects[0], false);
+                ToggleEmissive(emissiveObjects[1], false);
+                ToggleEmissive(emissiveObjects[2], true);
+                yield return new WaitForSeconds(sideFlashDuration);
+            }
+        }
+
+        IEnumerator FrontDangerPattern()
+        {
+            while (true)
+            {
+                ToggleEmissive(frontEmissiveObjects[0], true);
+                ToggleEmissive(frontEmissiveObjects[1], true);
+                yield return new WaitForSeconds(frontDangerDuration);
+
+                ToggleEmissive(frontEmissiveObjects[0], false);
+                ToggleEmissive(frontEmissiveObjects[1], false);
+                yield return new WaitForSeconds(frontDangerDelay);
+            }
+        }
+
+        IEnumerator SideDangerPattern(Renderer[] emissiveObjects)
+        {
+            while (true)
+            {
+                ToggleEmissive(emissiveObjects[0], true);
+                ToggleEmissive(emissiveObjects[1], false);
+                ToggleEmissive(emissiveObjects[2], true);
+                yield return new WaitForSeconds(sideDangerDuration);
+
+                ToggleEmissive(emissiveObjects[0], false);
+                ToggleEmissive(emissiveObjects[1], true);
+                ToggleEmissive(emissiveObjects[2], false);
+                yield return new WaitForSeconds(sideDangerDelay);
+            }
+        }
+
+        void ToggleEmissive(Renderer renderer, bool isOn)
+        {
+            if (isOn)
+            {
+                renderer.material.EnableKeyword("_EMISSION");
+            }
+            else
+            {
+                renderer.material.DisableKeyword("_EMISSION");
+            }
+        }
+
+        public void TurnAllOff()
+        {
+            foreach (var renderer in frontEmissiveObjects)
+            {
+                ToggleEmissive(renderer, false);
+            }
+
+            foreach (var renderer in leftEmissiveObjects)
+            {
+                ToggleEmissive(renderer, false);
+            }
+
+            foreach (var renderer in rightEmissiveObjects)
+            {
+                ToggleEmissive(renderer, false);
+            }
+        }
+
+        public void StartAttractPattern()
+        {
+            // Stop any currently running coroutines
+            StopCurrentPatterns();
+
+            // Start the attract pattern for front, left, and right
+            frontCoroutine = StartCoroutine(FrontAttractPattern());
+            leftCoroutine = StartCoroutine(SideAttractPattern(leftEmissiveObjects));
+            rightCoroutine = StartCoroutine(SideAttractPattern(rightEmissiveObjects));
+        }
+
+        public void StartDangerPattern()
+        {
+            // Stop any currently running coroutines
+            StopCurrentPatterns();
+
+            // Start the danger pattern for front, left, and right
+            frontCoroutine = StartCoroutine(FrontDangerPattern());
+            leftCoroutine = StartCoroutine(SideDangerPattern(leftEmissiveObjects));
+            rightCoroutine = StartCoroutine(SideDangerPattern(rightEmissiveObjects));
+        }
+
+        private void StopCurrentPatterns()
+        {
+            if (frontCoroutine != null)
+            {
+                StopCoroutine(frontCoroutine);
+                frontCoroutine = null;
+            }
+
+            if (leftCoroutine != null)
+            {
+                StopCoroutine(leftCoroutine);
+                leftCoroutine = null;
+            }
+
+            if (rightCoroutine != null)
+            {
+                StopCoroutine(rightCoroutine);
+                rightCoroutine = null;
             }
         }
 

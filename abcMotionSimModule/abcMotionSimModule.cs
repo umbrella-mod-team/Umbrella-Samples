@@ -5,16 +5,16 @@ using System.Collections.Generic;
 using EmuVR.InputManager;
 using System.Collections;
 
-namespace WIGUx.Modules.aburnerMotionSim
+namespace WIGUx.Modules.abcMotionSim
 {
-    public class aburnerMotionSimController : MonoBehaviour
+    public class abcMotionSimController : MonoBehaviour
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        private readonly float keyboardVelocityX = 25.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 25.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 25.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 30.5f;        // Velocity for VR controller input
+        private readonly float keyboardVelocityX = 35.5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityY = 35.5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityZ = 35.5f;  // Velocity for keyboard input
+        private readonly float vrVelocity = 35.5f;        // Velocity for VR controller input
 
         private readonly float centeringVelocityX = 20.5f;  // Velocity for centering rotation
         private readonly float centeringVelocityY = 20.5f;  // Velocity for centering rotation
@@ -22,9 +22,9 @@ namespace WIGUx.Modules.aburnerMotionSim
 
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
 
-        private float rotationLimitX = 15f;  // Rotation limit for X-axis
-        private float rotationLimitY = 15f;  // Rotation limit for Y-axis
-        private float rotationLimitZ = 15f;  // Rotation limit for Z-axis
+        private float rotationLimitX = 25f;  // Rotation limit for X-axis
+        private float rotationLimitY = 0f;  // Rotation limit for Y-axis
+        private float rotationLimitZ = 0f;  // Rotation limit for Z-axis
 
         private float currentRotationX = 0f;  // Current rotation for X-axis
         private float currentRotationY = 0f;  // Current rotation for Y-axis
@@ -35,11 +35,11 @@ namespace WIGUx.Modules.aburnerMotionSim
         private readonly float keyboardControllerVelocityX = 150.5f;  // Velocity for keyboard input
         private readonly float keyboardControllerVelocityY = 150.5f;  // Velocity for keyboard input
         private readonly float keyboardControllerVelocityZ = 150.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 200.5f;        // Velocity for VR controller input
+        private readonly float vrControllerVelocity = 150.5f;        // Velocity for VR controller input
 
-        private float controllerrotationLimitX = 15f;  // Rotation limit for X-axis (stick or wheel)
+        private float controllerrotationLimitX = 12f;  // Rotation limit for X-axis (stick or wheel)
         private float controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
-        private float controllerrotationLimitZ = 10f;  // Rotation limit for Z-axis (stick or wheel)
+        private float controllerrotationLimitZ = 12f;  // Rotation limit for Z-axis (stick or wheel)
 
         private float currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
         private float currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
@@ -48,29 +48,40 @@ namespace WIGUx.Modules.aburnerMotionSim
         private readonly float centeringControllerVelocityX = 50.5f;  // Velocity for centering rotation (stick or wheel)
         private readonly float centeringControllerVelocityY = 50.5f;  // Velocity for centering rotation (stick or wheel)
         private readonly float centeringControllerVelocityZ = 50.5f;  // Velocity for centering rotation (stick or wheel)
+        
+        //throttle stuff
+        private readonly float throttlecenteringVelocity = 0.3f;  // Velocity for centering rotation (throttle)
+        private readonly float throttleVelocity = 0.3f;  // Velocity for throttle movement
+        private float abcthrottleLimit = 3f;  // position limit for throttle
+        private float currentthrottlePosition = 0f;  // Current throttle position value
+        private Quaternion abcthrottleStartRotation;  //shouldnt need this
+        private Vector3 abcthrottleStartPosition; // Initial throttle positions and rotations for resetting
+        private Transform abcthrottleObject; // Reference to the Throttle
 
-        private Transform aburnerControllerX; // Reference to the main animated controller (wheel)
-        private Vector3 aburnerControllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion aburnerControllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform aburnerControllerY; // Reference to the main animated controller (wheel)
-        private Vector3 aburnerControllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion aburnerControllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform aburnerControllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 aburnerControllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion aburnerControllerZStartRotation; // Initial controlller positions and rotations for resetting
-
-        private Transform aburnerXObject; // Reference to the main X object
-        private Transform aburnerYObject; // Reference to the main Y object
-        private Transform aburnerZObject; // Reference to the main Z object
+        //controllers
+        private Transform abcControllerX; // Reference to the main animated controller (wheel)
+        private Vector3 abcControllerXStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion abcControllerXStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform abcControllerY; // Reference to the main animated controller (wheel)
+        private Vector3 abcControllerYStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion abcControllerYStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform abcControllerZ; // Reference to the main animated controller (wheel)
+        private Vector3 abcControllerZStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion abcControllerZStartRotation; // Initial controlller positions and rotations for resetting
+     
+        //cockpit
+        private Transform abcXObject; // Reference to the main X object
+        private Transform abcYObject; // Reference to the main Y object
+        private Transform abcZObject; // Reference to the main Z object
         private GameObject cockpitCam;    // Reference to the cockpit camera
 
         // Initial positions and rotations for resetting
-        private Vector3 aburnerXStartPosition;
-        private Quaternion aburnerXStartRotation;
-        private Vector3 aburnerYStartPosition;
-        private Quaternion aburnerYStartRotation;
-        private Vector3 aburnerZStartPosition;
-        private Quaternion aburnerZStartRotation;
+        private Vector3 abcXStartPosition;
+        private Quaternion abcXStartRotation;
+        private Vector3 abcYStartPosition;
+        private Quaternion abcYStartRotation;
+        private Vector3 abcZStartPosition;
+        private Quaternion abcZStartRotation;
         private Vector3 cockpitCamStartPosition;
         private Quaternion cockpitCamStartRotation;
 
@@ -85,20 +96,24 @@ namespace WIGUx.Modules.aburnerMotionSim
         // GameObject references for PlayerCamera and VR setup
         private GameObject playerCamera;
         private GameObject playerVRSetup;
+        private GameObject Hands;
 
+        // Variable to store the game path
+        public GameObject gameObject2;
+        private string gamePath;
         //lights
-        private Transform fireemissiveObject;
+        private Transform fireemissive1Object;
         private Transform fireemissive2Object;
         public Light fire1_light;
         public Light fire2_light;
         public float lightDuration = 0.35f; // Duration during which the lights will be on
-  //      public float fireLightIntensity = 3.0f; // Intensity of the light when it is on
-//        public Color fireLightColor = Color.red; // Color of the light when it is on
+                                            //      public float fireLightIntensity = 3.0f; // Intensity of the light when it is on
+                                            //        public Color fireLightColor = Color.red; // Color of the light when it is on
         private Light[] lights;
 
         private bool inFocusMode = false;  // Flag to track focus mode state
 
-        private readonly string[] compatibleGames = { "aburner2.zip", "aburner.zip" };
+        private readonly string[] compatibleGames = { "After Burner Climax.win", "After Burner - Climax.win" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -107,151 +122,158 @@ namespace WIGUx.Modules.aburnerMotionSim
             // Find references to PlayerCamera and VR setup objects
             playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
             playerVRSetup = PlayerVRSetup.PlayerRig.gameObject;
-
             // Check if objects are found
             CheckObject(playerCamera, "PlayerCamera");
-            CheckObject(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
-            GameObject cameraObject = GameObject.Find("OVRCameraRig");
+            // Find the GameObject named "Hands"
+            GameObject handsObject = GameObject.Find("Hands");
+            // Check the object and log the result
+            CheckObject(handsObject, "Hands");
 
-            // Find aburnerX object in hierarchy
-            aburnerXObject = transform.Find("aburnerX");
-            if (aburnerXObject != null)
+            // Find abcX object in hierarchy
+            abcXObject = transform.Find("abcX");
+            if (abcXObject != null)
             {
-                logger.Info("aburnerX object found.");
-                aburnerXStartPosition = aburnerXObject.position;
-                aburnerXStartRotation = aburnerXObject.rotation;
+                logger.Info("abcX object found.");
+                abcXStartPosition = abcXObject.position;
+                abcXStartRotation = abcXObject.rotation;
 
-                // Gets all Light components in the target object and its children
-                Light[] allLights = aburnerXObject.GetComponentsInChildren<Light>();
-
-                // Initialize a new list to store filtered lights
-                List<Light> filteredLights = new List<Light>();
-
-                // Log the names of the objects containing the Light components and filter out unwanted lights
-                foreach (Light light in allLights)
+                // Find abcY object under abcX
+                abcYObject = abcXObject.Find("abcY");
+                if (abcYObject != null)
                 {
-                    if (light.gameObject.name != "screen_light(Clone)" && light.gameObject.name != "ambient_light")
+                    logger.Info("abcY object found.");
+                    abcYStartPosition = abcYObject.position;
+                    abcYStartRotation = abcYObject.rotation;
+
+                    // Find abcZ object under abcY
+                    abcZObject = abcYObject.Find("abcZ");
+                    if (abcZObject != null)
                     {
-                        filteredLights.Add(light);
-                        logger.Info("Included Light found in object: " + light.gameObject.name);
-                    }
-                    else
-                    {
-                        logger.Info("Excluded Light found in object: " + light.gameObject.name);
-                    }
-                }
+                        logger.Info("abcZ object found.");
+                        abcZStartPosition = abcZObject.position;
+                        abcZStartRotation = abcZObject.rotation;
 
-                // Store the filtered lights
-                lights = filteredLights.ToArray();                
-
-                /*
-                // Find the "firelight1" under aburnerX and get its Light component
-                Transform firelight1Transform = aburnerXObject.Find("firelight1");
-                if (firelight1Transform != null)
-                {
-                    logger.Info("fire1_light object found.");
-                    firelight1 = fire1_lightTransform.GetComponent<Light>();
-                }
-                else
-                {
-                    logger.Error("fire1_light object not found under aburnerX!");
-                }
-
-                // Find the "fire2_light" under aburnerX and get its Light component
-                Transform fire2_lightTransform = aburnerXObject.Find("fire2_light");
-                if (fire2_lightTransform != null)
-                {
-                    logger.Info("fire2_light object found.");
-                    fire2_light = firelight2Transform.GetComponent<Light>();
-                }
-                else
-                {
-                    logger.Error("fire2_light object not found under aburnerX!");
-                }
-                */
-
-                // Find aburnerY object under aburnerX
-                aburnerYObject = aburnerXObject.Find("aburnerY");
-                if (aburnerYObject != null)
-                {
-                    logger.Info("aburnerY object found.");
-                    aburnerYStartPosition = aburnerYObject.position;
-                    aburnerYStartRotation = aburnerYObject.rotation;
-
-                    // Find aburnerZ object under aburnerY
-                    aburnerZObject = aburnerYObject.Find("aburnerZ");
-                    if (aburnerZObject != null)
-                    {
-                        logger.Info("aburnerZ object found.");
-                        aburnerZStartPosition = aburnerZObject.position;
-                        aburnerZStartRotation = aburnerZObject.rotation;
-
-                        // Find fireemissive object under aburnerX
-                        fireemissiveObject = aburnerXObject.Find("fireemissive");
-                        if (fireemissiveObject != null)
+                        // Find fireemissive object under abcZ
+                        fireemissive1Object = abcZObject.Find("fireemissive1");
+                        if (fireemissive1Object != null)
                         {
-                            logger.Info("fireemissive object found.");
-                            // Ensure the fireemissive object is initially off
-                            Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
+                            logger.Info("fireemissive1 object found.");
+                            // Ensure the fireemissive1 object is initially off
+                            Renderer renderer = fireemissive1Object.GetComponent<Renderer>();
                             if (renderer != null)
                             {
                                 renderer.material.DisableKeyword("_EMISSION");
                             }
                             else
                             {
-                                logger.Debug("Renderer component is not found on fireemissive object.");
+                                logger.Debug("Renderer component is not found on fireemissive1 object.");
                             }
                         }
                         else
                         {
-                            logger.Debug("fireemissive object not found under aburnerX.");
+                            logger.Debug("fireemissive1 object not found under abcZ.");
                         }
 
-                        // Find aburnerControllerX under aburnerZ
-                        aburnerControllerX = aburnerZObject.Find("aburnerControllerX");
-                        if (aburnerControllerX != null)
+                        // Find fireemissive object under abcZ
+                        fireemissive2Object = abcZObject.Find("fireemissive2");
+                        if (fireemissive2Object != null)
                         {
-                            logger.Info("aburnerControllerX object found.");
-                            // Store initial position and rotation of the stick
-                            aburnerControllerXStartPosition = aburnerControllerX.transform.position; // these could cause the controller to mess up
-                            aburnerControllerXStartRotation = aburnerControllerX.transform.rotation;
-
-                            // Find aburnerControllerY under aburnerControllerX
-                            aburnerControllerY = aburnerControllerX.Find("aburnerControllerY");
-                            if (aburnerControllerY != null)
+                            logger.Info("fireemissive2 object found.");
+                            // Ensure the fireemissive2 object is initially off
+                            Renderer renderer = fireemissive2Object.GetComponent<Renderer>();
+                            if (renderer != null)
                             {
-                                logger.Info("aburnerControllerY object found.");
-                                // Store initial position and rotation of the stick
-                                aburnerControllerYStartPosition = aburnerControllerY.transform.position;
-                                aburnerControllerYStartRotation = aburnerControllerY.transform.rotation;
+                                renderer.material.DisableKeyword("_EMISSION");
+                            }
+                            else
+                            {
+                                logger.Debug("Renderer component is not found on fireemissive2 object.");
+                            }
+                        }
+                        else
+                        {
+                            logger.Debug("fireemissive2 object not found under abcZ.");
+                        }
+                        // Find fire1_light object
+                        fire1_light = abcZObject.Find("fire1_light").GetComponent<Light>();
+                        if (fire1_light != null)
+                        {
+                            logger.Info("fire1_light object found.");
+                        }
+                        else
+                        {
+                            logger.Debug("fire1_light object not found.");
+                        }
 
-                                // Find aburnerControllerZ under aburnerControllerY
-                                aburnerControllerZ = aburnerControllerY.Find("aburnerControllerZ");
-                                if (aburnerControllerZ != null)
+                        // Find fire2_light object
+                        fire2_light = abcZObject.Find("fire2_light").GetComponent<Light>();
+                        if (fire2_light != null)
+                        {
+                            logger.Info("fire2_light object found.");
+                        }
+                        else
+                        {
+                            logger.Debug("fire2_light object not found.");
+                        }
+
+                        // Find plunger4 object under button4
+                        abcthrottleObject = abcZObject.Find("throttle");
+                        if (abcthrottleObject != null)
+                        {
+                            logger.Info("abcthrottleObject found.");
+                            abcthrottleStartPosition = abcthrottleObject.position;
+                            abcthrottleStartRotation = abcthrottleObject.rotation;
+                        }
+                        else
+                        {
+                            logger.Error("abcthrottleObject object not found under abcZObject!");
+                        }
+
+                        // Find abcControllerX under abcZ
+                        abcControllerX = abcZObject.Find("abcControllerX");
+                        if (abcControllerX != null)
+                        {
+                            logger.Info("abcControllerX object found.");
+                            // Store initial position and rotation of the stick
+                            abcControllerXStartPosition = abcControllerX.transform.position; // these could cause the controller to mess up
+                            abcControllerXStartRotation = abcControllerX.transform.rotation;
+
+                            // Find abcControllerY under abcControllerX
+                            abcControllerY = abcControllerX.Find("abcControllerY");
+                            if (abcControllerY != null)
+                            {
+                                logger.Info("abcControllerY object found.");
+                                // Store initial position and rotation of the stick
+                                abcControllerYStartPosition = abcControllerY.transform.position;
+                                abcControllerYStartRotation = abcControllerY.transform.rotation;
+
+                                // Find abcControllerZ under abcControllerY
+                                abcControllerZ = abcControllerY.Find("abcControllerZ");
+                                if (abcControllerZ != null)
                                 {
-                                    logger.Info("aburnerControllerZ object found.");
+                                    logger.Info("abcControllerZ object found.");
                                     // Store initial position and rotation of the stick
-                                    aburnerControllerZStartPosition = aburnerControllerZ.transform.position;
-                                    aburnerControllerZStartRotation = aburnerControllerZ.transform.rotation;
+                                    abcControllerZStartPosition = abcControllerZ.transform.position;
+                                    abcControllerZStartRotation = abcControllerZ.transform.rotation;
                                 }
                                 else
                                 {
-                                    logger.Error("aburnerControllerZ object not found under aburnerControllerY!");
+                                    logger.Error("abcControllerZ object not found under abcControllerY!");
                                 }
                             }
                             else
                             {
-                                logger.Error("aburnerControllerY object not found under aburnerControllerX!");
+                                logger.Error("abcControllerY object not found under abcControllerX!");
                             }
                         }
                         else
                         {
-                            logger.Error("aburnerControllerX object not found under aburnerZ!");
+                            logger.Error("abcControllerX object not found under abcZ!");
                         }
 
-                        // Find cockpit camera under aburnerZ
-                        cockpitCam = aburnerZObject.Find("eyes/cockpitcam")?.gameObject;
+                        // Find cockpit camera under abcZ
+                        cockpitCam = abcZObject.Find("eyes/cockpitcam")?.gameObject;
                         if (cockpitCam != null)
                         {
                             logger.Info("Cockpitcam object found.");
@@ -262,22 +284,22 @@ namespace WIGUx.Modules.aburnerMotionSim
                         }
                         else
                         {
-                            logger.Error("Cockpitcam object not found under aburnerZ!");
+                            logger.Error("Cockpitcam object not found under abcZ!");
                         }
                     }
                     else
                     {
-                        logger.Error("aburnerZ object not found under aburnerY!");
+                        logger.Error("abcZ object not found under abcY!");
                     }
                 }
                 else
                 {
-                    logger.Error("aburnerY object not found under aburnerX!");
+                    logger.Error("abcY object not found under abcX!");
                 }
             }
             else
             {
-                logger.Error("aburnerX object not found!");
+                logger.Error("abcX object not found!");
             }
         }
 
@@ -318,28 +340,40 @@ namespace WIGUx.Modules.aburnerMotionSim
                 // Fire2
                 if (Input.GetButtonDown("Fire2"))
                 {
-                    ToggleFireEmissive(true);
-                    ToggleLights(true);
+                    ToggleFireEmissive1(true);
+                    ToggleFireEmissive2(true);
+                    ToggleLight1(true);
+                    ToggleLight2(true);
                     inputDetected = true;
                 }
 
                 // Reset position on button release
                 if (Input.GetButtonUp("Fire2"))
                 {
-                    ToggleFireEmissive(false);
-                    ToggleLights(false);
+                    ToggleFireEmissive1(false);
+                    ToggleFireEmissive2(false);
+                    ToggleLight1(false);
+                    ToggleLight2(false);
                     inputDetected = true;
                 }
 
                 // Fire3
                 if (Input.GetButtonDown("Fire3"))
                 {
+                    ToggleFireEmissive1(true);
+                    ToggleFireEmissive2(true);
+                    ToggleLight1(true);
+                    ToggleLight2(true);
                     inputDetected = true;
                 }
 
                 // Reset position on button release
                 if (Input.GetButtonUp("Fire3"))
                 {
+                    ToggleFireEmissive1(false);
+                    ToggleFireEmissive2(false);
+                    ToggleLight1(false);
+                    ToggleLight2(false);
                     inputDetected = true;
                 }
 
@@ -363,10 +397,15 @@ namespace WIGUx.Modules.aburnerMotionSim
         {
             string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
             logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Powering Up Motors...");
-            logger.Info("Sega After Burner Motion Sim starting...");
-            logger.Info("GET READY!!...");
-
+            logger.Info("Compatible Rom Dectected, Greetings...");
+            logger.Info("Sega After Burner Climax Motion Sim starting...");
+            logger.Info("GET READY, AGAIN!!!...");
+            /*
+            if (handsObject != null)
+            {
+                handsObject.SetActive(false); // Disable the object
+            }
+            */
             // Set objects as children of cockpit cam for focus mode
             if (cockpitCam != null)
             {
@@ -399,12 +438,14 @@ namespace WIGUx.Modules.aburnerMotionSim
                     playerVRSetup.transform.SetParent(cockpitCam.transform, false);
                     playerVRSetup.transform.localScale = playerVRSetupStartScale;
                     playerVRSetup.transform.localRotation = Quaternion.identity;
+
+
                     logger.Info("PlayerVRSetup.PlayerRig set as child of CockpitCam.");
                 }
             }
             else
             {
-                logger.Error("CockpitCam object not found under aburnerZ!");
+                logger.Error("CockpitCam object not found under abcZ!");
             }
 
             // Reset rotation allowances and current rotation values
@@ -413,6 +454,7 @@ namespace WIGUx.Modules.aburnerMotionSim
             currentRotationZ = 0f;
             currentControllerRotationX = 0f;
             currentControllerRotationY = 0f;
+            currentControllerRotationZ = 0f;
             currentControllerRotationZ = 0f;
 
             inFocusMode = true;  // Set focus mode flag
@@ -425,45 +467,52 @@ namespace WIGUx.Modules.aburnerMotionSim
             RestoreOriginalParent(playerCamera, "PlayerCamera");
             RestoreOriginalParent(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
-            // Reset aburnerX to initial positions and rotations
-            if (aburnerXObject != null)
+
+
+            // Reset abcX to initial positions and rotations
+            if (abcXObject != null)
             {
-                aburnerXObject.position = aburnerXStartPosition;
-                aburnerXObject.rotation = aburnerXStartRotation;
+                abcXObject.position = abcXStartPosition;
+                abcXObject.rotation = abcXStartRotation;
             }
 
-            // Reset aburnerY object to initial position and rotation
-            if (aburnerYObject != null)
+            // Reset abcY object to initial position and rotation
+            if (abcYObject != null)
             {
-                aburnerYObject.position = aburnerYStartPosition;
-                aburnerYObject.rotation = aburnerYStartRotation;
+                abcYObject.position = abcYStartPosition;
+                abcYObject.rotation = abcYStartRotation;
             }
-            // Reset aburnerZ object to initial position and rotation
-            if (aburnerZObject != null)
+            // Reset abcZ object to initial position and rotation
+            if (abcZObject != null)
             {
-                aburnerZObject.position = aburnerZStartPosition;
-                aburnerZObject.rotation = aburnerZStartRotation;
+                abcZObject.position = abcZStartPosition;
+                abcZObject.rotation = abcZStartRotation;
             }
-
-            // Reset aburnercontrollerX object to initial position and rotation
-            if (aburnerControllerX != null)
+            // Reset abcthrottle object to initial position and rotation
+            if (abcthrottleObject != null)
             {
-                // aburnerController.position = aburnerControllerStartPosition;
-                aburnerControllerX.rotation = aburnerControllerXStartRotation;
+                abcthrottleObject.position = abcthrottleStartPosition;
+                abcthrottleObject.rotation = abcthrottleStartRotation;
             }
-
-            // Reset aburnercontrollerY object to initial position and rotation
-            if (aburnerControllerY != null)
+            // Reset abccontrollerX object to initial position and rotation
+            if (abcControllerX != null)
             {
-                // aburnerControllerY.position = aburnerControllerStartPosition; 
-                aburnerControllerY.rotation = aburnerControllerYStartRotation;
+                // abcController.position = abcControllerStartPosition;
+                abcControllerX.rotation = abcControllerXStartRotation;
             }
 
-            // Reset aburnercontrollerZ object to initial position and rotation
-            if (aburnerControllerZ != null)
+            // Reset abccontrollerY object to initial position and rotation
+            if (abcControllerY != null)
             {
-                // aburnerControllerY.position = aburnerControllerStartPosition;
-                aburnerControllerZ.rotation = aburnerControllerZStartRotation;
+                // abcControllerY.position = abcControllerStartPosition; 
+                abcControllerY.rotation = abcControllerYStartRotation;
+            }
+
+            // Reset abccontrollerZ object to initial position and rotation
+            if (abcControllerZ != null)
+            {
+                // abcControllerY.position = abcControllerStartPosition;
+                abcControllerZ.rotation = abcControllerZStartRotation;
             }
 
             // Reset cockpit cam to initial position and rotation
@@ -495,9 +544,6 @@ namespace WIGUx.Modules.aburnerMotionSim
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
 
-            //maybe add a check for xinput? not right now.
-            // XInput.IsConnected
-
             // VR controller input
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
@@ -521,35 +567,55 @@ namespace WIGUx.Modules.aburnerMotionSim
                 // Combine VR and Xbox inputs
                 primaryThumbstick += xboxPrimaryThumbstick;
                 secondaryThumbstick += xboxSecondaryThumbstick;
-                // Get the trigger axis values
-                // Detect input from Xbox triggers
 
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
+                // Handle X press
+                if (XInput.GetDown(XInput.Button.X))
                 {
+                    ToggleFireEmissive1(true);
+                    ToggleFireEmissive2(true);
+                    ToggleLight1(true);
+                    ToggleLight2(true);
                     inputDetected = true;
                 }
 
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
+                // Reset on X release
+                if (XInput.GetUp(XInput.Button.X))
                 {
+                    ToggleFireEmissive1(false);
+                    ToggleFireEmissive2(false);
+                    ToggleLight1(false);
+                    ToggleLight2(false);
                     inputDetected = true;
                 }
 
-                // LeftTrigger
-                if (XInput.GetDown(XInput.Button.LIndexTrigger))
+                // Handle LT press and throttle movement
+                if (XInput.GetDown(XInput.Button.LIndexTrigger) && currentthrottlePosition > -abcthrottleLimit) // position limit for throttle
                 {
+                    abcthrottleObject.Translate(-0.03f, 0, 0); // Using Translate method to move the object
                     inputDetected = true;
                 }
 
-                // Reset position on button release
-                if (XInput.GetUp(XInput.Button.LIndexTrigger))
+                // Handle LT press and throttle movement
+                if (XInput.GetUp(XInput.Button.LIndexTrigger) && currentthrottlePosition > -abcthrottleLimit) // position limit for throttle
                 {
+                    abcthrottleObject.Translate(0.03f, 0, 0);
+                    inputDetected = true;
+                }
+                // Handle RT press and throttle movement
+                if (XInput.GetDown(XInput.Button.RIndexTrigger) && currentthrottlePosition < abcthrottleLimit) // position limit for throttle
+                {
+                    abcthrottleObject.Translate(0.03f, 0, 0); // Using Translate method to move the object
+                    inputDetected = true;
+                }
+                // Handle RT press and throttle movement
+                if (XInput.GetUp(XInput.Button.RIndexTrigger) && currentthrottlePosition < abcthrottleLimit) // position limit for throttle
+                {
+                    abcthrottleObject.Translate(-0.03f, 0, 0);
                     inputDetected = true;
                 }
 
                 // Handle RB button press for plunger position
-                if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
+                if (XInput.GetUp(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
                 {
 
                     inputDetected = true;
@@ -574,121 +640,140 @@ namespace WIGUx.Modules.aburnerMotionSim
                 }
             }
 
-            // Handle X rotation for aburnerYObject and aburnerControllerX (Right Arrow or primaryThumbstick.x > 0)
+
+            // Handle LT press and throttle movement
+            if (XInput.GetDown(XInput.Button.LIndexTrigger) && currentthrottlePosition > -abcthrottleLimit) // position limit for throttle
+            {
+                float move = throttleVelocity * Time.deltaTime;
+                abcthrottleObject.Translate(0, 0, -move); // Using Translate method to move the object
+                currentthrottlePosition -= move; // Update the throttle position value
+                inputDetected = true;
+            }
+
+            // Handle RT press and throttle movement
+            if (XInput.GetDown(XInput.Button.RIndexTrigger) && currentthrottlePosition < abcthrottleLimit) // position limit for throttle
+            {
+                float move = throttleVelocity * Time.deltaTime;
+                abcthrottleObject.Translate(0, 0, move); // Using Translate method to move the object
+                currentthrottlePosition += move; // Update the throttle position value
+                inputDetected = true;
+            }
+
+            // Handle X rotation for abcYObject and abcControllerX (Right Arrow or primaryThumbstick.x > 0)
             // Thumbstick direction: right
             if ((Input.GetKey(KeyCode.RightArrow) || primaryThumbstick.x > 0))
             {
                 if (currentRotationX < rotationLimitX)
                 {
                     float rotateX = (Input.GetKey(KeyCode.RightArrow) ? keyboardVelocityX : primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    aburnerYObject.Rotate(-rotateX, 0, 0);
+                    abcYObject.Rotate(-rotateX, 0, 0);
                     currentRotationX += rotateX;
                     inputDetected = true;
                 }
                 if (currentControllerRotationX < controllerrotationLimitX)
                 {
                     float controllerRotateX = (Input.GetKey(KeyCode.RightArrow) ? keyboardControllerVelocityX : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                    aburnerControllerX.Rotate(-controllerRotateX, 0, 0);
+                    abcControllerX.Rotate(-controllerRotateX, 0, 0);
                     currentControllerRotationX += controllerRotateX;
                     inputDetected = true;
                 }
             }
 
-            // Handle X rotation for aburnerYObject and aburnerControllerX (Left Arrow or primaryThumbstick.x < 0)
+            // Handle X rotation for abcYObject and abcControllerX (Left Arrow or primaryThumbstick.x < 0)
             // Thumbstick direction: left
             if ((Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0))
             {
                 if (currentRotationX > -rotationLimitX)
                 {
                     float rotateX = (Input.GetKey(KeyCode.LeftArrow) ? keyboardVelocityX : -primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    aburnerYObject.Rotate(rotateX, 0, 0);
+                    abcYObject.Rotate(rotateX, 0, 0);
                     currentRotationX -= rotateX;
                     inputDetected = true;
                 }
                 if (currentControllerRotationX > -controllerrotationLimitX)
                 {
                     float controllerRotateX = (Input.GetKey(KeyCode.LeftArrow) ? keyboardControllerVelocityX : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                    aburnerControllerX.Rotate(controllerRotateX, 0, 0);
+                    abcControllerX.Rotate(controllerRotateX, 0, 0);
                     currentControllerRotationX -= controllerRotateX;
                     inputDetected = true;
                 }
             }
 
-            // Handle Z rotation for aburnerXObject and aburnerControllerZ (Down Arrow or primaryThumbstick.y < 0)
+            // Handle Z rotation for abcXObject and abcControllerZ (Down Arrow or primaryThumbstick.y < 0)
             // Thumbstick direction: down
             if ((Input.GetKey(KeyCode.DownArrow) || primaryThumbstick.y < 0))
             {
                 if (currentRotationZ > -rotationLimitZ)
                 {
                     float rotateZ = (Input.GetKey(KeyCode.DownArrow) ? keyboardVelocityZ : -primaryThumbstick.y * vrVelocity) * Time.deltaTime;
-                    aburnerXObject.Rotate(0, 0, rotateZ);
+                    abcXObject.Rotate(0, 0, rotateZ);
                     currentRotationZ -= rotateZ;
                     inputDetected = true;
                 }
                 if (currentControllerRotationZ > -controllerrotationLimitZ)
                 {
                     float controllerRotateZ = (Input.GetKey(KeyCode.DownArrow) ? keyboardControllerVelocityZ : -primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                    aburnerControllerZ.Rotate(0, 0, controllerRotateZ);
+                    abcControllerZ.Rotate(0, 0, controllerRotateZ);
                     currentControllerRotationZ -= controllerRotateZ;
                     inputDetected = true;
                 }
             }
 
-            // Handle Z rotation for aburnerXObject and aburnerControllerZ (Up Arrow or primaryThumbstick.y > 0)
+            // Handle Z rotation for abcXObject and abcControllerZ (Up Arrow or primaryThumbstick.y > 0)
             // Thumbstick direction: up
             if ((Input.GetKey(KeyCode.UpArrow) || primaryThumbstick.y > 0))
             {
                 if (currentRotationZ < rotationLimitZ)
                 {
                     float rotateZ = (Input.GetKey(KeyCode.UpArrow) ? keyboardVelocityZ : primaryThumbstick.y * vrVelocity) * Time.deltaTime;
-                    aburnerXObject.Rotate(0, 0, -rotateZ);
+                    abcXObject.Rotate(0, 0, -rotateZ);
                     currentRotationZ += rotateZ;
                     inputDetected = true;
                 }
                 if (currentControllerRotationZ < controllerrotationLimitZ)
                 {
                     float controllerRotateZ = (Input.GetKey(KeyCode.UpArrow) ? keyboardControllerVelocityZ : primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                    aburnerControllerZ.Rotate(0, 0, -controllerRotateZ);
+                    abcControllerZ.Rotate(0, 0, -controllerRotateZ);
                     currentControllerRotationZ += controllerRotateZ;
                     inputDetected = true;
                 }
             }
 
-            // Handle Y rotation for aburnerYObject and aburnerControllerY (Unused axis or secondaryThumbstick.x)
+            // Handle Y rotation for abcYObject and abcControllerY (Unused axis or secondaryThumbstick.x)
             // Thumbstick direction: left/right
             if ((Input.GetKey(KeyCode.None) || secondaryThumbstick.x != 0))
             {
                 if (secondaryThumbstick.x > 0 && currentRotationY < rotationLimitY)
                 {
                     float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                    aburnerYObject.Rotate(0, rotateY, 0);
+                    abcYObject.Rotate(0, rotateY, 0);
                     currentRotationY += rotateY;
                     inputDetected = true;
                 }
                 if (secondaryThumbstick.x > 0 && currentControllerRotationY < controllerrotationLimitY)
                 {
                     float controllerRotateY = secondaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                    aburnerControllerY.Rotate(0, controllerRotateY, 0);
+                    abcControllerY.Rotate(0, controllerRotateY, 0);
                     currentControllerRotationY += controllerRotateY;
                     inputDetected = true;
                 }
                 if (secondaryThumbstick.x < 0 && currentRotationY > -rotationLimitY)
                 {
                     float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                    aburnerYObject.Rotate(0, rotateY, 0);
+                    abcYObject.Rotate(0, rotateY, 0);
                     currentRotationY -= rotateY;
                     inputDetected = true;
                 }
                 if (secondaryThumbstick.x < 0 && currentControllerRotationY > -controllerrotationLimitY)
                 {
                     float controllerRotateY = secondaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                    aburnerControllerY.Rotate(0, controllerRotateY, 0);
+                    abcControllerY.Rotate(0, controllerRotateY, 0);
                     currentControllerRotationY -= controllerRotateY;
                     inputDetected = true;
                 }
             }
             /*
-            // Handle unused axis rotation for aburnerYObject and aburnerControllerY
+            // Handle unused axis rotation for abcYObject and abcControllerY
             // This can be mapped to secondaryThumbstick.y for additional rotation control
             // Thumbstick direction: up/down
             if (secondaryThumbstick.y != 0)
@@ -696,28 +781,28 @@ namespace WIGUx.Modules.aburnerMotionSim
                 if (secondaryThumbstick.y > 0 && currentRotationY < rotationLimitY)
                 {
                     float rotateY = secondaryThumbstick.y * vrVelocity * Time.deltaTime;
-                    aburnerYObject.Rotate(0, rotateY, 0);
+                    abcYObject.Rotate(0, rotateY, 0);
                     currentRotationY += rotateY;
                     inputDetected = true;
                 }
                 if (secondaryThumbstick.y > 0 && currentControllerRotationY < controllerrotationLimitY)
                 {
                     float controllerRotateY = secondaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
-                    aburnerControllerY.Rotate(0, controllerRotateY, 0);
+                    abcControllerY.Rotate(0, controllerRotateY, 0);
                     currentControllerRotationY += controllerRotateY;
                     inputDetected = true;
                 }
                 if (secondaryThumbstick.y < 0 && currentRotationY > -rotationLimitY)
                 {
                     float rotateY = secondaryThumbstick.y * vrVelocity * Time.deltaTime;
-                    aburnerYObject.Rotate(0, rotateY, 0);
+                    abcYObject.Rotate(0, rotateY, 0);
                     currentRotationY -= rotateY;
                     inputDetected = true;
                 }
                 if (secondaryThumbstick.y < 0 && currentControllerRotationY > -controllerrotationLimitY)
                 {
                     float controllerRotateY = secondaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
-                    aburnerControllerY.Rotate(0, controllerRotateY, 0);
+                    abcControllerY.Rotate(0, controllerRotateY, 0);
                     currentControllerRotationY -= controllerRotateY;
                     inputDetected = true;
                 }
@@ -751,13 +836,13 @@ namespace WIGUx.Modules.aburnerMotionSim
             if (currentRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, currentRotationX);
-                aburnerYObject.Rotate(unrotateX, 0, 0);
+                abcYObject.Rotate(unrotateX, 0, 0);
                 currentRotationX -= unrotateX;
             }
             else if (currentRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, -currentRotationX);
-                aburnerYObject.Rotate(-unrotateX, 0, 0);
+                abcYObject.Rotate(-unrotateX, 0, 0);
                 currentRotationX += unrotateX;
             }
 
@@ -765,13 +850,13 @@ namespace WIGUx.Modules.aburnerMotionSim
             if (currentRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, currentRotationY);
-                aburnerXObject.Rotate(0, unrotateY, 0);
+                abcXObject.Rotate(0, unrotateY, 0);
                 currentRotationY -= unrotateY;
             }
             else if (currentRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, -currentRotationY);
-                aburnerXObject.Rotate(0, -unrotateY, 0);
+                abcXObject.Rotate(0, -unrotateY, 0);
                 currentRotationY += unrotateY;
             }
 
@@ -779,13 +864,13 @@ namespace WIGUx.Modules.aburnerMotionSim
             if (currentRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, currentRotationZ);
-                aburnerXObject.Rotate(0, 0, unrotateZ);
+                abcXObject.Rotate(0, 0, unrotateZ);
                 currentRotationZ -= unrotateZ;
             }
             else if (currentRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, -currentRotationZ);
-                aburnerXObject.Rotate(0, 0, -unrotateZ);
+                abcXObject.Rotate(0, 0, -unrotateZ);
                 currentRotationZ += unrotateZ;
             }
             //Centering for contoller
@@ -794,13 +879,13 @@ namespace WIGUx.Modules.aburnerMotionSim
             if (currentControllerRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, currentControllerRotationY);
-                aburnerControllerY.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
+                abcControllerY.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
                 currentControllerRotationY -= unrotateY;    // Reducing the positive rotation
             }
             else if (currentControllerRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, -currentControllerRotationY);
-                aburnerControllerY.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
+                abcControllerY.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
                 currentControllerRotationY += unrotateY;    // Reducing the negative rotation
             }
 
@@ -808,13 +893,13 @@ namespace WIGUx.Modules.aburnerMotionSim
             if (currentControllerRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, currentControllerRotationX);
-                aburnerControllerX.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
+                abcControllerX.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentControllerRotationX -= unrotateX;    // Reducing the positive rotation
             }
             else if (currentControllerRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, -currentControllerRotationX);
-                aburnerControllerX.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
+                abcControllerX.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentControllerRotationX += unrotateX;    // Reducing the positive rotation
             }
 
@@ -822,14 +907,27 @@ namespace WIGUx.Modules.aburnerMotionSim
             if (currentControllerRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, currentControllerRotationZ);
-                aburnerControllerZ.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
+                abcControllerZ.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
                 currentControllerRotationZ -= unrotateZ;    // Reducing the positive rotation
             }
             else if (currentControllerRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, -currentControllerRotationZ);
-                aburnerControllerZ.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
+                abcControllerZ.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
                 currentControllerRotationZ += unrotateZ;    // Reducing the positive rotation
+            }
+
+            if (currentthrottlePosition > 0)
+            {
+                float unmove = Mathf.Min(throttlecenteringVelocity * Time.deltaTime, currentthrottlePosition);
+                abcthrottleObject.Translate(-unmove, 0, 0); // Move towards center
+                currentthrottlePosition -= unmove;
+            }
+            else if (currentthrottlePosition < 0)
+            {
+                float unmove = Mathf.Min(throttlecenteringVelocity * Time.deltaTime, -currentthrottlePosition);
+                abcthrottleObject.Translate(unmove, 0, 0); // Move towards center
+                currentthrottlePosition += unmove;
             }
         }
 
@@ -923,9 +1021,9 @@ namespace WIGUx.Modules.aburnerMotionSim
         // Method to toggle the fire1 emissive object
         void ToggleFireEmissive1(bool isActive)
         {
-            if (fireemissiveObject != null)
+            if (fireemissive1Object != null)
             {
-                Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
+                Renderer renderer = fireemissive1Object.GetComponent<Renderer>();
                 if (renderer != null)
                 {
                     if (isActive)
@@ -936,16 +1034,16 @@ namespace WIGUx.Modules.aburnerMotionSim
                     {
                         renderer.material.DisableKeyword("_EMISSION");
                     }
-                    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
+                    logger.Info($"fireemissive1 object emission turned {(isActive ? "on" : "off")}.");
                 }
                 else
                 {
-                    logger.Debug("Renderer component is not found on fireemissive object.");
+                    logger.Debug("Renderer component is not found on fireemissive1 object.");
                 }
             }
             else
             {
-                logger.Debug("fireemissive object is not assigned.");
+                logger.Debug("fireemissive1 object is not assigned.");
             }
         }
 
@@ -1005,47 +1103,6 @@ namespace WIGUx.Modules.aburnerMotionSim
                 logger.Debug("Fire2 light component is not found.");
             }
         }
-
-        // Method to toggle the lights
-        void ToggleLights(bool isActive)
-        {
-            for (int i = 0; i < lights.Length; i++)
-            {
-                lights[i].enabled = isActive;
-            }
-
-            logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
-        }
-
-        // Method to toggle the fireemissive object
-        void ToggleFireEmissive(bool isActive)
-        {
-            if (fireemissiveObject != null)
-            {
-                Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    if (isActive)
-                    {
-                        renderer.material.EnableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
-                }
-                else
-                {
-                    logger.Debug("Renderer component is not found on fireemissive object.");
-                }
-            }
-            else
-            {
-                logger.Debug("fireemissive object is not assigned.");
-            }
-        }
-
 
         // Method to check if VR input is active
         bool VRInputActive()

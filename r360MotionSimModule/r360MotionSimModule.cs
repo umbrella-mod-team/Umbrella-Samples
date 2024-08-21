@@ -14,18 +14,18 @@ namespace WIGUx.Modules.r360MotionSim
         private readonly float keyboardVelocityX = 100.5f;  // Velocity for keyboard input
         private readonly float keyboardVelocityY = 100.5f;  // Velocity for keyboard input
         private readonly float keyboardVelocityZ = 100.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 100.5f;        // Velocity for VR controller input
+        private readonly float vrVelocity = 75.5f;        // Velocity for VR controller input
 
-        private readonly float centeringVelocityX = 70.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityY = 70.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityZ = 70.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityX = 75.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityY = 75.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityZ = 75.5f;  // Velocity for centering rotation
 
         // Controller animation 
         // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 100.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 100.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 100.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 50.5f;        // Velocity for VR controller input
+        private readonly float keyboardControllerVelocityX = 300.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityY = 300.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityZ = 300.5f;  // Velocity for keyboard input
+        private readonly float vrControllerVelocity = 250.5f;        // Velocity for VR controller input
 
         private float controllerrotationLimitX = 20f;  // Rotation limit for X-axis (stick or wheel)
         private float controllerrotationLimitY = 20f;  // Rotation limit for Y-axis (stick or wheel)
@@ -35,9 +35,9 @@ namespace WIGUx.Modules.r360MotionSim
         private float currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
         private float currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
 
-        private readonly float centeringControllerVelocityX = 200.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityY = 200.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityZ = 200.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityX = 400.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityY = 400.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityZ = 400.5f;  // Velocity for centering rotation (stick or wheel)
 
         private Transform r360ControllerX; // Reference to the main animated controller (wheel)
         private Vector3 r360ControllerXStartPosition; // Initial controller positions and rotations for resetting
@@ -85,26 +85,36 @@ namespace WIGUx.Modules.r360MotionSim
         // GameObject references for PlayerCamera and VR setup
         private GameObject playerCamera;
         private GameObject playerVRSetup;
-        private Transform centerEyeAnchor;
 
         //lights
+        private Transform thrustObject;
+        public Renderer[] frontEmissiveObjects;
+        public Renderer[] leftEmissiveObjects;
+        public Renderer[] rightEmissiveObjects;
+        private Coroutine frontCoroutine;
+        private Coroutine leftCoroutine;
+        private Coroutine rightCoroutine;
+        private float frontFlashDuration = 0.4f;
+        private float frontFlashDelay = 0.17f;
+        private float sideFlashDuration = 0.02f;
+        private float sideFlashDelay = 0.005f;
+        private float frontDangerDuration = 0.2f;
+        private float frontDangerDelay = 0.2f;
+        private float sideDangerDuration = 0.1f;
+        private float sideDangerDelay = 0.2f;
         private Transform fireemissiveObject;
         public Light fire1_light;
         public Light fire2_light;
-        public string fireButton = "Fire1"; // Name of the fire button (you can change it according to your needs)
-        public string missileButton = "Fire2"; // Name of the fire button (you can change it according to your needs)
         public float lightDuration = 0.35f; // Duration during which the lights will be on
 
         private Light[] lights;
-        private readonly string[] compatibleGames = { "R360", "G-Loc", "Wing War", "WingWar", "glocr360.zip", "wingwar360.zip" };
+        private readonly string[] compatibleGames = { "glocr360", "wingwar360" };
         private bool inFocusMode = false;  // Flag to track focus mode state
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
         void Start()
         {
-           // logger.Info("Sega R360 Motion Sim starting...");
-
             // Find references to PlayerCamera and VR setup objects
             playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
             playerVRSetup = PlayerVRSetup.PlayerRig.gameObject;
@@ -114,10 +124,6 @@ namespace WIGUx.Modules.r360MotionSim
             CheckObject(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
             GameObject cameraObject = GameObject.Find("OVRCameraRig");
-            if (cameraObject != null)
-            {
-                centerEyeAnchor = cameraObject.transform;
-            }
 
             // Find r3602X object in hierarchy
             r360XObject = transform.Find("r360X");
@@ -161,7 +167,7 @@ namespace WIGUx.Modules.r360MotionSim
                         }
                         else
                         {
-                            logger.Debug("fireemissive object not found under gforce2Z.");
+                            logger.Debug("fireemissive object not found under r360Z.");
                         }
 
                         // Find r360ControllerX under r360Z
@@ -236,12 +242,13 @@ namespace WIGUx.Modules.r360MotionSim
             {
                 logger.Error("r360X object not found!");
             }
+
+
             // Gets all Light components in the target object and its children
             Light[] allLights = r360ZObject.GetComponentsInChildren<Light>();
-
             // Initialize a new list to store filtered lights
             List<Light> filteredLights = new List<Light>();
-
+            // Initialize left and right arrays from r360ZObject
             // Log the names of the objects containing the Light components and filter out unwanted lights
             foreach (Light light in allLights)
             {
@@ -255,9 +262,10 @@ namespace WIGUx.Modules.r360MotionSim
                     logger.Info("Excluded Light found in object: " + light.gameObject.name);
                 }
             }
-
+            InitializeEmissiveArrays();
             // Store the filtered lights
             lights = filteredLights.ToArray();
+            StartAttractPattern();
         }
 
         void Update()
@@ -268,21 +276,14 @@ namespace WIGUx.Modules.r360MotionSim
                 logger.Info("Resetting Positions");
                 ResetPositions();
             }
-            if (Input.GetKeyDown(KeyCode.O))
-            {
-                var gameValue = GameSystem.ControlledSystem.Game;
-
-                // Ensure the value is converted to a string for logging
-                logger.Info(gameValue != null ? gameValue.ToString() : "Game value is null");
-            }
             if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
-                string controlledSystemGameString = GameSystem.ControlledSystem.Game != null ? GameSystem.ControlledSystem.Game.ToString() : null;
+                string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
                 bool containsString = false;
 
                 foreach (var gameString in compatibleGames)
                 {
-                    if (controlledSystemGameString != null && controlledSystemGameString.Contains(gameString))
+                    if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
                     {
                         containsString = true;
                         break;
@@ -305,37 +306,62 @@ namespace WIGUx.Modules.r360MotionSim
                 HandleTransformAdjustment();
                 HandleVRInput(ref inputDetected);  // Pass by reference
                 HandleKeyboardInput(ref inputDetected);  // Pass by reference
-                if (Input.GetButtonDown(missileButton) || Input.GetKey(KeyCode.X)) // Checks if the missile button has been pressed
+                                                         // Reset position on button release
+                if (Input.GetButtonUp("Fire1"))
                 {
-                    // Starts the coroutine to turn on the lights for a brief period
-                    ToggleFireEmissive(true);
-                    ToggleLights(true);
+                    inputDetected = true;
                 }
-                if (Input.GetButtonUp(missileButton) || Input.GetKey(KeyCode.X)) // Checks if the missile button has been pressed
-                {
-                    // Starts the coroutine to turn on the lights for a brief period
-                    ToggleFireEmissive(false);
-                    ToggleLights(false);
-                }
-                if (Input.GetKeyDown(KeyCode.I))
+
+                // Fire2
+                if (Input.GetButtonDown("Fire2"))
                 {
                     ToggleFireEmissive(true);
                     ToggleLights(true);
+                    inputDetected = true;
                 }
-                if (Input.GetKeyUp(KeyCode.I))
+
+                // Reset position on button release
+                if (Input.GetButtonUp("Fire2"))
                 {
                     ToggleFireEmissive(false);
                     ToggleLights(false);
+                    inputDetected = true;
+                }
+
+                // Fire3
+                if (Input.GetButtonDown("Fire3"))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on button release
+                if (Input.GetButtonUp("Fire3"))
+                {
+                    inputDetected = true;
+                }
+
+                // Jump
+                if (Input.GetButtonDown("Jump"))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on button release
+                if (Input.GetButtonUp("Jump"))
+                {
+
+                    inputDetected = true;
                 }
             }
         }
         void StartFocusMode()
         {
-            logger.Info("Compatible Rom Dectected, Booting Whte rbt.obj...");
-            logger.Info("Sega R360 Motion Sim starting...Please Work");
-            logger.Info("Magic Word Used! Hold on your Butts!...");
-            cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
-            cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
+            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
+            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
+            logger.Info("Compatible Rom Dectected, Lower Safty Bar...");
+            logger.Info("Sega R360 Motion Sim starting...");
+            logger.Info("Vomit bags are below the seat...");
+            StartDangerPattern();
             // Set objects as children of cockpit cam for focus mode
             if (cockpitCam != null)
             {
@@ -373,15 +399,9 @@ namespace WIGUx.Modules.r360MotionSim
             {
                 logger.Error("CockpitCam object not found under r360Z!");
             }
-
-            // Reset rotation allowances and current rotation values
-            currentRotationX = 0f;
-            currentRotationY = 0f;
-            currentRotationZ = 0f;
-            currentControllerRotationX = 0f;
-            currentControllerRotationY = 0f;
-            currentControllerRotationZ = 0f;
             playerCamera.transform.localScale = playerCameraStartScale;
+    //        cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
+    //        cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
             inFocusMode = true;  // Set focus mode flag
         }
 
@@ -429,16 +449,9 @@ namespace WIGUx.Modules.r360MotionSim
             }
 
             // Reset rotation allowances and current rotation values
-            currentRotationX = 0f;
-            currentRotationY = 0f;
-            currentRotationZ = 0f;
-            currentControllerRotationX = 0f;
-            currentControllerRotationY = 0f;
-            currentControllerRotationZ = 0f;
-            playerCamera.transform.localScale = playerCameraStartScale;
             logger.Info("Resetting Positions");
             ResetPositions();
-
+            StartAttractPattern();
             inFocusMode = false;  // Clear focus mode flag
         }
 
@@ -578,13 +591,72 @@ namespace WIGUx.Modules.r360MotionSim
                 secondaryThumbstick = rightController.GetAxis();
             }
 
-            // Ximput controller input
-            Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-            Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+            if (XInput.IsConnected)
+            {
+                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
+                Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+                // Ximput controller input
+                // Combine VR and Xbox inputs
+                primaryThumbstick += xboxPrimaryThumbstick;
+                secondaryThumbstick += xboxSecondaryThumbstick;
+                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
 
-            // Combine VR and Xbox inputs
-            primaryThumbstick += xboxPrimaryThumbstick;
-            secondaryThumbstick += xboxSecondaryThumbstick;
+                // Combine VR and Xbox inputs
+                primaryThumbstick += xboxPrimaryThumbstick;
+                secondaryThumbstick += xboxSecondaryThumbstick;
+
+                // Get the trigger axis values
+                // Detect input from Xbox triggers
+
+                // Handle RT press (assuming RT is mapped to a button in your XInput class)
+                if (XInput.GetDown(XInput.Button.RIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on RT release
+                if (XInput.GetUp(XInput.Button.RIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // LeftTrigger
+                if (XInput.GetDown(XInput.Button.LIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on button release
+                if (XInput.GetUp(XInput.Button.LIndexTrigger))
+                {
+                    inputDetected = true;
+                }
+
+                // Handle RB button press for plunger position
+                if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on RB button release
+                if (XInput.GetUp(XInput.Button.RShoulder) || Input.GetKeyUp(KeyCode.JoystickButton5))
+                {
+                    inputDetected = true;
+                }
+
+                // Handle LB button press for plunger position
+                if (XInput.GetDown(XInput.Button.LShoulder) || Input.GetKeyDown(KeyCode.JoystickButton4))
+                {
+                    inputDetected = true;
+                }
+
+                // Reset position on LB button release
+                if (XInput.GetUp(XInput.Button.LShoulder) || Input.GetKeyUp(KeyCode.JoystickButton4))
+                {
+                    inputDetected = true;
+                }
+            }
 
             // Handle forward rotation (Thumbstick right)
             if (primaryThumbstick.x > 0 && currentRotationY > -rotationLimitY)
@@ -727,17 +799,21 @@ namespace WIGUx.Modules.r360MotionSim
 
         void ResetPositions()
         {
-            cockpitCam.transform.position = cockpitCamStartPosition;
-            cockpitCam.transform.rotation = cockpitCamStartRotation;
             playerVRSetup.transform.position = playerVRSetupStartPosition;
             playerVRSetup.transform.rotation = playerVRSetupStartRotation;
             playerVRSetup.transform.localScale = playerVRSetupStartScale;
             //playerVRSetup.transform.localScale = new Vector3(1f, 1f, 1f);
             playerCamera.transform.position = playerCameraStartPosition;
             playerCamera.transform.rotation = playerCameraStartRotation;
-            //playerCamera.transform.localScale = new Vector3(1f, 1f, 1f);
             playerCamera.transform.localScale = playerCameraStartScale;
-            cockpitCam.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+            //playerCamera.transform.localScale = new Vector3(1f, 1f, 1f);
+            // cockpitCam.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+            currentRotationX = 0f;
+            currentRotationY = 0f;
+            currentRotationZ = 0f;
+            currentControllerRotationX = 0f;
+            currentControllerRotationY = 0f;
+            currentControllerRotationZ = 0f;
         }
 
         void CenterRotation()
@@ -871,6 +947,341 @@ namespace WIGUx.Modules.r360MotionSim
             cockpitCamStartPosition = cockpitCam.transform.position;
             cockpitCamStartRotation = cockpitCam.transform.rotation;
         }
+
+
+        // Initialize the emissive arrays with the appropriate objects
+        private void InitializeEmissiveArrays()
+        {
+            // Find front emissive objects under "emissive" in the root
+            frontEmissiveObjects = new Renderer[16];
+            Transform emissiveObject = transform.Find("emissive");
+            if (emissiveObject != null)
+            {
+                frontEmissiveObjects[0] = emissiveObject.Find("emissive1step1")?.GetComponent<Renderer>();
+                frontEmissiveObjects[1] = emissiveObject.Find("emissive1step2")?.GetComponent<Renderer>();
+                frontEmissiveObjects[2] = emissiveObject.Find("emissive1step3")?.GetComponent<Renderer>();
+                frontEmissiveObjects[3] = emissiveObject.Find("emissive1step4")?.GetComponent<Renderer>();
+                frontEmissiveObjects[4] = emissiveObject.Find("emissive2step1")?.GetComponent<Renderer>();
+                frontEmissiveObjects[5] = emissiveObject.Find("emissive2step2")?.GetComponent<Renderer>();
+                frontEmissiveObjects[6] = emissiveObject.Find("emissive2step3")?.GetComponent<Renderer>();
+                frontEmissiveObjects[7] = emissiveObject.Find("emissive2step4")?.GetComponent<Renderer>();
+                frontEmissiveObjects[8] = emissiveObject.Find("emissive3step1")?.GetComponent<Renderer>();
+                frontEmissiveObjects[9] = emissiveObject.Find("emissive3step2")?.GetComponent<Renderer>();
+                frontEmissiveObjects[10] = emissiveObject.Find("emissive3step3")?.GetComponent<Renderer>();
+                frontEmissiveObjects[11] = emissiveObject.Find("emissive3step4")?.GetComponent<Renderer>();
+                frontEmissiveObjects[12] = emissiveObject.Find("emissive4step1")?.GetComponent<Renderer>();
+                frontEmissiveObjects[13] = emissiveObject.Find("emissive4step2")?.GetComponent<Renderer>();
+                frontEmissiveObjects[14] = emissiveObject.Find("emissive4step3")?.GetComponent<Renderer>();
+                frontEmissiveObjects[15] = emissiveObject.Find("emissive4step4")?.GetComponent<Renderer>();
+            }
+
+            // Initialize left and right arrays from thrustObject
+            leftEmissiveObjects = new Renderer[15];
+            rightEmissiveObjects = new Renderer[15];
+            thrustObject = r360ZObject.Find("thrust");
+            if (thrustObject != null)
+            {
+                // Left side
+                leftEmissiveObjects[0] = thrustObject.Find("thrustL_1_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[1] = thrustObject.Find("thrustL_1_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[2] = thrustObject.Find("thrustL_1_3")?.GetComponent<Renderer>();
+                leftEmissiveObjects[3] = thrustObject.Find("thrustL_2_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[4] = thrustObject.Find("thrustL_2_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[5] = thrustObject.Find("thrustL_2_3")?.GetComponent<Renderer>();
+                leftEmissiveObjects[6] = thrustObject.Find("thrustL_3_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[7] = thrustObject.Find("thrustL_3_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[8] = thrustObject.Find("thrustL_3_3")?.GetComponent<Renderer>();
+                leftEmissiveObjects[9] = thrustObject.Find("thrustL_4_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[10] = thrustObject.Find("thrustL_4_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[11] = thrustObject.Find("thrustL_4_3")?.GetComponent<Renderer>();
+                leftEmissiveObjects[12] = thrustObject.Find("thrustL_5_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[13] = thrustObject.Find("thrustL_5_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[14] = thrustObject.Find("thrustL_5_3")?.GetComponent<Renderer>();
+
+                // Right side
+                rightEmissiveObjects[0] = thrustObject.Find("thrustR_1_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[1] = thrustObject.Find("thrustR_1_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[2] = thrustObject.Find("thrustR_1_3")?.GetComponent<Renderer>();
+                rightEmissiveObjects[3] = thrustObject.Find("thrustR_2_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[4] = thrustObject.Find("thrustR_2_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[5] = thrustObject.Find("thrustR_2_3")?.GetComponent<Renderer>();
+                rightEmissiveObjects[6] = thrustObject.Find("thrustR_3_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[7] = thrustObject.Find("thrustR_3_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[8] = thrustObject.Find("thrustR_3_3")?.GetComponent<Renderer>();
+                rightEmissiveObjects[9] = thrustObject.Find("thrustR_4_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[10] = thrustObject.Find("thrustR_4_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[11] = thrustObject.Find("thrustR_4_3")?.GetComponent<Renderer>();
+                rightEmissiveObjects[12] = thrustObject.Find("thrustR_5_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[13] = thrustObject.Find("thrustR_5_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[14] = thrustObject.Find("thrustR_5_3")?.GetComponent<Renderer>();
+            }
+
+            LogMissingObject(frontEmissiveObjects, "frontEmissiveObjects");
+            LogMissingObject(leftEmissiveObjects, "leftEmissiveObjects");
+            LogMissingObject(rightEmissiveObjects, "rightEmissiveObjects");
+        }
+
+
+        // Method to disable emission
+        void DisableEmission(Renderer[] emissiveObjects)
+        {
+            foreach (var renderer in emissiveObjects)
+            {
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    Debug.Log("Renderer component not found on one of the emissive objects.");
+                }
+            }
+        }
+
+        // Method to log missing objects
+        void LogMissingObject(Renderer[] emissiveObjects, string arrayName)
+        {
+            for (int i = 0; i < emissiveObjects.Length; i++)
+            {
+                if (emissiveObjects[i] == null)
+                {
+                    logger.Error($"{arrayName} object at index {i} not found under r360Z.");
+                }
+            }
+        }
+
+        // Attract pattern for the front
+        IEnumerator FrontAttractPattern()
+        {
+            int previousStep = -1; // Track the previous step
+
+            while (true)
+            {
+                // Iterate through each "step" (0 to 3, corresponding to "step 1" to "step 4")
+                for (int step = 0; step < 4; step++)
+                {
+                    // Turn on all lights for the current step
+                    for (int group = step; group < frontEmissiveObjects.Length; group += 4)
+                    {
+                        ToggleEmissive(frontEmissiveObjects[group], true);
+                    }
+
+                    // If there was a previous step, wait before turning off its lights
+                    if (previousStep >= 0)
+                    {
+                        yield return new WaitForSeconds(frontFlashDelay);
+
+                        // Turn off the previous step's lights
+                        for (int group = previousStep; group < frontEmissiveObjects.Length; group += 4)
+                        {
+                            ToggleEmissive(frontEmissiveObjects[group], false);
+                        }
+                    }
+
+                    // Update the previous step
+                    previousStep = step;
+
+                    // Wait for the duration before moving to the next step
+                    yield return new WaitForSeconds(frontFlashDuration);
+                }
+
+                // Turn off the last step's lights after the loop
+                yield return new WaitForSeconds(frontFlashDelay);
+                for (int group = previousStep; group < frontEmissiveObjects.Length; group += 4)
+                {
+                    ToggleEmissive(frontEmissiveObjects[group], false);
+                }
+                previousStep = -1; // Reset previous step for the next cycle
+            }
+        }
+
+        // Attract pattern for the side
+        IEnumerator SideAttractPattern(Renderer[] emissiveObjects)
+        {
+            int previousIndex = -1; // Track the previous light index
+
+            while (true)
+            {
+                for (int i = 0; i < emissiveObjects.Length; i++)
+                {
+                    // Turn on the current light
+                    ToggleEmissive(emissiveObjects[i], true);
+
+                    // If there was a previous light, wait before turning it off
+                    if (previousIndex >= 0)
+                    {
+                        yield return new WaitForSeconds(sideFlashDelay); // Use the sideFlashDelay for the overlap timing
+                        ToggleEmissive(emissiveObjects[previousIndex], false);
+                    }
+
+                    // Update the previous light index
+                    previousIndex = i;
+
+                    // Wait before moving to the next light
+                    yield return new WaitForSeconds(sideFlashDuration);
+                }
+
+                // Turn off the last light after the loop
+                yield return new WaitForSeconds(sideFlashDelay);
+                ToggleEmissive(emissiveObjects[previousIndex], false);
+                previousIndex = -1; // Reset previous index for the next cycle
+            }
+        }
+
+
+        IEnumerator FrontDangerPattern()
+        {
+            while (true)
+            {
+                // Flash even-numbered lights
+                for (int i = 1; i < frontEmissiveObjects.Length; i += 2)
+                {
+                    ToggleEmissive(frontEmissiveObjects[i], true);
+                }
+                yield return new WaitForSeconds(frontDangerDuration);
+
+                // Turn off even-numbered lights
+                for (int i = 1; i < frontEmissiveObjects.Length; i += 2)
+                {
+                    ToggleEmissive(frontEmissiveObjects[i], false);
+                }
+
+                // Flash odd-numbered lights
+                for (int i = 0; i < frontEmissiveObjects.Length; i += 2)
+                {
+                    ToggleEmissive(frontEmissiveObjects[i], true);
+                }
+                yield return new WaitForSeconds(frontDangerDuration);
+
+                // Turn off odd-numbered lights
+                for (int i = 0; i < frontEmissiveObjects.Length; i += 2)
+                {
+                    ToggleEmissive(frontEmissiveObjects[i], false);
+                }
+
+                yield return new WaitForSeconds(frontDangerDelay);
+            }
+        }
+
+        // Danger pattern for the sides
+        IEnumerator SideDangerPattern(Renderer[] emissiveObjects)
+        {
+            while (true)
+            {
+                // Flash even-numbered lights in each group
+                for (int group = 1; group < 3; group += 2) // This iterates over the second light in each group (index 1, 4, 7, 10, 13)
+                {
+                    for (int i = group; i < emissiveObjects.Length; i += 3)
+                    {
+                        ToggleEmissive(emissiveObjects[i], true);
+                    }
+                }
+                yield return new WaitForSeconds(sideDangerDuration);
+
+                // Turn off even-numbered lights
+                for (int group = 1; group < 3; group += 2)
+                {
+                    for (int i = group; i < emissiveObjects.Length; i += 3)
+                    {
+                        ToggleEmissive(emissiveObjects[i], false);
+                    }
+                }
+
+                // Flash odd-numbered lights in each group
+                for (int group = 0; group < 3; group += 2) // This iterates over the first and third lights in each group (index 0, 3, 6, 9, 12)
+                {
+                    for (int i = group; i < emissiveObjects.Length; i += 3)
+                    {
+                        ToggleEmissive(emissiveObjects[i], true);
+                    }
+                }
+                yield return new WaitForSeconds(sideDangerDuration);
+
+                // Turn off odd-numbered lights
+                for (int group = 0; group < 3; group += 2)
+                {
+                    for (int i = group; i < emissiveObjects.Length; i += 3)
+                    {
+                        ToggleEmissive(emissiveObjects[i], false);
+                    }
+                }
+
+                yield return new WaitForSeconds(sideDangerDelay);
+            }
+        }
+
+
+        // Method to toggle emissive on or off
+        void ToggleEmissive(Renderer renderer, bool isOn)
+        {
+            if (renderer != null)
+            {
+                if (isOn)
+                {
+                    renderer.material.EnableKeyword("_EMISSION");
+                }
+                else
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+            }
+        }
+
+        // Method to toggle all in the array
+        void ToggleAll(Renderer[] emissiveObjects, bool isOn)
+        {
+            foreach (var renderer in emissiveObjects)
+            {
+                ToggleEmissive(renderer, isOn);
+            }
+        }
+
+        public void TurnAllOff()
+        {
+            ToggleAll(frontEmissiveObjects, false);
+            ToggleAll(leftEmissiveObjects, false);
+            ToggleAll(rightEmissiveObjects, false);
+        }
+
+        public void StartAttractPattern()
+        {
+            StopCurrentPatterns();
+
+            frontCoroutine = StartCoroutine(FrontAttractPattern());
+            leftCoroutine = StartCoroutine(SideAttractPattern(leftEmissiveObjects));
+            rightCoroutine = StartCoroutine(SideAttractPattern(rightEmissiveObjects));
+        }
+
+        public void StartDangerPattern()
+        {
+            StopCurrentPatterns();
+
+            frontCoroutine = StartCoroutine(FrontDangerPattern());
+            leftCoroutine = StartCoroutine(SideDangerPattern(leftEmissiveObjects));
+            rightCoroutine = StartCoroutine(SideDangerPattern(rightEmissiveObjects));
+        }
+
+        private void StopCurrentPatterns()
+        {
+            if (frontCoroutine != null)
+            {
+                StopCoroutine(frontCoroutine);
+                frontCoroutine = null;
+            }
+
+            if (leftCoroutine != null)
+            {
+                StopCoroutine(leftCoroutine);
+                leftCoroutine = null;
+            }
+
+            if (rightCoroutine != null)
+            {
+                StopCoroutine(rightCoroutine);
+                rightCoroutine = null;
+            }
+        }
+
         // Method to toggle the lights
         void ToggleLights(bool isActive)
         {

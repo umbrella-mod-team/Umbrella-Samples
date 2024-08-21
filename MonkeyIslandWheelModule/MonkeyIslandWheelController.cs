@@ -1,39 +1,47 @@
 ﻿using UnityEngine;
 using UnityEngine.XR;
+using WIGU;
 
-namespace WIGU.Modules.MonkeyIslandWheel
+namespace WIGUx.Modules.ToggleEmission
 {
-    public class MonkeyIslandWheelController : MonoBehaviour
+
+    public class ToggleEmissionController : MonoBehaviour
     {
-        private IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
+        /// <summary>
+        /// Get logger from service provider to use logging feature in our controller
+        /// </summary>
+        static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
         private readonly float velocity = 1.5f;
+        private readonly float velocityKey = 20.5f;
         private Transform childLayer;
 
         void Start()
         {
+            logger.Info("ToggleEmission script started...");
+
             childLayer = transform.Find("Front");
-            logger.Debug($"{typeof(MonkeyIslandWheelController)}.Start");
         }
 
         void Update()
         {
-            if (!HandGrabber.IsGrabbed(gameObject))
+            // If user is not selecting or grabbing the object no need to continue
+            if (!PlayerControllerHelper.IsObjectSelectedOrGrabbed(gameObject))
                 return;
 
-            if (Input.GetKeyDown(KeyCode.J))
+            if (Input.GetKey(KeyCode.J))
             {
-                childLayer.Rotate(0, 0, velocity * Time.deltaTime, Space.Self);
+                childLayer.Rotate(0, 0, velocityKey * Time.deltaTime, Space.Self);
             }
 
-            if (Input.GetKeyDown(KeyCode.H))
+            if (Input.GetKey(KeyCode.H))
             {
-                childLayer.Rotate(0, 0, velocity * Time.deltaTime, Space.Self);
+                childLayer.Rotate(0, 0, -velocityKey * Time.deltaTime, Space.Self);
             }
 
             if (XRDevice.isPresent)
             {
-                if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger))
+                if (XRDevice.isPresent && OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger))
                 {
                     childLayer.Rotate(0, 0, -velocity, Space.Self);
                 }

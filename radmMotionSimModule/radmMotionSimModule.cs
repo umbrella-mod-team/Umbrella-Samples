@@ -5,26 +5,26 @@ using System.Collections.Generic;
 using EmuVR.InputManager;
 using System.Collections;
 
-namespace WIGUx.Modules.outrunMotionSim
+namespace WIGUx.Modules.radmMotionSim
 {
-    public class outrunMotionSimController : MonoBehaviour
+    public class radmMotionSimController : MonoBehaviour
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
         private readonly float keyboardVelocityX = 15.5f;  // Velocity for keyboard input
         private readonly float keyboardVelocityY = 15.5f;  // Velocity for keyboard input
         private readonly float keyboardVelocityZ = 15.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 15.5f;        // Velocity for VR controller input
+        private readonly float vrVelocity = 5.5f;        // Velocity for VR controller input
 
-        private readonly float centeringVelocityX = 20.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityY = 20.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityZ = 20.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityX = 15.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityY = 15.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityZ = 15.5f;  // Velocity for centering rotation
 
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
 
-        private float rotationLimitX = 10f;  // Rotation limit for X-axis
-        private float rotationLimitY = 10f;  // Rotation limit for Y-axis
-        private float rotationLimitZ = 15f;  // Rotation limit for Z-axis
+        private float rotationLimitX = 12f;  // Rotation limit for X-axis
+        private float rotationLimitY = 0f;  // Rotation limit for Y-axis
+        private float rotationLimitZ = 0f;  // Rotation limit for Z-axis
 
         private float currentRotationX = 0f;  // Current rotation for X-axis
         private float currentRotationY = 0f;  // Current rotation for Y-axis
@@ -32,13 +32,13 @@ namespace WIGUx.Modules.outrunMotionSim
 
         // Controller animation 
         // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 400.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 400.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 400.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 100.5f;        // Velocity for VR controller input
+        private readonly float keyboardControllerVelocityX = 500.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityY = 500.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityZ = 500.5f;  // Velocity for keyboard input
+        private readonly float vrControllerVelocity = 500.5f;        // Velocity for VR controller input
 
-        private float controllerrotationLimitX = 0f;  // Rotation limit for X-axis (stick or wheel)
-        private float controllerrotationLimitY = 270f;  // Rotation limit for Y-axis (stick or wheel)
+        private float controllerrotationLimitX = 270f;  // Rotation limit for X-axis (stick or wheel)
+        private float controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
         private float controllerrotationLimitZ = 0f;  // Rotation limit for Z-axis (stick or wheel)
 
         private float currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
@@ -49,34 +49,34 @@ namespace WIGUx.Modules.outrunMotionSim
         private readonly float centeringControllerVelocityY = 300.5f;  // Velocity for centering rotation (stick or wheel)
         private readonly float centeringControllerVelocityZ = 300.5f;  // Velocity for centering rotation (stick or wheel)
 
-        private Transform outrunController; // Reference to the main animated controller (wheel)
-        private Vector3 outrunControllerStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion outrunControllerStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform radmController; // Reference to the main animated controller (wheel)
+        private Vector3 radmControllerStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion radmControllerStartRotation; // Initial controlller positions and rotations for resetting
         /*
-        private Transform outrunControllerX; // Reference to the main animated controller (wheel)
-        private Vector3 outrunControllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion outrunControllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform outrunControllerY; // Reference to the main animated controller (wheel)
-        private Vector3 outrunControllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion outrunControllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform outrunControllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 outrunControllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion outrunControllerZStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform radmControllerX; // Reference to the main animated controller (wheel)
+        private Vector3 radmControllerXStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion radmControllerXStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform radmControllerY; // Reference to the main animated controller (wheel)
+        private Vector3 radmControllerYStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion radmControllerYStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform radmControllerZ; // Reference to the main animated controller (wheel)
+        private Vector3 radmControllerZStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion radmControllerZStartRotation; // Initial controlller positions and rotations for resetting
          */
 
-        private Transform outrunXObject; // Reference to the main X object
-        private Transform outrunYObject; // Reference to the main Y object
-        private Transform outrunZObject; // Reference to the main Z object
+        private Transform radmXObject; // Reference to the main X object
+        private Transform radmYObject; // Reference to the main Y object
+        private Transform radmZObject; // Reference to the main Z object
 
         private GameObject cockpitCam;    // Reference to the cockpit camera
 
         // Initial positions and rotations for resetting
-        private Vector3 outrunXStartPosition;
-        private Quaternion outrunXStartRotation;
-        private Vector3 outrunYStartPosition;
-        private Quaternion outrunYStartRotation;
-        private Vector3 outrunZStartPosition;
-        private Quaternion outrunZStartRotation;
+        private Vector3 radmXStartPosition;
+        private Quaternion radmXStartRotation;
+        private Vector3 radmYStartPosition;
+        private Quaternion radmYStartRotation;
+        private Vector3 radmZStartPosition;
+        private Quaternion radmZStartRotation;
         private Vector3 cockpitCamStartPosition;
         private Quaternion cockpitCamStartRotation;
 
@@ -105,7 +105,7 @@ namespace WIGUx.Modules.outrunMotionSim
         public string JumpButton = "Jump"; // Name of the fire button 
         // public float lightDuration = 0.35f; // Duration during which the lights will be on
 
-        private readonly string[] compatibleGames = { "outrun.zip" };
+        private readonly string[] compatibleGames = { "radm.zip" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -121,35 +121,35 @@ namespace WIGUx.Modules.outrunMotionSim
 
             GameObject cameraObject = GameObject.Find("OVRCameraRig");
 
-            // Find outrunX object in hierarchy
-            outrunXObject = transform.Find("outrunX");
-            if (outrunXObject != null)
+            // Find radmX object in hierarchy
+            radmXObject = transform.Find("radmX");
+            if (radmXObject != null)
             {
-                logger.Info("outrunX object found.");
-                outrunXStartPosition = outrunXObject.position;
-                outrunXStartRotation = outrunXObject.rotation;
+                logger.Info("radmX object found.");
+                radmXStartPosition = radmXObject.position;
+                radmXStartRotation = radmXObject.rotation;
 
-                // Find outrunY object under outrunX
-                outrunYObject = outrunXObject.Find("outrunY");
-                if (outrunYObject != null)
+                // Find radmY object under radmX
+                radmYObject = radmXObject.Find("radmY");
+                if (radmYObject != null)
                 {
-                    logger.Info("outrunY object found.");
-                    outrunYStartPosition = outrunYObject.position;
-                    outrunYStartRotation = outrunYObject.rotation;
+                    logger.Info("radmY object found.");
+                    radmYStartPosition = radmYObject.position;
+                    radmYStartRotation = radmYObject.rotation;
 
-                    // Find outrunZ object under outrunY
-                    outrunZObject = outrunYObject.Find("outrunZ");
-                    if (outrunZObject != null)
+                    // Find radmZ object under radmY
+                    radmZObject = radmYObject.Find("radmZ");
+                    if (radmZObject != null)
                     {
-                        logger.Info("outrunZ object found.");
-                        outrunZStartPosition = outrunZObject.position;
-                        outrunZStartRotation = outrunZObject.rotation;
+                        logger.Info("radmZ object found.");
+                        radmZStartPosition = radmZObject.position;
+                        radmZStartRotation = radmZObject.rotation;
 
-                        // Find fireemissive object under outrunX
-                        fireemissiveObject = outrunZObject.Find("fireemissive");
+                        // Find fireemissive object under radmX
+                        fireemissiveObject = radmZObject.Find("emissive");
                         if (fireemissiveObject != null)
                         {
-                            logger.Info("fireemissive object found.");
+                            logger.Info("emissive object found.");
                             // Ensure the fireemissive object is initially off
                             Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
                             if (renderer != null)
@@ -158,16 +158,16 @@ namespace WIGUx.Modules.outrunMotionSim
                             }
                             else
                             {
-                                logger.Debug("Renderer component is not found on fireemissive object.");
+                                logger.Debug("Renderer component is not found on emissive object.");
                             }
                         }
                         else
                         {
-                            logger.Debug("fireemissive object not found under outrunZ.");
+                            logger.Debug("emissive object not found under radmZ.");
                         }
 
                         // Find fire1_light object
-                        fire1_light = outrunZObject.Find("fire1_light").GetComponent<Light>();
+                        fire1_light = radmZObject.Find("fire1_light").GetComponent<Light>();
                         if (fire1_light != null)
                         {
                             logger.Info("fire1_light object found.");
@@ -178,7 +178,7 @@ namespace WIGUx.Modules.outrunMotionSim
                         }
 
                         // Find fire2_light object
-                        fire2_light = outrunZObject.Find("fire2_light").GetComponent<Light>();
+                        fire2_light = radmZObject.Find("fire2_light").GetComponent<Light>();
                         if (fire2_light != null)
                         {
                             logger.Info("fire2_light object found.");
@@ -188,23 +188,23 @@ namespace WIGUx.Modules.outrunMotionSim
                             logger.Debug("fire2_light object not found.");
                         }
 
-                        // Find outrunController under outrunZ
-                        outrunController = outrunZObject.Find("outrunController");
+                        // Find radmController under radmZ
+                        radmController = radmZObject.Find("radmController");
                         if (cockpitCam != null)
                         {
-                            logger.Info("outrunController object found.");
+                            logger.Info("radmController object found.");
 
                             // Store initial position and rotation of the wheel
-                            outrunControllerStartPosition = outrunController.transform.position;
-                            outrunControllerStartRotation = outrunController.transform.rotation;
+                            radmControllerStartPosition = radmController.transform.position;
+                            radmControllerStartRotation = radmController.transform.rotation;
                         }
                         else
                         {
-                         //   logger.Error("outrunController object not found under outrunZ!");
+                            logger.Error("radmController object not found under radmZ!");
                         }
 
-                        // Find cockpit camera under outrunZ
-                        cockpitCam = outrunZObject.Find("eyes/cockpitcam")?.gameObject;
+                        // Find cockpit camera under radmZ
+                        cockpitCam = radmZObject.Find("eyes/cockpitcam")?.gameObject;
                         if (cockpitCam != null)
                         {
                             logger.Info("Cockpitcam object found.");
@@ -215,29 +215,29 @@ namespace WIGUx.Modules.outrunMotionSim
                         }
                         else
                         {
-                            logger.Error("Cockpitcam object not found under outrunZ!");
+                            logger.Error("Cockpitcam object not found under radmZ!");
                         }
                     }
                     else
                     {
-                        logger.Error("outrunZ object not found under outrunY!");
+                        logger.Error("radmZ object not found under radmY!");
                     }
                 }
 
                 else
                 {
-                    logger.Error("outrunY object not found under outrunX!");
+                    logger.Error("radmY object not found under radmX!");
                 }
             }
             else
             {
-                logger.Error("outrunX object not found!");
+                logger.Error("radmX object not found!");
             }
         }
 
         void Update()
         {
-            bool inputDetected = false;  // Initialize at the beginning of the Update method
+            bool inputDetected = false; // Initialize at the beginning of the Update method
 
             if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
@@ -256,7 +256,7 @@ namespace WIGUx.Modules.outrunMotionSim
                 if (containsString)
                 {
                     StartFocusMode();
-                 }
+                }
             }
 
             if (GameSystem.ControlledSystem == null && inFocusMode)
@@ -276,9 +276,9 @@ namespace WIGUx.Modules.outrunMotionSim
         {
             string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
             logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Activating Hydrolics...");
-            logger.Info("Sega Out Run Deluxe Motion Sim starting...");
-            logger.Info("Put on some Passing Breeze, or is it called Splash Wave Now?");
+            logger.Info("Compatible Rom Dectected, Hanging Sonic on the Mirror...");
+            logger.Info("Sega Rad Mobile Deluxe Motion Sim starting...");
+            logger.Info("El queso está viejo y podrido. Dónde está el sanitario");
             cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
             cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
             // Set objects as children of cockpit cam for focus mode
@@ -316,7 +316,7 @@ namespace WIGUx.Modules.outrunMotionSim
             }
             else
             {
-                logger.Error("CockpitCam object not found under outrunZ!");
+                logger.Error("CockpitCam object not found under radmZ!");
             }
 
             // Reset rotation allowances and current rotation values
@@ -337,31 +337,31 @@ namespace WIGUx.Modules.outrunMotionSim
             RestoreOriginalParent(playerCamera, "PlayerCamera");
             RestoreOriginalParent(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
-            // Reset outrunX to initial positions and rotations
-            if (outrunXObject != null)
+            // Reset radmX to initial positions and rotations
+            if (radmXObject != null)
             {
-                outrunXObject.position = outrunXStartPosition;
-                outrunXObject.rotation = outrunXStartRotation;
+                radmXObject.position = radmXStartPosition;
+                radmXObject.rotation = radmXStartRotation;
             }
 
-            // Reset outrunY object to initial position and rotation
-            if (outrunYObject != null)
+            // Reset radmY object to initial position and rotation
+            if (radmYObject != null)
             {
-                outrunYObject.position = outrunYStartPosition;
-                outrunYObject.rotation = outrunYStartRotation;
+                radmYObject.position = radmYStartPosition;
+                radmYObject.rotation = radmYStartRotation;
             }
-            // Reset outrunZ object to initial position and rotation
-            if (outrunZObject != null)
+            // Reset radmZ object to initial position and rotation
+            if (radmZObject != null)
             {
-                outrunZObject.position = outrunZStartPosition;
-                outrunZObject.rotation = outrunZStartRotation;
+                radmZObject.position = radmZStartPosition;
+                radmZObject.rotation = radmZStartRotation;
             }
 
-            // Reset outruncontroller object to initial position and rotation
-            if (outrunController != null)
+            // Reset radmcontroller object to initial position and rotation
+            if (radmController != null)
             {
-                // outrunController.position = outrunControllerStartPosition; // didnt need this
-                outrunController.rotation = outrunControllerStartRotation; 
+                // radmController.position = radmControllerStartPosition; // didnt need this
+                radmController.rotation = radmControllerStartRotation; 
             }
 
             // Reset cockpit cam to initial position and rotation
@@ -440,84 +440,32 @@ namespace WIGUx.Modules.outrunMotionSim
 
                 inputDetected = true;
             }
-            */
-            /*
-            // Handle keyboard input for pitch and roll
-            if (Input.GetKey(KeyCode.UpArrow) && currentRotationX > -rotationLimitX)
-            {
-                float rotateX = keyboardVelocityX * Time.deltaTime;
-                outrunYObject.Rotate(rotateX, 0, 0);
-                currentRotationX -= rotateX;
-                inputDetected = true;
-            }
 
-            if (Input.GetKey(KeyCode.DownArrow) && currentRotationX < rotationLimitX)
-            {
-                float rotateX = keyboardVelocityX * Time.deltaTime;
-                outrunYObject.Rotate(-rotateX, 0, 0);
-                currentRotationX += rotateX;
-                inputDetected = true;
-            }
-            */
-            /*
-            if (Input.GetKey(KeyCode.RightArrow) && currentRotationZ > -rotationLimitZ)
-            {
-                float rotateZ = keyboardVelocityZ * Time.deltaTime;
-                outrunXObject.Rotate(0, 0, rotateZ);
-                currentRotationZ -= rotateZ;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.LeftArrow) && currentRotationZ < rotationLimitZ)
-            {
-                float rotateZ = keyboardVelocityZ * Time.deltaTime;
-                outrunXObject.Rotate(0, 0, -rotateZ);
-                currentRotationZ += rotateZ;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.LeftArrow) && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = keyboardVelocityY * Time.deltaTime;
-                outrunZObject.Rotate(0, rotateY, 0);
-                currentRotationY -= rotateY;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.RightArrow) && currentRotationY < rotationLimitY)
-            {
-                float rotateY = keyboardVelocityY * Time.deltaTime;
-                outrunZObject.Rotate(0, -rotateY, 0);
-                currentRotationY += rotateY;
-                inputDetected = true;
-            }
-            
             // Stick Rotations 
 
             // Stick Y Rotation
-            if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationY > -controllerrotationLimitY)
+            if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationZ > -controllerrotationLimitZ)
             {
-                float rotateY = keyboardControllerVelocityY * Time.deltaTime;
-                outrunController.Rotate(0, rotateY, 0);
-                currentControllerRotationY -= rotateY;
+                float rotateZ = keyboardControllerVelocityZ * Time.deltaTime;
+                radmController.Rotate(0, 0, rotateZ);
+                currentControllerRotationZ -= rotateZ;
                 inputDetected = true;
             }
 
-            if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationY < controllerrotationLimitY)
+            if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationZ < controllerrotationLimitZ)
             {
-                float rotateY = keyboardControllerVelocityY * Time.deltaTime;
-                outrunController.Rotate(0, -rotateY, 0);
-                currentControllerRotationY += rotateY;
+                float rotateZ = keyboardControllerVelocityY * Time.deltaTime;
+                radmController.Rotate(0, 0, -rotateZ);
+                currentControllerRotationZ += rotateZ;
                 inputDetected = true;
             }
-            */
-
+                        */
             /*
             // Stick X Rotation
             if (Input.GetKey(KeyCode.UpArrow) && currentControllerRotationX > -controllerrotationLimitX)
             {
                 float rotateX = keyboardControllerVelocityX * Time.deltaTime;
-                outrunController.Rotate(rotateX, 0, 0);
+                radmController.Rotate(rotateX, 0, 0);
                 currentControllerRotationX -= rotateX;
                 inputDetected = true;
             }
@@ -525,7 +473,7 @@ namespace WIGUx.Modules.outrunMotionSim
             if (Input.GetKey(KeyCode.DownArrow) && currentControllerRotationX < controllerrotationLimitX)
             {
                 float rotateX = keyboardControllerVelocityX * Time.deltaTime;
-                outrunController.Rotate(-rotateX, 0, 0);
+                radmController.Rotate(-rotateX, 0, 0);
                 currentControllerRotationX += rotateX;
                 inputDetected = true;
             }
@@ -534,7 +482,7 @@ namespace WIGUx.Modules.outrunMotionSim
             if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationZ > -controllerrotationLimitZ)
             {
                 float rotateZ = keyboardControllerVelocityZ * Time.deltaTime;
-                outrunController.Rotate(0, 0, rotateZ);
+                radmController.Rotate(0, 0, rotateZ);
                 currentControllerRotationZ -= rotateZ;
                 inputDetected = true;
             }
@@ -542,7 +490,7 @@ namespace WIGUx.Modules.outrunMotionSim
             if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationZ < controllerrotationLimitZ)
             {
                 float rotateZ = keyboardControllerVelocityZ * Time.deltaTime;
-                outrunController.Rotate(0, 0, -rotateZ);
+                radmController.Rotate(0, 0, -rotateZ);
                 currentControllerRotationZ += rotateZ;
                 inputDetected = true;
             }
@@ -710,32 +658,94 @@ namespace WIGUx.Modules.outrunMotionSim
                     inputDetected = true;
                 }
             }
+            // Handle X rotation for aburnerYObject and aburnerControllerX (Right Arrow or primaryThumbstick.x > 0)
+            // Thumbstick direction: right
+            if ((Input.GetKey(KeyCode.RightArrow) || primaryThumbstick.x > 0))
+            {
+                if (currentRotationX < rotationLimitX)
+                {
+                    float rotateX = (Input.GetKey(KeyCode.RightArrow) ? keyboardVelocityX : primaryThumbstick.x * vrVelocity) * Time.deltaTime;
+                    radmXObject.Rotate(-rotateX, 0, 0);
+                    currentRotationX += rotateX;
+                    inputDetected = true;
+                }
+                if (currentControllerRotationX < controllerrotationLimitX)
+                {
+                    float controllerRotateX = (Input.GetKey(KeyCode.RightArrow) ? keyboardControllerVelocityX : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
+                    radmController.Rotate(-controllerRotateX, 0, 0);
+                    currentControllerRotationX += controllerRotateX;
+                    inputDetected = true;
+                }
+            }
+
+            // Handle X rotation for aburnerYObject and aburnerControllerX (Left Arrow or primaryThumbstick.x < 0)
+            // Thumbstick direction: left
+            if ((Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0))
+            {
+                if (currentRotationX > -rotationLimitX)
+                {
+                    float rotateX = (Input.GetKey(KeyCode.LeftArrow) ? keyboardVelocityX : -primaryThumbstick.x * vrVelocity) * Time.deltaTime;
+                    radmXObject.Rotate(rotateX, 0, 0);
+                    currentRotationX -= rotateX;
+                    inputDetected = true;
+                }
+                if (currentControllerRotationX > -controllerrotationLimitX)
+                {
+                    float controllerRotateX = (Input.GetKey(KeyCode.LeftArrow) ? keyboardControllerVelocityX : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
+                    radmController.Rotate(controllerRotateX, 0, 0);
+                    currentControllerRotationX -= controllerRotateX;
+                    inputDetected = true;
+                }
+            }
+
 
             /*
-            // Handle X rotation (Thumbstick up)
-            if (primaryThumbstick.y > 0 && currentRotationX > -rotationLimitX)
+            // Handle X rotation (Thumbstick left)
+            if (primaryThumbstick.x < 0 && currentRotationX < rotationLimitX)
             {
-                float rotateX = primaryThumbstick.y * vrVelocity * Time.deltaTime;
-                outrunYObject.Rotate(rotateX, 0, 0);  // Rotate up
-                currentRotationX -= rotateX;  // Update current rotation (more negative)
+                float rotateX = primaryThumbstick.x * vrVelocity * Time.deltaTime;
+                radmYObject.Rotate(rotateX, 0, 0);
+                currentRotationX -= rotateX; 
                 inputDetected = true;
             }
 
-            // Handle X rotation (Thumbstick down)
-            if (primaryThumbstick.y < 0 && currentRotationX < rotationLimitX)
+            // Handle X rotation (Thumbstick right)
+            if (primaryThumbstick.x > 0 && currentRotationX > -rotationLimitX)
             {
-                float rotateX = primaryThumbstick.y * vrVelocity * Time.deltaTime;
-                outrunYObject.Rotate(rotateX, 0, 0);  // Rotate backward (nose up)
+                float rotateX = primaryThumbstick.x * vrVelocity * Time.deltaTime;
+                radmYObject.Rotate(rotateX, 0, 0);  
                 currentRotationX -= rotateX;
                 inputDetected = true;
             }
-            */
+
+            //HANDLE INGAME CONTROLLER ANIMATION
+
+            // Handle controller rotation
+
+            // Handle X rotation (Thumbstick left)
+            if (primaryThumbstick.x < 0 && currentControllerRotationX < controllerrotationLimitX)
+            {
+                float rotateX = primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
+                radmController.Rotate(rotateX, 0, 0);
+                currentControllerRotationX -= rotateX;
+                inputDetected = true;
+            }
+            // Handle X rotation (Thumbstick right)
+            if (primaryThumbstick.x > 0 && currentControllerRotationX > -controllerrotationLimitX)
+            {
+                float rotateX = primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
+                radmController.Rotate(rotateX, 0, 0);
+                currentControllerRotationX -= rotateX;
+                inputDetected = true;
+            }
+
+            /*
 
             // Handle Y rotation (Thumbstick left)
             if (primaryThumbstick.x > 0 && currentRotationY < rotationLimitY)
             {
                 float rotateY = -primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                outrunYObject.Rotate(0, rotateY, 0);  // Rotate Y to the left
+                radmYObject.Rotate(0, rotateY, 0);  // Rotate Y to the left
                 currentRotationY -= rotateY;  // Update current rotation (more positive)
                 inputDetected = true;
             }
@@ -743,7 +753,7 @@ namespace WIGUx.Modules.outrunMotionSim
             if (primaryThumbstick.x < 0 && currentRotationY > -rotationLimitY)
             {
                 float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                outrunYObject.Rotate(0, -rotateY, 0);  // Rotate Y to the right
+                radmYObject.Rotate(0, -rotateY, 0);  // Rotate Y to the right
                 currentRotationY += rotateY;  // Update current rotation (more negative)
                 inputDetected = true;
             }
@@ -752,7 +762,7 @@ namespace WIGUx.Modules.outrunMotionSim
             if (primaryThumbstick.x > 0 && currentRotationZ > -rotationLimitZ)
             {
                 float rotateZ = -primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                outrunXObject.Rotate(0, 0, -rotateZ);  // Rotate forward
+                radmXObject.Rotate(0, 0, -rotateZ);  // Rotate forward
                 currentRotationZ += rotateZ;  // Update current rotation (more negative)
                 inputDetected = true;
             }
@@ -760,17 +770,16 @@ namespace WIGUx.Modules.outrunMotionSim
             if (primaryThumbstick.x < 0 && currentRotationZ < rotationLimitZ)
             {
                 float rotateZ = -primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                outrunXObject.Rotate(0, 0, -rotateZ);  // Rotate backward
+                radmXObject.Rotate(0, 0, -rotateZ);  // Rotate backward
                 currentRotationZ += rotateZ;  // Update current rotation (more positive)
                 inputDetected = true;
             }
 
-            /*
             // Handle rotation (secondary Thumbstick left)
             if (secondaryThumbstick.x < 0 && currentRotationY < rotationLimitY)
             {
                 float rotateY = -secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                outrunYObject.Rotate(0, -rotateY, 0);  // Rotate Y to the left
+                radmYObject.Rotate(0, -rotateY, 0);  // Rotate Y to the left
                 currentRotationY += rotateY;  // Update current rotation (more positive)
                 inputDetected = true;
             }
@@ -778,66 +787,47 @@ namespace WIGUx.Modules.outrunMotionSim
             if (secondaryThumbstick.x > 0 && currentRotationY > -rotationLimitY)
             {
                 float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                outrunYObject.Rotate(0, rotateY, 0);  // Rotate Y to the right
+                radmYObject.Rotate(0, rotateY, 0);  // Rotate Y to the right
                 currentRotationY -= rotateY;  // Update current rotation (more negative)
                 inputDetected = true;
             }
+
             */
+
             //END OF CONTROLLER MAP
-
-            //HANDLE INGAME CONTROLLER ANIMATION
-
-            // Handle controller rotation (Thumbstick right)
-
-            // Handle Y rotation (Thumbstick left)
-            if (primaryThumbstick.x < 0 && currentControllerRotationY < controllerrotationLimitY)
-            {
-                float rotateY = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                outrunController.Rotate(0, -rotateY, 0);  // Rotate Y to the left
-                currentControllerRotationY += rotateY;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-            // Handle Y rotation (Thumbstick right)
-            if (primaryThumbstick.x > 0 && currentControllerRotationY > -controllerrotationLimitY)
-            {
-                float rotateY = primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                outrunController.Rotate(0, rotateY, 0);  // Rotate Y to the right
-                currentControllerRotationY -= rotateY;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
 
             /*
              // Handle controller rotation  (Thumbstick up)
-            if (primaryThumbstick.y < 0 && currentControllerRotationX < controllerrotationLimitX)
+            if (primaryThumbstick.y < 0 && currentControllerRotationY < controllerrotationLimitY)
             {
-                float rotateX = primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
-                outrunController.Rotate(rotateX, 0, 0);  // Rotate left (negative direction)
-                currentControllerRotationX -= rotateX;  // Update current rotation (more negative)
+                float rotateY = primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
+                radmController.Rotate(0, rotateY, 0); 
+                currentControllerRotationY -= rotateT;  
                 inputDetected = true;
             }
             // Handle controller rotation  (Thumbstick down)
-            if (primaryThumbstick.y > 0 && currentControllerRotationX > -controllerrotationLimitX)
+            if (primaryThumbstick.y > 0 && currentControllerRotationY > -controllerrotationLimitY)
             {
-                float rotateX = primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
-                outrunController.Rotate(rotateX, 0, 0);  // Rotate right (positive direction)
-                currentControllerRotationX -= rotateX;  // Update current rotation (more positive)
+                float rotateY = primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
+                radmController.Rotate(0, rotateY, 0); 
+                currentControllerRotationY -= rotateY; 
                 inputDetected = true;
             }
 
-            // Handle controller rotation (Thumbstick left)
-            if (primaryThumbstick.x < 0 && currentControllerRotationZ > -controllerrotationLimitZ)
+             // Handle controller rotation  (Thumbstick up)
+            if (primaryThumbstick.y < 0 && currentControllerRotationZ > -controllerrotationLimitZ)
             {
-                float rotateZ = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                outrunController.Rotate(0, 0, rotateZ);  // Rotate forward
-                currentControllerRotationZ -= rotateZ;  // Update current rotation (more negative)
+                float rotateZ = -primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
+                radmController.Rotate(0, 0, rotateZ); 
+                currentControllerRotationZ -= rotateZ; 
                 inputDetected = true;
             }
-            // Handle controller rotation (Thumbstick right)
-            if (primaryThumbstick.x > 0 && currentControllerRotationZ < controllerrotationLimitZ)
+            // Handle controller rotation  (Thumbstick down)
+            if (primaryThumbstick.y > 0 && currentControllerRotationZ < controllerrotationLimitZ)
             {
-                float rotateZ = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                outrunController.Rotate(0, 0, rotateZ);  // Rotate backward
-                currentControllerRotationZ -= rotateZ;  // Update current rotation (more positive)
+                float rotateZ = -primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
+                radmController.Rotate(0, 0, rotateZ);  
+                currentControllerRotationZ -= rotateZ; 
                 inputDetected = true;
             }
             */
@@ -865,13 +855,13 @@ namespace WIGUx.Modules.outrunMotionSim
             if (currentRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, currentRotationX);
-                outrunYObject.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
+                radmYObject.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentRotationX -= unrotateX;    // Reducing the positive rotation
             }
             else if (currentRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, -currentRotationX);
-                outrunYObject.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
+                radmYObject.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentRotationX += unrotateX;    // Reducing the positive rotation
             }
 
@@ -879,13 +869,13 @@ namespace WIGUx.Modules.outrunMotionSim
             if (currentRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, currentRotationY);
-                outrunZObject.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
+                radmZObject.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
                 currentRotationY -= unrotateY;    // Reducing the positive rotation
             }
             else if (currentRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, -currentRotationY);
-                outrunZObject.Rotate(0, -unrotateY, 0);   // Rotating to reduce the rotation
+                radmZObject.Rotate(0, -unrotateY, 0);   // Rotating to reduce the rotation
                 currentRotationY += unrotateY;    // Reducing the positive rotation
             }
 
@@ -893,13 +883,13 @@ namespace WIGUx.Modules.outrunMotionSim
             if (currentRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, currentRotationZ);
-                outrunXObject.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
+                radmXObject.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
                 currentRotationZ -= unrotateZ;    // Reducing the positive rotation
             }
             else if (currentRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, -currentRotationZ);
-                outrunXObject.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
+                radmXObject.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
                 currentRotationZ += unrotateZ;    // Reducing the positive rotation
             }
 
@@ -908,13 +898,13 @@ namespace WIGUx.Modules.outrunMotionSim
             if (currentControllerRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, currentControllerRotationY);
-                outrunController.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
+                radmController.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
                 currentControllerRotationY -= unrotateY;    // Reducing the positive rotation
             }
             else if (currentControllerRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, -currentControllerRotationY);
-                outrunController.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
+                radmController.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
                 currentControllerRotationY += unrotateY;    // Reducing the negative rotation
             }
 
@@ -922,13 +912,13 @@ namespace WIGUx.Modules.outrunMotionSim
             if (currentControllerRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, currentControllerRotationX);
-                outrunController.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
+                radmController.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentControllerRotationX -= unrotateX;    // Reducing the positive rotation
             }
             else if (currentControllerRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, -currentControllerRotationX);
-                outrunController.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
+                radmController.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentControllerRotationX += unrotateX;    // Reducing the positive rotation
             }
 
@@ -936,13 +926,13 @@ namespace WIGUx.Modules.outrunMotionSim
             if (currentControllerRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, currentControllerRotationZ);
-                outrunController.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
+                radmController.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
                 currentControllerRotationZ -= unrotateZ;    // Reducing the positive rotation
             }
             else if (currentControllerRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, -currentControllerRotationZ);
-                outrunController.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
+                radmController.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
                 currentControllerRotationZ += unrotateZ;    // Reducing the positive rotation
             }
         }
