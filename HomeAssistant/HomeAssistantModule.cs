@@ -5,7 +5,7 @@ using WIGU;
 
 namespace WIGUx.Modules.HomeAssistant
 {
-    public class HomeAssistantModule : WIGUModule
+    public class HomeAssistantModule : WiguModule
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 

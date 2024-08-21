@@ -2,7 +2,7 @@
 
 namespace WIGU.Modules
 {
-    public class SampleModule : WIGUModule
+    public class SampleModule : WiguModule
     {
         static ILogger logger = ServiceProvider.Instance.GetService<ILogger>();
         /// <summary>

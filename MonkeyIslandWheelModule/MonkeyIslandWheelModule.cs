@@ -2,7 +2,7 @@
 
 namespace WIGU.Modules.MonkeyIslandWheel
 {
-    public class MonkeyIslandWheelModule : WIGUModule
+    public class MonkeyIslandWheelModule : WiguModule
     {
         private IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
