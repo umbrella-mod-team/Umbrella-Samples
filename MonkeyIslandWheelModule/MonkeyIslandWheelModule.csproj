@@ -4,6 +4,6 @@
    <OutputType>Library</OutputType>
       <AssemblyName>MonkeyIslandWheelModule</AssemblyName>
       <TargetFramework>netstandard2.0</TargetFramework>
-      <RootNamespace>WIGUx.Modules</RootNamespace>
+      <RootNamespace>WIGU.Modules</RootNamespace>
   </PropertyGroup>
 </Project>
