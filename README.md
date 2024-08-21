@@ -54,8 +54,9 @@ Now your modules are in the expected folder but you need associate the UGC with 
 4. Select your UGC and click 'Add module to UGC' button and select the Controller created
 5. Click save and we are ready to go!
 
-## Upate in your code
+## Upating in your module code
 
-Now we have everything configured, if we want to update our module/controller code with new functionality we only need to build the project, this will override automatially the old assembly in EMUVR and next step will be launch emuvr for testing
+Now we have everything configured, if we want to update our module/controller code with new functionality we only need to build the project.
+This action will override automatially the old assembly in EMUVR and we only need execute EmuVR again for testing it.
 
 
