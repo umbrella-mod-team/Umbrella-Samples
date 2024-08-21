@@ -35,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "r360MotionSimModule", "r360
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sharrierMotionSimModule", "sharrierMotionSimModule\sharrierMotionSimModule.csproj", "{357145EE-B4B6-407E-A9FC-15C2C7957BF5}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DragonBallModule", "DragonBallModule\DragonBallModule.csproj", "{968F06BC-DF03-4C28-8611-3CEFCD4E0AB9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +95,10 @@ Global
 		{357145EE-B4B6-407E-A9FC-15C2C7957BF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{357145EE-B4B6-407E-A9FC-15C2C7957BF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{357145EE-B4B6-407E-A9FC-15C2C7957BF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{968F06BC-DF03-4C28-8611-3CEFCD4E0AB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{968F06BC-DF03-4C28-8611-3CEFCD4E0AB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{968F06BC-DF03-4C28-8611-3CEFCD4E0AB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{968F06BC-DF03-4C28-8611-3CEFCD4E0AB9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
