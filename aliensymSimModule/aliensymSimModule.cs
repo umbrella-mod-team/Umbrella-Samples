@@ -309,6 +309,8 @@ namespace WIGUx.Modules.aliensymSim
                     logger.Error($"AlienSymLights[{i}] is not assigned!");
                 }
             }
+            strobeCoroutine = StartCoroutine(FlashLights());
+            areStrobesOn = !areStrobesOn;
         }
         /*
         // Find controllerX for player 1
@@ -638,7 +640,12 @@ namespace WIGUx.Modules.aliensymSim
 
         void StartFocusMode()
         {
+            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
+            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
+            logger.Info("Compatible Rom Dectected, Reach the Exit!...");
             logger.Info("Alien Syndrome Module starting...");
+            logger.Info("Watch Out!!..");
+
 
             //Buttons
 

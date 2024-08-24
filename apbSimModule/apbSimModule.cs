@@ -605,7 +605,11 @@ namespace WIGUx.Modules.apbSim
         }
         void StartFocusMode()
         {
-            logger.Info("Module starting...");
+            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
+            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
+            logger.Info("Compatible Rom Dectected, You are on Duty!...");
+            logger.Info("APB Module starting...");
+            logger.Info("Grab your Doughnuts!!..");
 
             // Reset controllers to initial positions and rotations
             if (p1controllerX != null)

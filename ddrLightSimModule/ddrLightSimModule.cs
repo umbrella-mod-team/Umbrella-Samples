@@ -247,7 +247,7 @@ namespace WIGUx.Modules.ddrLightSim
                 // Handle Y button
                 if (XInput.GetDown(XInput.Button.Y))
                 {
-                    logger.Info("XInput Button Y pressed");
+                 //   logger.Info("XInput Button Y pressed");
                     ToggleEmissive(ddr3EmissiveRenderer, true);
                     ToggleEmissive(ddr7EmissiveRenderer, true);
                     StartCoroutine(RampLightIntensity(ddr2Light));
@@ -255,7 +255,7 @@ namespace WIGUx.Modules.ddrLightSim
 
                 if (XInput.GetUp(XInput.Button.Y))
                 {
-                    logger.Info("XInput Button Y released");
+                 //   logger.Info("XInput Button Y released");
                     ToggleEmissive(ddr3EmissiveRenderer, false);
                     ToggleEmissive(ddr7EmissiveRenderer, false);
                 }
@@ -271,7 +271,7 @@ namespace WIGUx.Modules.ddrLightSim
 
                 if (XInput.GetUp(XInput.Button.A))
                 {
-                    logger.Info("XInput Button A released");
+                 //   logger.Info("XInput Button A released");
                     ToggleEmissive(ddr4EmissiveRenderer, false);
                     ToggleEmissive(ddr8EmissiveRenderer, false);
                 }
@@ -279,7 +279,7 @@ namespace WIGUx.Modules.ddrLightSim
                 // Handle B button
                 if (XInput.GetDown(XInput.Button.B))
                 {
-                    logger.Info("XInput Button B pressed");
+                 //   logger.Info("XInput Button B pressed");
                     ToggleEmissive(ddr2EmissiveRenderer, true);
                     ToggleEmissive(ddr6EmissiveRenderer, true);
                     StartCoroutine(RampLightIntensity(ddr3Light));
@@ -295,7 +295,7 @@ namespace WIGUx.Modules.ddrLightSim
                 // Handle X button
                 if (XInput.GetDown(XInput.Button.X))
                 {
-                    logger.Info("XInput Button X pressed");
+                 //   logger.Info("XInput Button X pressed");
                     ToggleEmissive(ddr1EmissiveRenderer, true);
                     ToggleEmissive(ddr5EmissiveRenderer, true);
                     StartCoroutine(RampLightIntensity(ddr1Light));
@@ -303,7 +303,7 @@ namespace WIGUx.Modules.ddrLightSim
 
                 if (XInput.GetUp(XInput.Button.X))
                 {
-                    logger.Info("XInput Button X released");
+                 //   logger.Info("XInput Button X released");
                     ToggleEmissive(ddr1EmissiveRenderer, false);
                     ToggleEmissive(ddr5EmissiveRenderer, false);
                 }

@@ -263,11 +263,11 @@ namespace WIGUx.Modules.tapperMotionSim
                 inputDetected = true;
 
                 // Info logs to monitor the values
-                logger.Info("tapVelocity: " + tapVelocity);
-                logger.Info("Time.deltaTime: " + Time.deltaTime);
-                logger.Info("p1tapRotateZ: " + p1tapRotateZ);
-                logger.Info("p1currenttapRotationZ: " + p1currenttapRotationZ);
-                logger.Info("p1taprotationLimitZ: " + p1taprotationLimitZ);
+         //       logger.Info("tapVelocity: " + tapVelocity);
+       //         logger.Info("Time.deltaTime: " + Time.deltaTime);
+        //        logger.Info("p1tapRotateZ: " + p1tapRotateZ);
+      //          logger.Info("p1currenttapRotationZ: " + p1currenttapRotationZ);
+    //            logger.Info("p1taprotationLimitZ: " + p1taprotationLimitZ);
             }
 
 
