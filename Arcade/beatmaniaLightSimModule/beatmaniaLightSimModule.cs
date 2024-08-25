@@ -23,7 +23,8 @@ namespace WIGUx.Modules.beatmaniaLightSim
         private float CurrentBeatIntensity = 0f;
         private Coroutine beatFlashCoroutine;
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private readonly string[] compatibleGames = { "aliensym" };
+        private readonly string[] compatibleGames = {"bm1stmix", "bm2ndmix", "bm3", "bm36th", "bm37th", "bm3core", "bm3final", "bm3rdmix", "bm4thmix", "bm5thmix", "bm6thmix", "bm7thmix", "bmaster", "bmboxing", "bmbugs", "bmcbowl", "bmclubmx", "bmcompm2", "bmcompmx", "bmcorerm", "bmcpokr", "bmdct", "bmfinal", "bmiidx", "bmiidx2", "bmiidx3", "bmiidx4", "bmiidx5", "bmiidx6", "bmiidx7", "bmiidx8", "bmiidxc", "bmiidxc2", "bmiidxs", "bmjr", "bml3", "bml3kanji", "bml3mp1802", "bml3mp1805", "bmoonii", "bmsafari", "bmsoccer", "bmx", "bmxstunts"
+};
 
         void Start()
         {

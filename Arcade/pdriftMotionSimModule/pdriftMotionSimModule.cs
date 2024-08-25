@@ -105,7 +105,7 @@ namespace WIGUx.Modules.pdriftMotionSim
         public string JumpButton = "Jump"; // Name of the fire button 
         // public float lightDuration = 0.35f; // Duration during which the lights will be on
 
-        private readonly string[] compatibleGames = { "pdrift.zip" };
+        private readonly string[] compatibleGames = { "pdrift" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -157,7 +157,7 @@ namespace WIGUx.Modules.pdriftMotionSim
                         }
                         else
                         {
-                            logger.Error("pdriftController object not found under pdriftZ!");
+                         //   logger.Error("pdriftController object not found under pdriftZ!");
                         }
 
                         // Find cockpit camera under pdriftZ

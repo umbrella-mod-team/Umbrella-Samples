@@ -98,7 +98,7 @@ namespace WIGUx.Modules.tbladeMotionSim
         private bool inFocusMode = false;  // Flag to track focus mode state
         private Light[] lights;
 
-        private readonly string[] compatibleGames = { "thndrbld.zip" };
+        private readonly string[] compatibleGames = { "thndrbld" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 

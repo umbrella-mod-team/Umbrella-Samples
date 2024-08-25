@@ -97,7 +97,7 @@ namespace WIGUx.Modules.sharrierMotionSim
 
         private bool inFocusMode = false;  // Flag to track focus mode state
 
-        private readonly string[] compatibleGames = { "sharrier.zip", "sharrierdx.zip" };
+        private readonly string[] compatibleGames = { "sharrier", "sharrierdx" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 

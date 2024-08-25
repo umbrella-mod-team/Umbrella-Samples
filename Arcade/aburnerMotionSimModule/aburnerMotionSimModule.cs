@@ -98,7 +98,7 @@ namespace WIGUx.Modules.aburnerMotionSim
 
         private bool inFocusMode = false;  // Flag to track focus mode state
 
-        private readonly string[] compatibleGames = { "aburner2.zip", "aburner.zip" };
+        private readonly string[] compatibleGames = { "aburner2", "aburner" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 

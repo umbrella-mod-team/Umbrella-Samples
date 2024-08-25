@@ -246,7 +246,8 @@ namespace WIGUx.Modules.aliensymSim
         public string StartButton = "Start"; // Name of the fire button 
         private Light[] lights;
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private readonly string[] compatibleGames = { "aliensym" };
+
+        private readonly string[] compatibleGames = { "aliensyn" };
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
                                                                                                               // Public property to access the Game instance
         void Start()
@@ -309,8 +310,6 @@ namespace WIGUx.Modules.aliensymSim
                     logger.Error($"AlienSymLights[{i}] is not assigned!");
                 }
             }
-            strobeCoroutine = StartCoroutine(FlashLights());
-            areStrobesOn = !areStrobesOn;
         }
         /*
         // Find controllerX for player 1
@@ -586,25 +585,10 @@ namespace WIGUx.Modules.aliensymSim
 
             bool inputDetected = false;  // Initialize at the beginning of the Update method
 
-            // Check if the "L" key is pressed
             if (Input.GetKeyDown(KeyCode.L))
             {
-                if (areStrobesOn)
-                {
-                    // Strobe lights are currently on, stop the coroutine to turn them off
-                    logger.Info("Stopping lights");
-                    StopCoroutine(strobeCoroutine);
-                    strobeCoroutine = null;
-                }
-                else
-                {
-                    // Strobe lights are currently off, start the coroutine to flash them
-                    logger.Info("Starting strobes");
-                    strobeCoroutine = StartCoroutine(FlashLights());
-                }
-
-                // Toggle the strobe state
-                areStrobesOn = !areStrobesOn;
+                ToggleStrobes();
+                StartFocusMode();
             }
 
             if (GameSystem.ControlledSystem != null && !inFocusMode)
@@ -640,12 +624,12 @@ namespace WIGUx.Modules.aliensymSim
 
         void StartFocusMode()
         {
+            StartStrobes();
             string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
             logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
             logger.Info("Compatible Rom Dectected, Reach the Exit!...");
             logger.Info("Alien Syndrome Module starting...");
             logger.Info("Watch Out!!..");
-
 
             //Buttons
 
@@ -760,13 +744,13 @@ namespace WIGUx.Modules.aliensymSim
             p2currentControllerRotationX = 0f;
             p2currentControllerRotationY = 0f;
             p2currentControllerRotationZ = 0f;
-
             inFocusMode = true;  // Set focus mode flag
         }
 
         void EndFocusMode()
         {
             logger.Info("Exiting Focus Mode...");
+            StopStrobes(); 
             //player 1
             p1currentControllerRotationX = 0f;
             p1currentControllerRotationY = 0f;
@@ -868,7 +852,7 @@ namespace WIGUx.Modules.aliensymSim
                 primaryThumbstick = leftController.GetAxis();
                 secondaryThumbstick = rightController.GetAxis();
             }
-
+            /*
             // Ximput controller input
             if (XInput.IsConnected)
             {
@@ -1024,8 +1008,6 @@ namespace WIGUx.Modules.aliensymSim
                 p2currentControllerRotationZ -= p2controllerRotateZ;
                 inputDetected = true;
             }
-
-            /*
             // Thumbstick direction: up 
             if (secondaryThumbstick.y > 0 && p2currentControllerRotationY < p2controllerrotationLimitY)
             {
@@ -1049,7 +1031,7 @@ namespace WIGUx.Modules.aliensymSim
             {
                 logger.Info("OVR Primary index trigger pressed");
             }
-            */
+
 
             // p1 start
 
@@ -1211,9 +1193,6 @@ namespace WIGUx.Modules.aliensymSim
             {
                 inputDetected = true;
             }
-
-
-            /*
             //Back
             // Check if the Back button is pressed
             if (XInput.GetButtonDown("Back") || Input.GetKeyDown(KeyCode.JoystickButton6))
@@ -1375,6 +1354,39 @@ namespace WIGUx.Modules.aliensymSim
             // Implement VR secondary thumbstick input handling here
             return Vector2.zero;
         }
+
+        void StartStrobes()
+        {
+            if (!areStrobesOn)
+            {
+                logger.Info("Starting strobes");
+                strobeCoroutine = StartCoroutine(FlashLights());
+                areStrobesOn = true;
+            }
+        }
+
+        void StopStrobes()
+        {
+            if (areStrobesOn)
+            {
+                logger.Info("Stopping lights");
+                StopCoroutine(strobeCoroutine);
+                areStrobesOn = false;
+            }
+        }
+
+        void ToggleStrobes()
+        {
+            if (areStrobesOn)
+            {
+                StopStrobes();
+            }
+            else
+            {
+                StartStrobes();
+            }
+        }
+
 
         // Method to toggle the lights
         void ToggleLights(bool isActive)

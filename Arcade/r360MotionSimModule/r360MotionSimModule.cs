@@ -1045,7 +1045,7 @@ namespace WIGUx.Modules.r360MotionSim
             {
                 if (emissiveObjects[i] == null)
                 {
-                    logger.Error($"{arrayName} object at index {i} not found under r360Z.");
+               //    logger.Error($"{arrayName} object at index {i} not found.");
                 }
             }
         }

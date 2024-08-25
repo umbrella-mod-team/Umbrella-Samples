@@ -98,7 +98,7 @@ namespace WIGUx.Modules.metalhawkMotionSim
         private bool inFocusMode = false;  // Flag to track focus mode state
         private Light[] lights;
 
-        private readonly string[] compatibleGames = { "metlhawk.zip" };
+        private readonly string[] compatibleGames = { "metlhawk" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -156,7 +156,7 @@ namespace WIGUx.Modules.metalhawkMotionSim
                         }
                         else
                         {
-                            logger.Debug("fireemissive object not found under metalhawkZ.");
+                      //      logger.Debug("fireemissive object not found under metalhawkZ.");
                         }
 
                         // Find fireemissive object under sharrierX
@@ -177,7 +177,7 @@ namespace WIGUx.Modules.metalhawkMotionSim
                         }
                         else
                         {
-                            logger.Debug("fireemissive2 object not found under metalhawkZ.");
+                        //    logger.Debug("fireemissive2 object not found under metalhawkZ.");
                         }
 
 

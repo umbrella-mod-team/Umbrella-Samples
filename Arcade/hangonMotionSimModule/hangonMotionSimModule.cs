@@ -72,7 +72,7 @@ namespace WIGUx.Modules.hangonMotionSim
 
         private bool inFocusMode = false;  // Flag to track focus mode state
 
-        private readonly string[] compatibleGames = { "hangon.zip", "hangonjr.zip", "shangon.zip" };
+        private readonly string[] compatibleGames = { "hangon", "hangonjr", "shangon" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 

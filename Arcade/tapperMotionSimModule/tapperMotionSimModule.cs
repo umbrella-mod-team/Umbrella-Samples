@@ -64,10 +64,10 @@ namespace WIGUx.Modules.tapperMotionSim
         public string fire3Button = "Fire3"; // Name of the fire button 
         public string JumpButton = "Jump"; // Name of the fire button 
         public string StartButton = "Start"; // Name of the fire button 
-        public float lightDuration = 0.35f; // Duration during which the lights will be on
+       // public float lightDuration = 0.35f; // Duration during which the lights will be on
 
-        private Light[] lights;
-        private readonly string[] compatibleGames = { "tapper.zip" };
+        // private Light[] lights;
+        private readonly string[] compatibleGames = { "tapper.zip", "tapper.7z" };
 
         private bool inFocusMode = false;  // Flag to track focus mode state
 
