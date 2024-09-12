@@ -4,13 +4,12 @@ namespace WIGU.Modules
 {
     public class SampleModule : WiguModule
     {
-        static ILogger logger = ServiceProvider.Instance.GetService<ILogger>();
         /// <summary>
         /// Event executed on WIGU initialization.
         /// </summary>
         public override void OnInitialize()
         {
-            logger.Log($"{GetType().Assembly.FullName} OnInitialize");
+            Debug.Log($"{GetType().Assembly.FullName} OnInitialize");
         }
 
         /// <summary>
@@ -19,7 +18,7 @@ namespace WIGU.Modules
         /// <param name="index">Level's index loaded</param>
         public override void OnLevelLoaded(int index)
         {
-            logger.Log($"{GetType().Assembly.FullName} OnLevelLoaded: {index}");
+            Debug.Log($"{GetType().Assembly.FullName} OnLevelLoaded: {index}");
         }
 
         /// <summary>
@@ -29,7 +28,7 @@ namespace WIGU.Modules
         /// <param name="gameObject2">GameObject loaded.</param>
         public override void OnUgcLoaded(AssetBundle assetBundle, GameObject gameObject2)
         {
-            logger.Log($"{GetType().Assembly.FullName} OnUgcLoaded: {gameObject2.name}");
+            Debug.Log($"{GetType().Assembly.FullName} OnUgcLoaded: {gameObject2.name}");
         }
     }
 }

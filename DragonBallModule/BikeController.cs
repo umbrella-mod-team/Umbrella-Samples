@@ -41,7 +41,7 @@ namespace WIGU.Modules.DragonBall
         // Start is called before the first frame update
         void Start()
         {
-            LogDebug(".Start");
+            Debug.Log(".Start");
 
             engineSound = GetComponent<AudioSource>();
             AssertIsNotNull(engineSound, nameof(engineSound));

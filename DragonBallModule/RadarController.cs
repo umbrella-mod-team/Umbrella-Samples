@@ -41,12 +41,12 @@ namespace WIGU.Modules.DragonBall
         {
             try
             {
-                LogDebug(".Initialize isInitialized:" + isInitialized);
+                Debug.Log(".Initialize isInitialized:" + isInitialized);
 
                 if (isInitialized)
                     return;
 
-                LogDebug("RadarController isInitialized finished");
+                Debug.Log("RadarController isInitialized finished");
 
                 // Asegúrate de que el audioSource no esté reproduciendo nada al inicio
                 audioSource = GetComponent<AudioSource>();
@@ -72,10 +72,10 @@ namespace WIGU.Modules.DragonBall
             }
             catch (Exception ex)
             {
-                LogError(ex.ToString());
+                Debug.LogError(ex.ToString());
             }
 
-            LogDebug("RadarController initialization finished");
+            Debug.Log("RadarController initialization finished");
         }
 
         private void UpdateCirclesPosition()
@@ -94,21 +94,21 @@ namespace WIGU.Modules.DragonBall
             var elem = balls.FirstOrDefault(s => s.source == transform);
             if (elem != default && elem.source != null)
             {
-                LogDebug($"Follow: found destroying... {balls.Count}");
+                Debug.Log($"Follow: found destroying... {balls.Count}");
                 GameObject.DestroyImmediate(elem.circle);
                 this.balls.Remove(elem);
-                LogDebug($"Follow: destroyed... {balls.Count}");
+                Debug.Log($"Follow: destroyed... {balls.Count}");
             }
             else
             {
-                LogDebug($"Follow: adding..{balls.Count}");
+                Debug.Log($"Follow: adding..{balls.Count}");
                 var triangle = GameObject.Instantiate(radarCircle, gameObject.transform);
                 triangle.localPosition = radarCircle.localPosition;
                 triangle.localRotation = radarCircle.localRotation;
                 triangle.localScale = radarCircle.localScale;
                 triangle.gameObject.SetActive(true);
                 this.balls.Add((transform, triangle));
-                LogDebug($"Follow: added..{balls.Count}");
+                Debug.Log($"Follow: added..{balls.Count}");
             }
         }
 
@@ -124,9 +124,8 @@ namespace WIGU.Modules.DragonBall
             if (!isInitialized)
                 return;
 
-            //if (!HandGrabber.IsGrabbed(gameObject))
-            //    return;
-           
+            if (!HandGrabber.IsGrabbed(gameObject))
+                return;
 
             UpdateCirclesPosition();
 
@@ -143,11 +142,11 @@ namespace WIGU.Modules.DragonBall
 
             var addItem = Input.GetKeyDown(KeyCode.K) || InputManager.GetButtonDown(Button.ActionLeft);
             if (addItem) {
-                LogDebug("trying to follow object: SelectedObject:" + (SelectableManager.SelectedObject?.name));
+                Debug.Log("trying to follow object: SelectedObject:" + (SelectableManager.SelectedObject?.name));
                 if (SelectableManager.SelectedObject)
                     Follow(SelectableManager.SelectedObject.transform);
                 else
-                    LogDebug("no object to select");
+                    Debug.Log("no object to select");
             }
 
             var isZoomKeyPressed = Input.GetKeyDown(KeyCode.Space) || InputManager.GetButton(Button.ActionRight);
@@ -163,7 +162,7 @@ namespace WIGU.Modules.DragonBall
                 return;
 
             // default ball detection only if there's any active ball
-            var allBallsDisabled = balls.All(s => !s.circle.gameObject.active);
+            var allBallsDisabled = balls.All(s => !s.circle.gameObject.activeSelf);
             if (allBallsDisabled)
                 return;
 
@@ -183,7 +182,7 @@ namespace WIGU.Modules.DragonBall
 
             var differenceX = System.Math.Max(x, radarTriangle.localPosition.x) - System.Math.Min(x, radarTriangle.localPosition.x);
             var differenceY = System.Math.Max(y, radarTriangle.localPosition.y) - System.Math.Min(y, radarTriangle.localPosition.y);
-            LogDebug($"cube:{cube.gameObject.name} circle:{circle.gameObject.name} differenceX:{differenceX} differenceY:{differenceY}");
+            Debug.Log($"cube:{cube.gameObject.name} circle:{circle.gameObject.name} differenceX:{differenceX} differenceY:{differenceY}");
 
             var minValue = System.Math.Max(differenceX, differenceY);
             if (minValue < distance.mid)

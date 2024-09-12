@@ -3,8 +3,6 @@ namespace WIGU.Modules.DragonBall
 {
     public class RadarButtonController : MonoBehaviour
     {
-        private static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
-
         private Vector3 originalPosition; // La posición original del objeto
         private Vector3 pressedPosition; // La posición cuando el botón está presionado
         private AudioSource audioSource; // El componente de AudioSource para reproducir el sonido
@@ -23,7 +21,7 @@ namespace WIGU.Modules.DragonBall
             audioSource = GetComponent<AudioSource>();
             if (audioSource == null)
             {
-                logger.Error("No se encontró un AudioSource en el objeto.");
+                Debug.LogError("No se encontró un AudioSource en el objeto.");
             }
 
             // Iniciar en la posición original
@@ -55,10 +53,7 @@ namespace WIGU.Modules.DragonBall
                 transform.localPosition = pressedPosition;
 
                 // Reproducir el sonido
-                if (audioSource != null)
-                {
-                    audioSource.Play();
-                }
+                audioSource?.Play();
 
                 // Establecer el estado como presionado
                 IsPlaying = true;

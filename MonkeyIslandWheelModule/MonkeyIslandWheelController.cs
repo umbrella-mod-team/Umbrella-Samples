@@ -5,15 +5,13 @@ namespace WIGU.Modules.MonkeyIslandWheel
 {
     public class MonkeyIslandWheelController : MonoBehaviour
     {
-        private IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
-
         private readonly float velocity = 1.5f;
         private Transform childLayer;
 
         void Start()
         {
             childLayer = transform.Find("Front");
-            logger.Debug($"{typeof(MonkeyIslandWheelController)}.Start");
+            Debug.Log($"{GetType().Name}.Start");
         }
 
         void Update()

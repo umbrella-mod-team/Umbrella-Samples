@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 
 namespace WIGU.Modules.Texture
@@ -9,35 +8,33 @@ namespace WIGU.Modules.Texture
 
     public class MultipleTextureLoaderController : MonoBehaviour
     {
-        IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
-
         Material Material;
         int index = 0;
         string[] textures = new string[0];
 
         void Start ()
         {
-            logger.Info("TextureLoaderController> Start");
+            Debug.Log("TextureLoaderController> Start");
 
             var meshrenderer = GetComponent<MeshRenderer>();
             if (meshrenderer == null)
             {
-                logger.Info("TextureLoaderController> Mesh Renderer is null");
+                Debug.Log("TextureLoaderController> Mesh Renderer is null");
                 return;
             }
 
             var renderer = meshrenderer.GetComponent<Renderer>();
             if (renderer == null)
             {
-                logger.Info("TextureLoaderController> Renderer is null TextureLoaderController");
+                Debug.Log("TextureLoaderController> Renderer is null TextureLoaderController");
                 return;
             }
 
-            logger.Info($"TextureLoaderController> Listing materials:");
+            Debug.Log ($"TextureLoaderController> Listing materials:");
             // first we associate 
             foreach (Material mat in renderer.materials)
             {
-                logger.Info($"TextureLoaderController> {mat.name}");
+                Debug.Log($"TextureLoaderController> {mat.name}");
                 if (Material == null)
                 {
                     if (mat.name.StartsWith("DefaultMaterial"))
@@ -47,15 +44,15 @@ namespace WIGU.Modules.Texture
                 }
             }
 
-            logger.Info($"TextureLoaderController> MainCover exists {Material != null}");
+            Debug.Log($"TextureLoaderController> MainCover exists {Material != null}");
 
             // read all the textures
             var name = gameObject.name.Substring("ugc_".Length).Replace("(Clone)", "");
             var path = Path.Combine(WIGU.EmuVrDirectoryPath, "Custom", "Multitexture", name);
-            logger.Info($"TextureLoaderController> Path:  {path}");
+            Debug.Log($"TextureLoaderController> Path:  {path}");
 
             textures = Directory.GetFiles(path, "*.jpg");
-            logger.Info("TextureLoaderController> " + path + " total:" + textures.Length);
+            Debug.Log("TextureLoaderController> " + path + " total:" + textures.Length);
             Print();
 
             StartCoroutine(ChangeTexture(textures[index]));
@@ -85,7 +82,7 @@ namespace WIGU.Modules.Texture
 
         private void Print()
         {
-            logger.Info($"TextureLoaderController> Index {index}/{textures.Length}");
+            Debug.Log($"TextureLoaderController> Index {index}/{textures.Length}");
         }
 
         //public override void OnLoadJson(JsonObject json)
