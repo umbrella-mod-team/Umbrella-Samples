@@ -458,7 +458,7 @@ namespace WIGUx.Modules.r360MotionSim
         void HandleKeyboardInput(ref bool inputDetected)
         {
             if (!inFocusMode) return;
-            /*
+
             // Handle keyboard input for pitch and roll
             if (Input.GetKey(KeyCode.DownArrow) && currentRotationX > -rotationLimitX)
             {
@@ -508,10 +508,9 @@ namespace WIGUx.Modules.r360MotionSim
                 inputDetected = true;
             }
             */
-            /*
             // Stick Rotations 
             // Stick Y Rotation
-            if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationY > -controllerrotationLimitY)
+            if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationY > -controllerrotationLimitY)
             {
                 float rotateY = keyboardControllerVelocityY * Time.deltaTime;
                 r360ControllerY.Rotate(0, rotateY, 0);
@@ -519,7 +518,7 @@ namespace WIGUx.Modules.r360MotionSim
                 inputDetected = true;
             }
 
-            if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationY < controllerrotationLimitY)
+            if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationY < controllerrotationLimitY)
             {
                 float rotateY = keyboardControllerVelocityY * Time.deltaTime;
                 r360ControllerY.Rotate(0, -rotateY, 0);
@@ -529,7 +528,7 @@ namespace WIGUx.Modules.r360MotionSim
 
 
             // Stick X Rotation
-            if (Input.GetKey(KeyCode.UpArrow) && currentControllerRotationX > -controllerrotationLimitX)
+            if (Input.GetKey(KeyCode.DownArrow) && currentControllerRotationX > -controllerrotationLimitX)
             {
                 float rotateX = keyboardControllerVelocityX * Time.deltaTime;
                 r360ControllerZ.Rotate(rotateX, 0, 0);
@@ -537,7 +536,7 @@ namespace WIGUx.Modules.r360MotionSim
                 inputDetected = true;
             }
 
-            if (Input.GetKey(KeyCode.DownArrow) && currentControllerRotationX < controllerrotationLimitX)
+            if (Input.GetKey(KeyCode.UpArrow) && currentControllerRotationX < controllerrotationLimitX)
             {
                 float rotateX = keyboardControllerVelocityX * Time.deltaTime;
                 r360ControllerZ.Rotate(-rotateX, 0, 0);

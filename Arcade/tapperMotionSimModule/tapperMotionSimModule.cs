@@ -28,30 +28,30 @@ namespace WIGUx.Modules.tapperMotionSim
 
         //p1 sticks
 
-        private float p1controllerrotationLimitX = 10f;  // Rotation limit for X-axis (stick or wheel)
-        private float p1controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
-        private float p1controllerrotationLimitZ = 10f;  // Rotation limit for Z-axis (stick or wheel)
-        private float p1taprotationLimitZ = 45f;  // Rotation limit for Z-axis (stick or wheel)
+        private float tapp1controllerrotationLimitX = 10f;  // Rotation limit for X-axis (stick or wheel)
+        private float tapp1controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
+        private float tapp1controllerrotationLimitZ = 10f;  // Rotation limit for Z-axis (stick or wheel)
+        private float tapp1taprotationLimitZ = 95f;  // Rotation limit for Z-axis (stick or wheel)
 
-        private float p1currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
-        private float p1currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
-        private float p1currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
-        private float p1currenttapRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
+        private float tapp1currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
+        private float tapp1currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
+        private float tapp1currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
+        private float tapp1currenttapRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
 
-        private readonly float p1centeringControllerVelocityX = 150.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float p1centeringControllerVelocityY = 150.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float p1centeringControllerVelocityZ = 150.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float p1centeringtapVelocityZ = 250.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float tapp1centeringControllerVelocityX = 150.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float tapp1centeringControllerVelocityY = 150.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float tapp1centeringControllerVelocityZ = 150.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float tapp1centeringtapVelocityZ = 250.5f;  // Velocity for centering rotation (stick or wheel)
 
-        private Transform p1controllerX; // Reference to the main animated controller (wheel)
-        private Vector3 p1controllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion p1controllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform p1controllerY; // Reference to the main animated controller (wheel)
-        private Vector3 p1controllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion p1controllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform p1controllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 p1controllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion p1controllerZStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform tapp1controllerX; // Reference to the main animated controller (wheel)
+        private Vector3 tapp1controllerXStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion tapp1controllerXStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform tapp1controllerY; // Reference to the main animated controller (wheel)
+        private Vector3 tapp1controllerYStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion tapp1controllerYStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform tapp1controllerZ; // Reference to the main animated controller (wheel)
+        private Vector3 tapp1controllerZStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion tapp1controllerZStartRotation; // Initial controlller positions and rotations for resetting
         private Transform p1tapZ; // Reference to the tap object
         private Vector3 p1tapZStartPosition; // Initial controller positions and rotations for resetting
         private Quaternion p1tapZStartRotation; // Initial controlller positions and rotations for resetting
@@ -75,46 +75,46 @@ namespace WIGUx.Modules.tapperMotionSim
                                                                                                               // Public property to access the Game instance
         void Start()
         {
-            // Find controllerX for player 1
-            p1controllerX = transform.Find("p1controllerX");
-            if (p1controllerX != null)
+            // Find tapp1controllerX for player 1
+            tapp1controllerX = transform.Find("tapp1controllerX");
+            if (tapp1controllerX != null)
             {
-                logger.Info("p1controllerX object found.");
+                logger.Info("tapp1controllerX object found.");
                 // Store initial position and rotation of the stick
-                p1controllerXStartPosition = p1controllerX.transform.position;
-                p1controllerXStartRotation = p1controllerX.transform.rotation;
+                tapp1controllerXStartPosition = tapp1controllerX.transform.position;
+                tapp1controllerXStartRotation = tapp1controllerX.transform.rotation;
 
-                // Find p1controllerY under p1controllerX
-                p1controllerY = p1controllerX.Find("p1controllerY");
-                if (p1controllerY != null)
+                // Find p1controllerY under tapp1controllerX
+                tapp1controllerY = tapp1controllerX.Find("tapp1controllerY");
+                if (tapp1controllerY != null)
                 {
-                    logger.Info("p1controllerY object found.");
+                    logger.Info("tapp1controllerY object found.");
                     // Store initial position and rotation of the stick
-                    p1controllerYStartPosition = p1controllerY.transform.position;
-                    p1controllerYStartRotation = p1controllerY.transform.rotation;
+                    tapp1controllerYStartPosition = tapp1controllerY.transform.position;
+                    tapp1controllerYStartRotation = tapp1controllerY.transform.rotation;
 
-                    // Find p1controllerZ under p1controllerY
-                    p1controllerZ = p1controllerY.Find("p1controllerZ");
-                    if (p1controllerZ != null)
+                    // Find tapp1controllerZ under tapp1controllerY
+                    tapp1controllerZ = tapp1controllerY.Find("tapp1controllerZ");
+                    if (tapp1controllerZ != null)
                     {
-                        logger.Info("p1controllerZ object found.");
+                        logger.Info("tapp1controllerZ object found.");
                         // Store initial position and rotation of the stick
-                        p1controllerZStartPosition = p1controllerZ.transform.position;
-                        p1controllerZStartRotation = p1controllerZ.transform.rotation;
+                        tapp1controllerZStartPosition = tapp1controllerZ.transform.position;
+                        tapp1controllerZStartRotation = tapp1controllerZ.transform.rotation;
                     }
                     else
                     {
-                        logger.Error("p1controllerZ object not found under controllerY!");
+                        logger.Error("tapp1controllerZ object not found under tapp1controllerY!");
                     }
                 }
                 else
                 {
-                    logger.Error("p1controllerY object not found under controllerX!");
+                    logger.Error("tapp1controllerY object not found under tapp1controllerX!");
                 }
             }
             else
             {
-                logger.Error("p1controllerX object not found!!");
+                logger.Error("tapp1controllerX object not found!!");
             }
 
             // Find tapZ for player 1
@@ -181,10 +181,10 @@ namespace WIGUx.Modules.tapperMotionSim
         {
             logger.Info("Exiting Focus Mode...");
             //player 1
-            p1currentControllerRotationX = 0f;
-            p1currentControllerRotationY = 0f;
-            p1currentControllerRotationZ = 0f;
-            p1currenttapRotationZ = 0f;
+            tapp1currentControllerRotationX = 0f;
+            tapp1currentControllerRotationY = 0f;
+            tapp1currentControllerRotationZ = 0f;
+            tapp1currenttapRotationZ = 0f;
             inFocusMode = false;  // Clear focus mode flag
         }
 
@@ -247,82 +247,83 @@ namespace WIGUx.Modules.tapperMotionSim
 
 
             // Fire1
-            if (Input.GetButton("Fire1") && p1currenttapRotationZ < p1taprotationLimitZ)
+            if (Input.GetButton("Fire1") && tapp1currenttapRotationZ < tapp1taprotationLimitZ)
             {
                 float tapVelocity = 250.5f; // Example value, ensure this is correctly set in your actual code
                 float p1tapRotateZ = tapVelocity * Time.deltaTime; // Simplified calculation since the condition is always true
 
                 // Check if the increment would exceed the positive limit
-                if (p1currenttapRotationZ + p1tapRotateZ > p1taprotationLimitZ)
+                if (tapp1currenttapRotationZ + p1tapRotateZ > tapp1taprotationLimitZ)
                 {
-                    p1tapRotateZ = p1taprotationLimitZ - p1currenttapRotationZ; // Adjust to reach exactly the limit
+                    p1tapRotateZ = tapp1taprotationLimitZ - tapp1currenttapRotationZ; // Adjust to reach exactly the limit
                 }
 
                 p1tapZ.Rotate(0, 0, p1tapRotateZ); // Apply positive rotation
-                p1currenttapRotationZ += p1tapRotateZ; // Adjusting current rotation in the positive direction
+                tapp1currenttapRotationZ += p1tapRotateZ; // Adjusting current rotation in the positive direction
                 inputDetected = true;
 
                 // Info logs to monitor the values
-         //       logger.Info("tapVelocity: " + tapVelocity);
-       //         logger.Info("Time.deltaTime: " + Time.deltaTime);
-        //        logger.Info("p1tapRotateZ: " + p1tapRotateZ);
-      //          logger.Info("p1currenttapRotationZ: " + p1currenttapRotationZ);
-    //            logger.Info("p1taprotationLimitZ: " + p1taprotationLimitZ);
+             //   logger.Info("tapVelocity: " + tapVelocity);
+             //   logger.Info("Time.deltaTime: " + Time.deltaTime);
+             //   Vector3 rotation = p1tapZ.transform.rotation.eulerAngles;
+            //   logger.Info("Current Rotation - X: " + rotation.x + ", Y: " + rotation.y + ", Z: " + rotation.z);
+            //    logger.Info("p1currenttapRotationZ: " + tapp1currenttapRotationZ);
+            //    logger.Info("p1taprotationLimitZ: " + tapp1taprotationLimitZ);
             }
 
 
             // Thumbstick direction: Y
             // Thumbstick direction: up
-            if ((Input.GetKey(KeyCode.UpArrow) || XInput.Get(XInput.Button.DpadUp) || primaryThumbstick.y > 0) && p1currentControllerRotationY < p1controllerrotationLimitY)
+            if ((Input.GetKey(KeyCode.UpArrow) || XInput.Get(XInput.Button.DpadUp) || primaryThumbstick.y > 0) && tapp1currentControllerRotationY < tapp1controllerrotationLimitY)
             {
                 float p1controllerRotateY = (Input.GetKey(KeyCode.UpArrow) || XInput.Get(XInput.Button.DpadUp) ? keyboardControllerVelocityY : primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p1controllerY.Rotate(0, 0, -p1controllerRotateY);
-                p1currentControllerRotationY += p1controllerRotateY;
+                tapp1controllerY.Rotate(0, 0, -p1controllerRotateY);
+                tapp1currentControllerRotationY += p1controllerRotateY;
                 inputDetected = true;
             }
             // Thumbstick direction: down
-            if ((Input.GetKey(KeyCode.DownArrow) || XInput.Get(XInput.Button.DpadDown) || primaryThumbstick.y < 0) && p1currentControllerRotationY > -p1controllerrotationLimitY)
+            if ((Input.GetKey(KeyCode.DownArrow) || XInput.Get(XInput.Button.DpadDown) || primaryThumbstick.y < 0) && tapp1currentControllerRotationY > -tapp1controllerrotationLimitY)
             {
                 float p1controllerRotateY = (Input.GetKey(KeyCode.DownArrow) || XInput.Get(XInput.Button.DpadDown) ? keyboardControllerVelocityY : -primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p1controllerY.Rotate(0, 0, p1controllerRotateY);
-                p1currentControllerRotationY -= p1controllerRotateY;
+                tapp1controllerY.Rotate(0, 0, p1controllerRotateY);
+                tapp1currentControllerRotationY -= p1controllerRotateY;
                 inputDetected = true;
             }
 
             // Thumbstick direction: X
             // Thumbstick direction: right
-            if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && p1currentControllerRotationX < p1controllerrotationLimitX)
+            if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && tapp1currentControllerRotationX < tapp1controllerrotationLimitX)
             {
                 float p1controllerRotateX = (Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) ? keyboardControllerVelocityX : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                p1controllerX.Rotate(-p1controllerRotateX, 0, 0);
-                p1currentControllerRotationX += p1controllerRotateX;
+                tapp1controllerX.Rotate(-p1controllerRotateX, 0, 0);
+                tapp1currentControllerRotationX += p1controllerRotateX;
                 inputDetected = true;
             }
             // Thumbstick direction: left
-            if ((Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) || primaryThumbstick.x < 0) && p1currentControllerRotationX > -p1controllerrotationLimitX)
+            if ((Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) || primaryThumbstick.x < 0) && tapp1currentControllerRotationX > -tapp1controllerrotationLimitX)
             {
                 float p1controllerRotateX = (Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) ? keyboardControllerVelocityX : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                p1controllerX.Rotate(p1controllerRotateX, 0, 0);
-                p1currentControllerRotationX -= p1controllerRotateX;
+                tapp1controllerX.Rotate(p1controllerRotateX, 0, 0);
+                tapp1currentControllerRotationX -= p1controllerRotateX;
                 inputDetected = true;
             }
 
             // Thumbstick direction: Z
             // Thumbstick or D-pad direction: Up
-            if ((primaryThumbstick.y > 0 || XInput.Get(XInput.Button.DpadUp)) && p1currentControllerRotationZ < p1controllerrotationLimitZ)
+            if ((primaryThumbstick.y > 0 || XInput.Get(XInput.Button.DpadUp)) && tapp1currentControllerRotationZ < tapp1controllerrotationLimitZ)
             {
                 float p1controllerRotateZ = (Input.GetKey(KeyCode.UpArrow) || XInput.Get(XInput.Button.DpadUp) ? keyboardControllerVelocityZ : primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p1controllerZ.Rotate(0, 0, -p1controllerRotateZ);
-                p1currentControllerRotationZ += p1controllerRotateZ;
+                tapp1controllerZ.Rotate(0, 0, -p1controllerRotateZ);
+                tapp1currentControllerRotationZ += p1controllerRotateZ;
                 inputDetected = true;
             }
 
             // Thumbstick or D-pad direction: Down
-            if ((primaryThumbstick.y < 0 || XInput.Get(XInput.Button.DpadDown)) && p1currentControllerRotationZ > -p1controllerrotationLimitZ)
+            if ((primaryThumbstick.y < 0 || XInput.Get(XInput.Button.DpadDown)) && tapp1currentControllerRotationZ > -tapp1controllerrotationLimitZ)
             {
                 float p1controllerRotateZ = (Input.GetKey(KeyCode.DownArrow) || XInput.Get(XInput.Button.DpadDown) ? keyboardControllerVelocityZ : -primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p1controllerZ.Rotate(0, 0, p1controllerRotateZ);
-                p1currentControllerRotationZ -= p1controllerRotateZ;
+                tapp1controllerZ.Rotate(0, 0, p1controllerRotateZ);
+                tapp1currentControllerRotationZ -= p1controllerRotateZ;
                 inputDetected = true;
             }
             // Check for mouse movement
@@ -339,60 +340,65 @@ namespace WIGUx.Modules.tapperMotionSim
             //Centering for contoller 1
 
             // Center X-Axis Controller rotation
-            if (p1currentControllerRotationX > 0)
+            if (tapp1currentControllerRotationX > 0)
             {
-                float p1unrotateX = Mathf.Min(p1centeringControllerVelocityX * Time.deltaTime, p1currentControllerRotationX);
-                p1controllerX.Rotate(p1unrotateX, 0, 0);   // Rotating to reduce the rotation
-                p1currentControllerRotationX -= p1unrotateX;    // Reducing the positive rotation
+                float p1unrotateX = Mathf.Min(tapp1centeringControllerVelocityX * Time.deltaTime, tapp1currentControllerRotationX);
+                tapp1controllerX.Rotate(p1unrotateX, 0, 0);   // Rotating to reduce the rotation
+                tapp1currentControllerRotationX -= p1unrotateX;    // Reducing the positive rotation
             }
-            else if (p1currentControllerRotationX < 0)
+            else if (tapp1currentControllerRotationX < 0)
             {
-                float p1unrotateX = Mathf.Min(p1centeringControllerVelocityX * Time.deltaTime, -p1currentControllerRotationX);
-                p1controllerX.Rotate(-p1unrotateX, 0, 0);   // Rotating to reduce the rotation
-                p1currentControllerRotationX += p1unrotateX;    // Reducing the positive rotation
+                float p1unrotateX = Mathf.Min(tapp1centeringControllerVelocityX * Time.deltaTime, -tapp1currentControllerRotationX);
+                tapp1controllerX.Rotate(-p1unrotateX, 0, 0);   // Rotating to reduce the rotation
+                tapp1currentControllerRotationX += p1unrotateX;    // Reducing the positive rotation
             }
 
             // Center Y-axis Controller rotation
-            if (p1currentControllerRotationY > 0)
+            if (tapp1currentControllerRotationY > 0)
             {
-                float p1unrotateY = Mathf.Min(p1centeringControllerVelocityY * Time.deltaTime, p1currentControllerRotationY);
-                p1controllerY.Rotate(0, p1unrotateY, 0);   // Rotating to reduce the rotation
-                p1currentControllerRotationY -= p1unrotateY;    // Reducing the positive rotation
+                float p1unrotateY = Mathf.Min(tapp1centeringControllerVelocityY * Time.deltaTime, tapp1currentControllerRotationY);
+                tapp1controllerY.Rotate(0, p1unrotateY, 0);   // Rotating to reduce the rotation
+                tapp1currentControllerRotationY -= p1unrotateY;    // Reducing the positive rotation
             }
-            else if (p1currentControllerRotationY < 0)
+            else if (tapp1currentControllerRotationY < 0)
             {
-                float p1unrotateY = Mathf.Min(p1centeringControllerVelocityY * Time.deltaTime, -p1currentControllerRotationY);
-                p1controllerY.Rotate(0, -p1unrotateY, 0);  // Rotating to reduce the rotation
-                p1currentControllerRotationY += p1unrotateY;    // Reducing the negative rotation
+                float p1unrotateY = Mathf.Min(tapp1centeringControllerVelocityY * Time.deltaTime, -tapp1currentControllerRotationY);
+                tapp1controllerY.Rotate(0, -p1unrotateY, 0);  // Rotating to reduce the rotation
+                tapp1currentControllerRotationY += p1unrotateY;    // Reducing the negative rotation
             }
 
             // Center Z-axis Controller rotation
-            if (p1currentControllerRotationZ > 0)
+            if (tapp1currentControllerRotationZ > 0)
             {
-                float p1unrotateZ = Mathf.Min(p1centeringControllerVelocityZ * Time.deltaTime, p1currentControllerRotationZ);
-                p1controllerZ.Rotate(0, 0, p1unrotateZ);   // Rotating to reduce the rotation
-                p1currentControllerRotationZ -= p1unrotateZ;    // Reducing the positive rotation
+                float p1unrotateZ = Mathf.Min(tapp1centeringControllerVelocityZ * Time.deltaTime, tapp1currentControllerRotationZ);
+                tapp1controllerZ.Rotate(0, 0, p1unrotateZ);   // Rotating to reduce the rotation
+                tapp1currentControllerRotationZ -= p1unrotateZ;    // Reducing the positive rotation
             }
-            else if (p1currentControllerRotationZ < 0)
+            else if (tapp1currentControllerRotationZ < 0)
             {
-                float p1unrotateZ = Mathf.Min(p1centeringControllerVelocityZ * Time.deltaTime, -p1currentControllerRotationZ);
-                p1controllerZ.Rotate(0, 0, -p1unrotateZ);   // Rotating to reduce the rotation
-                p1currentControllerRotationZ += p1unrotateZ;    // Reducing the positive rotation
+                float p1unrotateZ = Mathf.Min(tapp1centeringControllerVelocityZ * Time.deltaTime, -tapp1currentControllerRotationZ);
+                tapp1controllerZ.Rotate(0, 0, -p1unrotateZ);   // Rotating to reduce the rotation
+                tapp1currentControllerRotationZ += p1unrotateZ;    // Reducing the positive rotation
             }
-            // Center Z-axis Tap rotation
-            if (p1currenttapRotationZ > 0)
+            // Center Z-Axis Tap rotation
+            if (tapp1currenttapRotationZ > 0)
             {
-                float p1tapunrotateZ = Mathf.Min(p1centeringtapVelocityZ * Time.deltaTime, p1currenttapRotationZ);
-                p1tapZ.Rotate(0, 0, p1tapunrotateZ);   // Rotating to reduce the rotation
-                p1currenttapRotationZ -= p1tapunrotateZ;    // Reducing the positive rotation
-            }
-            else if (p1currenttapRotationZ < 0)
-            {
-                float p1tapunrotateZ = Mathf.Min(p1centeringtapVelocityZ * Time.deltaTime, -p1currenttapRotationZ);
+                float p1tapunrotateZ = Mathf.Min(tapp1centeringtapVelocityZ * Time.deltaTime, tapp1currenttapRotationZ);
                 p1tapZ.Rotate(0, 0, -p1tapunrotateZ);   // Rotating to reduce the rotation
-                p1currenttapRotationZ += p1tapunrotateZ;    // Reducing the positive rotation
+                tapp1currenttapRotationZ -= p1tapunrotateZ;    // Reducing the positive rotation
             }
+            else if (tapp1currenttapRotationZ < 0)
+            {
+                float p1tapunrotateZ = Mathf.Min(tapp1centeringtapVelocityZ * Time.deltaTime, -tapp1currenttapRotationZ);
+                p1tapZ.Rotate(0, 0, p1tapunrotateZ);   // Rotating to reduce the rotation
+                tapp1currenttapRotationZ += p1tapunrotateZ;    // Reducing the positive rotation
+            }
+
+            // Log values for debugging
+       //     logger.Info("Centering Tap Rotation - X: " + tapp1currentControllerRotationX + ", Y: " + tapp1currentControllerRotationY + ", Z: " + tapp1currentControllerRotationZ);
+        //    logger.Info("Centering Tap Rotation - Current Tap Z: " + tapp1currenttapRotationZ);
         }
+
 
 
 

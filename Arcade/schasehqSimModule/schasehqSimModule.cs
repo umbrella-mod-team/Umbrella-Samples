@@ -10,9 +10,9 @@ using static SteamVR_Utils;
 using System.IO;
 using MelonLoader.ICSharpCode.SharpZipLib.GZip;
 
-namespace WIGUx.Modules.chasehqSim
+namespace WIGUx.Modules.schasehqSim
 {
-    public class chasehqSimController : MonoBehaviour
+    public class schasehqSimController : MonoBehaviour
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
@@ -35,53 +35,53 @@ namespace WIGUx.Modules.chasehqSim
 
         //p1 sticks
 
-        private float chasehqp1controllerrotationLimitX = 270f;  // Rotation limit for X-axis (stick or wheel)
-        private float chasehqp1controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
-        private float chasehqp1controllerrotationLimitZ = 0f;  // Rotation limit for Z-axis (stick or wheel)
+        private float schasehqp1controllerrotationLimitX = 270f;  // Rotation limit for X-axis (stick or wheel)
+        private float schasehqp1controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
+        private float schasehqp1controllerrotationLimitZ = 0f;  // Rotation limit for Z-axis (stick or wheel)
 
-        private float chasehqp1currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
-        private float chasehqp1currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
-        private float chasehqp1currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
+        private float schasehqp1currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
+        private float schasehqp1currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
+        private float schasehqp1currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
 
-        private readonly float chasehqp1centeringControllerVelocityX = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float chasehqp1centeringControllerVelocityY = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float chasehqp1centeringControllerVelocityZ = 400.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float schasehqp1centeringControllerVelocityX = 400.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float schasehqp1centeringControllerVelocityY = 400.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float schasehqp1centeringControllerVelocityZ = 400.5f;  // Velocity for centering rotation (stick or wheel)
 
-        private Transform chasehqshifter; // Reference to shifter
-        private Vector3 chasehqshifterStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion chasehqshifterStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform chasehqp1controllerX; // Reference to the main animated controller (wheel)
-        private Vector3 chasehqp1controllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion chasehqp1controllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform chasehqp1controllerY; // Reference to the main animated controller (wheel)
-        private Vector3 chasehqp1controllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion chasehqp1controllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform chasehqp1controllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 chasehqp1controllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion chasehqp1controllerZStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform schasehqshifter; // Reference to shifter
+        private Vector3 schasehqshifterStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion schasehqshifterStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform schasehqp1controllerX; // Reference to the main animated controller (wheel)
+        private Vector3 schasehqp1controllerXStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion schasehqp1controllerXStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform schasehqp1controllerY; // Reference to the main animated controller (wheel)
+        private Vector3 schasehqp1controllerYStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion schasehqp1controllerYStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform schasehqp1controllerZ; // Reference to the main animated controller (wheel)
+        private Vector3 schasehqp1controllerZStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion schasehqp1controllerZStartRotation; // Initial controlller positions and rotations for resetting
 
         //lights
         private Transform lightsObject;
-        public Light[] chasehqLights = new Light[2]; // Array to store lights
-        public Light chasehq1_light;
-        public Light chasehq2_light;
-        public Light chasehq3_light;
-        public Light chasehq4_light;
+        public Light[] schasehqLights = new Light[2]; // Array to store lights
+        public Light schasehq1_light;
+        public Light schasehq2_light;
+        public Light schasehq3_light;
+        public Light schasehq4_light;
         private float flashDuration = 0.15f;
         private float flashInterval = 0.15f;
         private float lightDuration = 0.5f; // Duration during which the lights will be on
-        private bool arechasehqLighsOn = false; // track strobe lights
-        private Coroutine chasehqCoroutine; // Coroutine variable to control the strobe flashing
+        private bool areschasehqLighsOn = false; // track strobe lights
+        private Coroutine schasehqCoroutine; // Coroutine variable to control the strobe flashing
         private Light[] lights;  
-        private bool isChaseHqFlashing = false; //set the flashing flag
-        private bool isChaseHqinHigh = false; //set the flashing flag
+        private bool isschasehqFlashing = false; //set the flashing flag
+        private bool isschasehqinHigh = false; //set the flashing flag
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private readonly string[] compatibleGames = { "chasehq" };
+        private readonly string[] compatibleGames = { "superchs.zip" };
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
                                                                                                               // Public property to access the Game instance
         void Start()
         {
-            logger.Info("Looking For Lights In Chase HQ");
+            logger.Info("Looking For Lights In Super Chase - Criminal Termination");
             lightsObject = transform.Find("lights");
             if (lightsObject != null)
             {
@@ -101,14 +101,14 @@ namespace WIGUx.Modules.chasehqSim
                 logger.Info($"Light found: {light.gameObject.name}");
                 switch (light.gameObject.name)
                 {
-                    case "chasehq1_light":
-                        chasehq1_light = light;
-                        chasehqLights[0] = light;
+                    case "schasehq1_light":
+                        schasehq1_light = light;
+                        schasehqLights[0] = light;
                         logger.Info("Included Light found in object: " + light.gameObject.name);
                         break;
-                    case "chasehq2_light":
-                        chasehq2_light = light;
-                        chasehqLights[1] = light;
+                    case "schasehq2_light":
+                        schasehq2_light = light;
+                        schasehqLights[1] = light;
                         logger.Info("Included Light found in object: " + light.gameObject.name);
                         break;
                     default:
@@ -118,64 +118,64 @@ namespace WIGUx.Modules.chasehqSim
             }
 
             // Log the assigned lights for verification
-            for (int i = 0; i < chasehqLights.Length; i++)
+            for (int i = 0; i < schasehqLights.Length; i++)
             {
-                if (chasehqLights[i] != null)
+                if (schasehqLights[i] != null)
                 {
-                    logger.Info($"chasehqLights[{i}] assigned to: {chasehqLights[i].name}");
+                    logger.Info($"schasehqLights[{i}] assigned to: {schasehqLights[i].name}");
                 }
                 else
                 {
-                    logger.Error($"chasehqLights[{i}] is not assigned!");
+                    logger.Error($"schasehqLights[{i}] is not assigned!");
                 }
             }
-            chasehqshifter = transform.Find("chasehqshifter");
-            if (chasehqshifter != null)
+            schasehqshifter = transform.Find("schasehqshifter");
+            if (schasehqshifter != null)
             {
-                logger.Info("chasehqshifter object found.");
-                chasehqshifterStartPosition = chasehqshifter.transform.position;
-                chasehqshifterStartRotation = chasehqshifter.transform.rotation;
+                logger.Info("schasehqshifter object found.");
+                schasehqshifterStartPosition = schasehqshifter.transform.position;
+                schasehqshifterStartRotation = schasehqshifter.transform.rotation;
             }
-            // Find chasehqcontrollerX for player 1
-            chasehqp1controllerX = transform.Find("chasehqp1controllerX");
-            if (chasehqp1controllerX != null)
+            // Find schasehqcontrollerX for player 1
+            schasehqp1controllerX = transform.Find("schasehqp1controllerX");
+            if (schasehqp1controllerX != null)
             {
-                logger.Info("chasehqp1controllerX object found.");
+                logger.Info("schasehqp1controllerX object found.");
                 // Store initial position and rotation of the stick
-                chasehqp1controllerXStartPosition = chasehqp1controllerX.transform.position;
-                chasehqp1controllerXStartRotation = chasehqp1controllerX.transform.rotation;
+                schasehqp1controllerXStartPosition = schasehqp1controllerX.transform.position;
+                schasehqp1controllerXStartRotation = schasehqp1controllerX.transform.rotation;
 
-                // Find chasehqp1controllerY under chasehqp1controllerX
-                chasehqp1controllerY = chasehqp1controllerX.Find("chasehqp1controllerY");
-                if (chasehqp1controllerY != null)
+                // Find schasehqp1controllerY under schasehqp1controllerX
+                schasehqp1controllerY = schasehqp1controllerX.Find("schasehqp1controllerY");
+                if (schasehqp1controllerY != null)
                 {
-                    logger.Info("chasehqp1controllerY object found.");
+                    logger.Info("schasehqp1controllerY object found.");
                     // Store initial position and rotation of the stick
-                    chasehqp1controllerYStartPosition = chasehqp1controllerY.transform.position;
-                    chasehqp1controllerYStartRotation = chasehqp1controllerY.transform.rotation;
+                    schasehqp1controllerYStartPosition = schasehqp1controllerY.transform.position;
+                    schasehqp1controllerYStartRotation = schasehqp1controllerY.transform.rotation;
 
-                    // Find chasehqp1controllerZ under chasehqp1controllerY
-                    chasehqp1controllerZ = chasehqp1controllerY.Find("chasehqp1controllerZ");
-                    if (chasehqp1controllerZ != null)
+                    // Find schasehqp1controllerZ under schasehqp1controllerY
+                    schasehqp1controllerZ = schasehqp1controllerY.Find("schasehqp1controllerZ");
+                    if (schasehqp1controllerZ != null)
                     {
-                        logger.Info("chasehqp1controllerZ object found.");
+                        logger.Info("schasehqp1controllerZ object found.");
                         // Store initial position and rotation of the stick
-                        chasehqp1controllerZStartPosition = chasehqp1controllerZ.transform.position;
-                        chasehqp1controllerZStartRotation = chasehqp1controllerZ.transform.rotation;
+                        schasehqp1controllerZStartPosition = schasehqp1controllerZ.transform.position;
+                        schasehqp1controllerZStartRotation = schasehqp1controllerZ.transform.rotation;
                     }
                     else
                     {
-                        logger.Error("chasehqp1controllerZ object not found under controllerY!");
+                        logger.Error("schasehqp1controllerZ object not found under controllerY!");
                     }
                 }
                 else
                 {
-                    logger.Error("chasehqp1controllerY object not found under controllerX!");
+                    logger.Error("schasehqp1controllerY object not found under controllerX!");
                 }
             }
             else
             {
-                logger.Error("chasehqp1controllerX object not found!!");
+                logger.Error("schasehqp1controllerX object not found!!");
             }
         }
 
@@ -353,37 +353,37 @@ namespace WIGUx.Modules.chasehqSim
         {
             string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
             logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Ready to Chase... ");
-            logger.Info("Chase HQ Module starting...");
-            logger.Info("Be on the Lookout!...");
+            logger.Info("Compatible Rom Dectected, Ready to Chase Again?... ");
+            logger.Info("Super Chase - Criminal Termination Module starting...");
+            logger.Info("Prepare For Criminal Termination!...");
             // Reset controllers to initial positions and rotations
-            if (chasehqp1controllerX != null)
+            if (schasehqp1controllerX != null)
             {
-                chasehqp1controllerX.position = chasehqp1controllerXStartPosition;
-                chasehqp1controllerX.rotation = chasehqp1controllerXStartRotation;
+                schasehqp1controllerX.position = schasehqp1controllerXStartPosition;
+                schasehqp1controllerX.rotation = schasehqp1controllerXStartRotation;
             }
-            if (chasehqp1controllerY != null)
+            if (schasehqp1controllerY != null)
             {
-                chasehqp1controllerY.position = chasehqp1controllerYStartPosition;
-                chasehqp1controllerY.rotation = chasehqp1controllerYStartRotation;
+                schasehqp1controllerY.position = schasehqp1controllerYStartPosition;
+                schasehqp1controllerY.rotation = schasehqp1controllerYStartRotation;
             }
-            if (chasehqp1controllerZ != null)
+            if (schasehqp1controllerZ != null)
             {
-                chasehqp1controllerZ.position = chasehqp1controllerZStartPosition;
-                chasehqp1controllerZ.rotation = chasehqp1controllerZStartRotation;
+                schasehqp1controllerZ.position = schasehqp1controllerZStartPosition;
+                schasehqp1controllerZ.rotation = schasehqp1controllerZStartRotation;
             }
-            if (chasehqshifter != null)
+            if (schasehqshifter != null)
             {
-                chasehqshifter.position = chasehqshifterStartPosition;
-                chasehqshifter.rotation = chasehqshifterStartRotation;
+                schasehqshifter.position = schasehqshifterStartPosition;
+                schasehqshifter.rotation = schasehqshifterStartRotation;
             }
 
 
             // Reset rotation allowances and current rotation values
             //player 1
-            chasehqp1currentControllerRotationX = 0f;
-            chasehqp1currentControllerRotationY = 0f;
-            chasehqp1currentControllerRotationZ = 0f;
+            schasehqp1currentControllerRotationX = 0f;
+            schasehqp1currentControllerRotationY = 0f;
+            schasehqp1currentControllerRotationZ = 0f;
             //player 2
 
             inFocusMode = true;  // Set focus mode flag
@@ -392,25 +392,25 @@ namespace WIGUx.Modules.chasehqSim
         void EndFocusMode()
         {
             // Reset controllers to initial positions and rotations
-            if (chasehqp1controllerX != null)
+            if (schasehqp1controllerX != null)
             {
-                chasehqp1controllerX.position = chasehqp1controllerXStartPosition;
-                chasehqp1controllerX.rotation = chasehqp1controllerXStartRotation;
+                schasehqp1controllerX.position = schasehqp1controllerXStartPosition;
+                schasehqp1controllerX.rotation = schasehqp1controllerXStartRotation;
             }
-            if (chasehqp1controllerY != null)
+            if (schasehqp1controllerY != null)
             {
-                chasehqp1controllerY.position = chasehqp1controllerYStartPosition;
-                chasehqp1controllerY.rotation = chasehqp1controllerYStartRotation;
+                schasehqp1controllerY.position = schasehqp1controllerYStartPosition;
+                schasehqp1controllerY.rotation = schasehqp1controllerYStartRotation;
             }
-            if (chasehqp1controllerZ != null)
+            if (schasehqp1controllerZ != null)
             {
-                chasehqp1controllerZ.position = chasehqp1controllerZStartPosition;
-                chasehqp1controllerZ.rotation = chasehqp1controllerZStartRotation;
+                schasehqp1controllerZ.position = schasehqp1controllerZStartPosition;
+                schasehqp1controllerZ.rotation = schasehqp1controllerZStartRotation;
             }
 
-            StopCoroutine(chasehqCoroutine);
-            TogglechasehqLight1(false);
-            TogglechasehqLight2(false);
+            StopCoroutine(schasehqCoroutine);
+            ToggleschasehqLight1(false);
+            ToggleschasehqLight2(false);
 
             inFocusMode = false;  // Clear focus mode flag
         }
@@ -477,20 +477,20 @@ namespace WIGUx.Modules.chasehqSim
                 {
                     logger.Info("OVR Primary thumbstick pressed");
                     {
-                        if (!isChaseHqFlashing)
+                        if (!isschasehqFlashing)
                         {
                             // Start the flashing if not already flashing
-                            chasehqCoroutine = StartCoroutine(FlashchasehqLights());
-                            isChaseHqFlashing = true;
+                            schasehqCoroutine = StartCoroutine(FlashschasehqLights());
+                            isschasehqFlashing = true;
                         }
                         else
                         {
                             // Stop the flashing if it's currently active
-                            StopCoroutine(chasehqCoroutine);
-                            TogglechasehqLight1(false);
-                            TogglechasehqLight2(false);
-                            chasehqCoroutine = null;
-                            isChaseHqFlashing = false;
+                            StopCoroutine(schasehqCoroutine);
+                            ToggleschasehqLight1(false);
+                            ToggleschasehqLight2(false);
+                            schasehqCoroutine = null;
+                            isschasehqFlashing = false;
                         }
 
                         inputDetected = true;
@@ -509,16 +509,16 @@ namespace WIGUx.Modules.chasehqSim
                     if (SteamVRInput.GetDown(SteamVRInput.Button.RGrip))
                     {
                         logger.Info("RGrip pressed");
-                        if (!isChaseHqinHigh)
+                        if (!isschasehqinHigh)
                         {
                             // Start the flashing if not already flashing
-                            chasehqshifter.Rotate(0, 0, 45f);
-                            isChaseHqinHigh = true;
+                            schasehqshifter.Rotate(0, 0, 45f);
+                            isschasehqinHigh = true;
                         }
                         else
                         {
-                            chasehqshifter.Rotate(0, 0, -45f);
-                            isChaseHqinHigh = false;
+                            schasehqshifter.Rotate(0, 0, -45f);
+                            isschasehqinHigh = false;
                         }
                         inputDetected = true;
                     }
@@ -539,16 +539,16 @@ namespace WIGUx.Modules.chasehqSim
                 if (SteamVRInput.GetDown(SteamVRInput.Button.RGrip))
                 {
                     logger.Info("RGrip pressed");
-                    if (!isChaseHqinHigh)
+                    if (!isschasehqinHigh)
                     {
                         // Start the flashing if not already flashing
-                        chasehqshifter.Rotate(0, 0, 45f);
-                        isChaseHqinHigh = true;
+                        schasehqshifter.Rotate(0, 0, 45f);
+                        isschasehqinHigh = true;
                     }
                     else
                     {
-                        chasehqshifter.Rotate(0, 0, -45f);
-                        isChaseHqinHigh = false;
+                        schasehqshifter.Rotate(0, 0, -45f);
+                        isschasehqinHigh = false;
                     }
                     inputDetected = true;
                 }
@@ -639,19 +639,19 @@ namespace WIGUx.Modules.chasehqSim
 
                 // Thumbstick direction: X
                 // Thumbstick direction: right
-                if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && chasehqp1currentControllerRotationX < chasehqp1controllerrotationLimitX)
+                if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && schasehqp1currentControllerRotationX < schasehqp1controllerrotationLimitX)
             {
                 float p1controllerRotateX = (Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) ? keyboardControllerVelocityX : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                chasehqp1controllerX.Rotate(-p1controllerRotateX, 0, 0);
-                chasehqp1currentControllerRotationX += p1controllerRotateX;
+                schasehqp1controllerX.Rotate(-p1controllerRotateX, 0, 0);
+                schasehqp1currentControllerRotationX += p1controllerRotateX;
                 inputDetected = true;
             }
             // Thumbstick direction: left
-            if ((Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) || primaryThumbstick.x < 0) && chasehqp1currentControllerRotationX > -chasehqp1controllerrotationLimitX)
+            if ((Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) || primaryThumbstick.x < 0) && schasehqp1currentControllerRotationX > -schasehqp1controllerrotationLimitX)
             {
                 float p1controllerRotateX = (Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) ? keyboardControllerVelocityX : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                chasehqp1controllerX.Rotate(p1controllerRotateX, 0, 0);
-                chasehqp1currentControllerRotationX -= p1controllerRotateX;
+                schasehqp1controllerX.Rotate(p1controllerRotateX, 0, 0);
+                schasehqp1currentControllerRotationX -= p1controllerRotateX;
                 inputDetected = true;
             }
             /*
@@ -683,36 +683,36 @@ namespace WIGUx.Modules.chasehqSim
             // Thunbstick button pressed
             if (XInput.GetDown(XInput.Button.LThumbstick))
             {
-                if (!isChaseHqFlashing)
+                if (!isschasehqFlashing)
                 {
                     // Start the flashing if not already flashing
-                    chasehqCoroutine = StartCoroutine(FlashchasehqLights());
-                    isChaseHqFlashing = true;
+                    schasehqCoroutine = StartCoroutine(FlashschasehqLights());
+                    isschasehqFlashing = true;
                 }
                 else
                 {
                     // Stop the flashing if it's currently active
-                    StopCoroutine(chasehqCoroutine);
-                    TogglechasehqLight1(false);
-                    TogglechasehqLight2(false);
-                    chasehqCoroutine = null;
-                    isChaseHqFlashing = false;
+                    StopCoroutine(schasehqCoroutine);
+                    ToggleschasehqLight1(false);
+                    ToggleschasehqLight2(false);
+                    schasehqCoroutine = null;
+                    isschasehqFlashing = false;
                 }
                 inputDetected = true;
             }
             // shift button pressed
             if (XInput.GetDown(XInput.Button.Y))
             {
-                if (!isChaseHqinHigh)
+                if (!isschasehqinHigh)
                 {
                     // Start the flashing if not already flashing
-                    chasehqshifter.Rotate(0, 0, 45f);
-                    isChaseHqinHigh = true;
+                    schasehqshifter.Rotate(0, 0, 45f);
+                    isschasehqinHigh = true;
                 }
                 else
                 {
-                    chasehqshifter.Rotate(0, 0, -45f);
-                    isChaseHqinHigh = false;
+                    schasehqshifter.Rotate(0, 0, -45f);
+                    isschasehqinHigh = false;
                 }
                 inputDetected = true;
             }
@@ -728,46 +728,46 @@ namespace WIGUx.Modules.chasehqSim
             //Centering for contoller 1
 
             // Center X-Axis Controller rotation
-            if (chasehqp1currentControllerRotationX > 0)
+            if (schasehqp1currentControllerRotationX > 0)
             {
-                float p1unrotateX = Mathf.Min(chasehqp1centeringControllerVelocityX * Time.deltaTime, chasehqp1currentControllerRotationX);
-                chasehqp1controllerX.Rotate(p1unrotateX, 0, 0);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationX -= p1unrotateX;    // Reducing the positive rotation
+                float p1unrotateX = Mathf.Min(schasehqp1centeringControllerVelocityX * Time.deltaTime, schasehqp1currentControllerRotationX);
+                schasehqp1controllerX.Rotate(p1unrotateX, 0, 0);   // Rotating to reduce the rotation
+                schasehqp1currentControllerRotationX -= p1unrotateX;    // Reducing the positive rotation
             }
-            else if (chasehqp1currentControllerRotationX < 0)
+            else if (schasehqp1currentControllerRotationX < 0)
             {
-                float p1unrotateX = Mathf.Min(chasehqp1centeringControllerVelocityX * Time.deltaTime, -chasehqp1currentControllerRotationX);
-                chasehqp1controllerX.Rotate(-p1unrotateX, 0, 0);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationX += p1unrotateX;    // Reducing the positive rotation
+                float p1unrotateX = Mathf.Min(schasehqp1centeringControllerVelocityX * Time.deltaTime, -schasehqp1currentControllerRotationX);
+                schasehqp1controllerX.Rotate(-p1unrotateX, 0, 0);   // Rotating to reduce the rotation
+                schasehqp1currentControllerRotationX += p1unrotateX;    // Reducing the positive rotation
             }
 
             // Center Y-axis Controller rotation
-            if (chasehqp1currentControllerRotationY > 0)
+            if (schasehqp1currentControllerRotationY > 0)
             {
-                float p1unrotateY = Mathf.Min(chasehqp1centeringControllerVelocityY * Time.deltaTime, chasehqp1currentControllerRotationY);
-                chasehqp1controllerY.Rotate(0, p1unrotateY, 0);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationY -= p1unrotateY;    // Reducing the positive rotation
+                float p1unrotateY = Mathf.Min(schasehqp1centeringControllerVelocityY * Time.deltaTime, schasehqp1currentControllerRotationY);
+                schasehqp1controllerY.Rotate(0, p1unrotateY, 0);   // Rotating to reduce the rotation
+                schasehqp1currentControllerRotationY -= p1unrotateY;    // Reducing the positive rotation
             }
-            else if (chasehqp1currentControllerRotationY < 0)
+            else if (schasehqp1currentControllerRotationY < 0)
             {
-                float p1unrotateY = Mathf.Min(chasehqp1centeringControllerVelocityY * Time.deltaTime, -chasehqp1currentControllerRotationY);
-                chasehqp1controllerY.Rotate(0, -p1unrotateY, 0);  // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationY += p1unrotateY;    // Reducing the negative rotation
+                float p1unrotateY = Mathf.Min(schasehqp1centeringControllerVelocityY * Time.deltaTime, -schasehqp1currentControllerRotationY);
+                schasehqp1controllerY.Rotate(0, -p1unrotateY, 0);  // Rotating to reduce the rotation
+                schasehqp1currentControllerRotationY += p1unrotateY;    // Reducing the negative rotation
             }
 
 
             // Center Z-axis Controller rotation
-            if (chasehqp1currentControllerRotationZ > 0)
+            if (schasehqp1currentControllerRotationZ > 0)
             {
-                float p1unrotateZ = Mathf.Min(chasehqp1centeringControllerVelocityZ * Time.deltaTime, chasehqp1currentControllerRotationZ);
-                chasehqp1controllerZ.Rotate(0, 0, p1unrotateZ);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationZ -= p1unrotateZ;    // Reducing the positive rotation
+                float p1unrotateZ = Mathf.Min(schasehqp1centeringControllerVelocityZ * Time.deltaTime, schasehqp1currentControllerRotationZ);
+                schasehqp1controllerZ.Rotate(0, 0, p1unrotateZ);   // Rotating to reduce the rotation
+                schasehqp1currentControllerRotationZ -= p1unrotateZ;    // Reducing the positive rotation
             }
-            else if (chasehqp1currentControllerRotationZ < 0)
+            else if (schasehqp1currentControllerRotationZ < 0)
             {
-                float p1unrotateZ = Mathf.Min(chasehqp1centeringControllerVelocityZ * Time.deltaTime, -chasehqp1currentControllerRotationZ);
-                chasehqp1controllerZ.Rotate(0, 0, -p1unrotateZ);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationZ += p1unrotateZ;    // Reducing the positive rotation
+                float p1unrotateZ = Mathf.Min(schasehqp1centeringControllerVelocityZ * Time.deltaTime, -schasehqp1currentControllerRotationZ);
+                schasehqp1controllerZ.Rotate(0, 0, -p1unrotateZ);   // Rotating to reduce the rotation
+                schasehqp1currentControllerRotationZ += p1unrotateZ;    // Reducing the positive rotation
             }
         }
 
@@ -805,7 +805,7 @@ namespace WIGUx.Modules.chasehqSim
         }
 
         // Method to toggle the lights
-        void TogglechasehqLights(bool isActive)
+        void ToggleschasehqLights(bool isActive)
         {
             for (int i = 0; i < lights.Length; i++)
             {
@@ -815,14 +815,14 @@ namespace WIGUx.Modules.chasehqSim
             logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
         }
 
-        IEnumerator FlashchasehqLights()
+        IEnumerator FlashschasehqLights()
         {
             int currentIndex = 0; // Start with the first light in the array
 
             while (true)
             {
                 // Select the current light
-                Light light = chasehqLights[currentIndex];
+                Light light = schasehqLights[currentIndex];
 
                 // Check if the light is not null
                 if (light != null)
@@ -831,13 +831,13 @@ namespace WIGUx.Modules.chasehqSim
                     // logger.Debug($"Flashing {light.name}");
 
                     // Turn on the chosen light
-                    TogglechasehqLight(light, true);
+                    ToggleschasehqLight(light, true);
 
                     // Wait for the flash duration
                     yield return new WaitForSeconds(flashDuration);
 
                     // Turn off the chosen light
-                    TogglechasehqLight(light, false);
+                    ToggleschasehqLight(light, false);
 
                     // Wait for the next flash interval
                     yield return new WaitForSeconds(flashInterval - flashDuration);
@@ -848,11 +848,11 @@ namespace WIGUx.Modules.chasehqSim
                 }
 
                 // Move to the next light in the array
-                currentIndex = (currentIndex + 1) % chasehqLights.Length;
+                currentIndex = (currentIndex + 1) % schasehqLights.Length;
             }
         }
 
-        void TogglechasehqLight(Light light, bool isActive)
+        void ToggleschasehqLight(Light light, bool isActive)
         {
             if (light != null)
             {
@@ -865,14 +865,14 @@ namespace WIGUx.Modules.chasehqSim
             }
         }
 
-        void TogglechasehqLight1(bool isActive)
+        void ToggleschasehqLight1(bool isActive)
         {
-            TogglechasehqLight(chasehq1_light, isActive);
+            ToggleschasehqLight(schasehq1_light, isActive);
         }
 
-        void TogglechasehqLight2(bool isActive)
+        void ToggleschasehqLight2(bool isActive)
         {
-            TogglechasehqLight(chasehq2_light, isActive);
+            ToggleschasehqLight(schasehq2_light, isActive);
         }
 
     }

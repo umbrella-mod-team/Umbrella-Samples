@@ -144,7 +144,50 @@ namespace WIGUx.Modules.pdriftMotionSim
                         logger.Info("pdriftZ object found.");
                         pdriftZStartPosition = pdriftZObject.position;
                         pdriftZStartRotation = pdriftZObject.rotation;
-                        
+
+                        // Find fireemissive object under pdriftX
+                        fireemissiveObject = pdriftZObject.Find("fireemissive");
+                        if (fireemissiveObject != null)
+                        {
+                            logger.Info("fireemissive object found.");
+                            // Ensure the fireemissive object is initially off
+                            Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
+                            if (renderer != null)
+                            {
+                                renderer.material.DisableKeyword("_EMISSION");
+                            }
+                            else
+                            {
+                                logger.Debug("Renderer component is not found on fireemissive object.");
+                            }
+                        }
+                        else
+                        {
+                            logger.Debug("fireemissive object not found under pdriftZ.");
+                        }
+
+                        // Find fire1_light object
+                        fire1_light = pdriftZObject.Find("fire1_light").GetComponent<Light>();
+                        if (fire1_light != null)
+                        {
+                            logger.Info("fire1_light object found.");
+                        }
+                        else
+                        {
+                            logger.Debug("fire1_light object not found.");
+                        }
+
+                        // Find fire2_light object
+                        fire2_light = pdriftZObject.Find("fire2_light").GetComponent<Light>();
+                        if (fire2_light != null)
+                        {
+                            logger.Info("fire2_light object found.");
+                        }
+                        else
+                        {
+                            logger.Debug("fire2_light object not found.");
+                        }
+
                         // Find pdriftController under pdriftZ
                         pdriftController = pdriftZObject.Find("pdriftController");
                         if (cockpitCam != null)
@@ -190,6 +233,9 @@ namespace WIGUx.Modules.pdriftMotionSim
             {
                 logger.Error("pdriftX object not found!");
             }
+            ToggleFireEmissive1(false);
+            ToggleLight1(false);
+            ToggleLight2(false);
         }
 
         void Update()
@@ -994,7 +1040,7 @@ namespace WIGUx.Modules.pdriftMotionSim
                     {
                         renderer.material.DisableKeyword("_EMISSION");
                     }
-                    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
+                  //  logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
                 }
                 else
                 {

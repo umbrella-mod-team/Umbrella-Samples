@@ -388,7 +388,6 @@ namespace WIGUx.Modules.outrunMotionSim
         void HandleKeyboardInput(ref bool inputDetected)
         {
             if (!inFocusMode) return;
-
             /*
             // Fire1
             if (Input.GetButtonDown("Fire1"))
@@ -401,21 +400,25 @@ namespace WIGUx.Modules.outrunMotionSim
             {
                 inputDetected = true;
             }
-
+            */
             // Fire2
             if (Input.GetButtonDown("Fire2"))
             {
-                StartCoroutine(LightsOn());
+                ToggleFireEmissive1(true);
+                ToggleLight1(true);
+                ToggleLight2(true);
                 inputDetected = true;
             }
 
             // Reset position on button release
             if (Input.GetButtonUp("Fire2"))
             {
-                StartCoroutine(LightsOff());
+                ToggleFireEmissive1(false);
+                ToggleLight1(false);
+                ToggleLight2(false);
                 inputDetected = true;
             }
-
+            /*
             // Fire3
             if (Input.GetButtonDown("Fire3"))
             {
@@ -459,7 +462,7 @@ namespace WIGUx.Modules.outrunMotionSim
                 inputDetected = true;
             }
             */
-            /*
+ 
             if (Input.GetKey(KeyCode.RightArrow) && currentRotationZ > -rotationLimitZ)
             {
                 float rotateZ = keyboardVelocityZ * Time.deltaTime;
@@ -510,7 +513,7 @@ namespace WIGUx.Modules.outrunMotionSim
                 currentControllerRotationY += rotateY;
                 inputDetected = true;
             }
-            */
+       
 
             /*
             // Stick X Rotation

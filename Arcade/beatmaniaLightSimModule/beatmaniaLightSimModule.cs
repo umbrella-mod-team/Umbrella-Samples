@@ -17,14 +17,13 @@ namespace WIGUx.Modules.beatmaniaLightSim
         public Light beat2Light;
         public Light beat3Light;
         public Light beat4Light;
-        private float BeatIntensity = 1.5f;
+        private float BeatIntensity = 2.5f;
         private float BeatIntensityLimit = 25.0f;
         private float BeatDuration = 0.25f; // Adjust this value for how long the intensity lasts after a key press
         private float CurrentBeatIntensity = 0f;
         private Coroutine beatFlashCoroutine;
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private readonly string[] compatibleGames = {"bm1stmix", "bm2ndmix", "bm3", "bm36th", "bm37th", "bm3core", "bm3final", "bm3rdmix", "bm4thmix", "bm5thmix", "bm6thmix", "bm7thmix", "bmaster", "bmboxing", "bmbugs", "bmcbowl", "bmclubmx", "bmcompm2", "bmcompmx", "bmcorerm", "bmcpokr", "bmdct", "bmfinal", "bmiidx", "bmiidx2", "bmiidx3", "bmiidx4", "bmiidx5", "bmiidx6", "bmiidx7", "bmiidx8", "bmiidxc", "bmiidxc2", "bmiidxs", "bmjr", "bml3", "bml3kanji", "bml3mp1802", "bml3mp1805", "bmoonii", "bmsafari", "bmsoccer", "bmx", "bmxstunts"
-};
+        private readonly string[] compatibleGames = { "bm1stmix", "bm2ndmix", "bm3", "bm36th", "bm37th", "bm3core", "bm3final", "bm3rdmix", "bm4thmix", "bm5thmix", "bm6thmix", "bm7thmix", "bmaster", "bmboxing", "bmbugs", "bmcbowl", "bmclubmx", "bmcompm2", "bmcompmx", "bmcorerm", "bmcpokr", "bmdct", "bmfinal", "bmiidx", "bmiidx2", "bmiidx3", "bmiidx4", "bmiidx5", "bmiidx6", "bmiidx7", "bmiidx8", "bmiidxc", "bmiidxc2", "bmiidxs", "bmjr", "bml3", "bml3kanji", "bml3mp1802", "bml3mp1805" };
 
         void Start()
         {
@@ -141,29 +140,18 @@ namespace WIGUx.Modules.beatmaniaLightSim
         {
             if (!inFocusMode) return;
 
-            Vector2 primaryThumbstick = Vector2.zero;
-            Vector2 secondaryThumbstick = Vector2.zero;
-
+            // Handle key input for beat flash
             if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.F) ||
                 Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.C) ||
                 Input.GetKeyDown(KeyCode.V))
             {
-                if (beatFlashCoroutine != null)
-                {
-                    StopCoroutine(beatFlashCoroutine);
-                }
-
-                CurrentBeatIntensity += BeatIntensity;
-                CurrentBeatIntensity = Mathf.Min(CurrentBeatIntensity, BeatIntensityLimit); // Clamp to BeatIntensityLimit
-
-                // If you want to limit how much the duration can increase
-                if (BeatDuration < 0.25f)  // Example limit for BeatDuration
-                {
-                    BeatDuration += 0.25f;  // Increase duration with each key press
-                }
-
-                beatFlashCoroutine = StartCoroutine(ManageBeatEffect());
+                HandleBeatFlash();
             }
+
+            Vector2 primaryThumbstick = Vector2.zero;
+            Vector2 secondaryThumbstick = Vector2.zero;
+
+
 
             // VR controller input
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
@@ -289,18 +277,40 @@ namespace WIGUx.Modules.beatmaniaLightSim
                 }
             }
         }
+
+        void HandleBeatFlash()
+        {
+            if (beatFlashCoroutine != null)
+            {
+                StopCoroutine(beatFlashCoroutine);  // Stop the existing coroutine if one is running
+            }
+
+            // Increase beat intensity and clamp it to a maximum limit
+            CurrentBeatIntensity += BeatIntensity;
+            CurrentBeatIntensity = Mathf.Min(CurrentBeatIntensity, BeatIntensityLimit);
+
+            // Restart the coroutine to manage the beat effect
+            beatFlashCoroutine = StartCoroutine(ManageBeatEffect());
+        }
+
         IEnumerator ManageBeatEffect()
         {
+            // Calculate the intensity decrease rate
+            float decayRate = BeatIntensity / BeatDuration;
+
             while (CurrentBeatIntensity > 0)
             {
                 SetLightIntensity(CurrentBeatIntensity);
                 ToggleBeatEmissive(CurrentBeatIntensity > 0);
 
                 // Decrease intensity over time
-                CurrentBeatIntensity -= (BeatIntensity / BeatDuration) * Time.deltaTime;
+                CurrentBeatIntensity -= decayRate * Time.deltaTime;
 
-                // Optionally, adjust the rate of decrease for `BeatDuration`
-                BeatDuration = Mathf.Max(BeatDuration - (Time.deltaTime / 2), 0.25f);  // Slower reduction over time, with a minimum value
+                // Ensure intensity does not drop below 0
+                if (CurrentBeatIntensity < 0)
+                {
+                    CurrentBeatIntensity = 0;
+                }
 
                 yield return null;
             }
