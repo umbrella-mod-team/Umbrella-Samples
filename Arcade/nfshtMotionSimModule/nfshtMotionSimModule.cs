@@ -6,15 +6,15 @@ using EmuVR.InputManager;
 using System.Collections;
 using System.Runtime.InteropServices.ComTypes;
 
-namespace WIGUx.Modules.vfMotionSim
+namespace WIGUx.Modules.nfshtMotionSim
 {
-    public class vfMotionSimController : MonoBehaviour
+    public class nfshtMotionSimController : MonoBehaviour
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
         private readonly float keyboardVelocityX = 1f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityY = 1f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityZ = 1f;  // Velocity for keyboard input
         private readonly float vrVelocity = 30f;        // Velocity for VR controller input
 
         private readonly float centeringVelocityX = 15f;  // Velocity for centering rotation
@@ -24,56 +24,56 @@ namespace WIGUx.Modules.vfMotionSim
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
 
         private float rotationLimitX = 3f;  // Rotation limit for X-axis
-        private float rotationLimitY = 10f;  // Rotation limit for Y-axis
-        private float rotationLimitZ = 10f;  // Rotation limit for Z-axis
+        private float rotationLimitY = 6f;  // Rotation limit for Y-axis
+        private float rotationLimitZ = 6f;  // Rotation limit for Z-axis
 
         private float currentRotationX = 0f;  // Current rotation for X-axis
         private float currentRotationY = 0f;  // Current rotation for Y-axis
         private float currentRotationZ = 0f;  // Current rotation for Z-axis
 
-        private Transform vfXObject; // Reference to the main X object
-        private Transform vfYObject; // Reference to the main Y object
-        private Transform vfZObject; // Reference to the main Z object
+        private Transform nfshtXObject; // Reference to the main X object
+        private Transform nfshtYObject; // Reference to the main Y object
+        private Transform nfshtZObject; // Reference to the main Z object
         private GameObject cockpitCam;    // Reference to the cockpit camera
 
         // Initial positions and rotations for resetting
-        private Vector3 vfXStartPosition;
-        private Quaternion vfXStartRotation;
-        private Vector3 vfYStartPosition;
-        private Quaternion vfYStartRotation;
-        private Vector3 vfZStartPosition;
-        private Quaternion vfZStartRotation;
+        private Vector3 nfshtXStartPosition;
+        private Quaternion nfshtXStartRotation;
+        private Vector3 nfshtYStartPosition;
+        private Quaternion nfshtYStartRotation;
+        private Vector3 nfshtZStartPosition;
+        private Quaternion nfshtZStartRotation;
         private Vector3 cockpitCamStartPosition;
         private Quaternion cockpitCamStartRotation;
 
         // Controller animation 
         // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 400f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 400f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 400f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityX = 600f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityY = 600f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityZ = 600f;  // Velocity for keyboard input
         private readonly float vrControllerVelocity = 350f;        // Velocity for VR controller input
 
         private float controllerrotationLimitX = 0f;  // Rotation limit for X-axis (stick or wheel)
         private float controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
-        private float controllerrotationLimitZ = 80f;  // Rotation limit for Z-axis (stick or wheel)
+        private float controllerrotationLimitZ = 150f;  // Rotation limit for Z-axis (stick or wheel)
 
         private float currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
         private float currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
         private float currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
 
-        private readonly float centeringControllerVelocityX = 400f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityY = 400f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityZ = 400f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityX = 600f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityY = 600f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityZ = 600f;  // Velocity for centering rotation (stick or wheel)
 
-        private Transform vfControllerX; // Reference to the main animated controller (wheel)
-        private Vector3 vfControllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion vfControllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform vfControllerY; // Reference to the main animated controller (wheel)
-        private Vector3 vfControllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion vfControllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform vfControllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 vfControllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion vfControllerZStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform nfshtControllerX; // Reference to the main animated controller (wheel)
+        private Vector3 nfshtControllerXStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion nfshtControllerXStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform nfshtControllerY; // Reference to the main animated controller (wheel)
+        private Vector3 nfshtControllerYStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion nfshtControllerYStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform nfshtControllerZ; // Reference to the main animated controller (wheel)
+        private Vector3 nfshtControllerZStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion nfshtControllerZStartRotation; // Initial controlller positions and rotations for resetting
 
         // Initial positions and rotations for VR setup
         private Vector3 playerCameraStartPosition;
@@ -87,52 +87,33 @@ namespace WIGUx.Modules.vfMotionSim
         private GameObject playerCamera;
         private GameObject playerVRSetup;
 
-
         //Lights and Emissives
-        private Transform vftaillight1Object;
-        private Transform vftaillight2Object;
-        private Transform vfhazardObject;
-        private Transform vfhazardlObject;
-        private Transform vfhazardrObject;
-        public float brightIntensity = 5.0f; // Set the brightness intensity level
         public float dimIntensity = 1.0f;    // Set the dim intensity level
         public string fire1Button = "Fire1"; // Name of the fire button
         public string fire2Button = "Fire2"; // Name of the fire button 
         public string fire3Button = "Fire3"; // Name of the fire button 
         public string JumpButton = "Jump"; // Name of the fire button 
-        public Light vfbrakelight1;
-        public Light vfbrakelight2;
+        private Light[] strobes;
+        private Renderer[] hazardRenderers;
         public Light strobe1_light;
         public Light strobe2_light;
         public Light strobe3_light;
         public Light strobe4_light;
-        private float flashDuration = 0.01f;
+        private float flashDuration = 0.05f;
         private float flashInterval = 0.05f;
-        private Renderer[] hazzardEmissiveObjects;
-        private Renderer[] leftEmissiveObjects;
-        private Renderer[] rightEmissiveObjects;
-        public float frontFlashDuration = 0.7f;
-        public float frontFlashDelay = 0.7f;
-        public float sideFlashDuration = 0.5f;
-        public float sideFlashDelay = 0.5f;
-        public float frontDangerDuration = 0.7f;
-        public float frontDangerDelay = 0.7f;
-        public float sideDangerDuration = 0.55f;
-        public float sideDangerDelay = 0.55f;
-        private Coroutine frontCoroutine;
-        private Coroutine leftCoroutine;
-        private Coroutine rightCoroutine;
-        public float lightDuration = 0.35f; // Duration during which the lights will be on
+        private float lightDuration = 0.5f; // Duration during which the lights will be on
+        private bool arenfshtLighsOn = false; // track strobe lights
+        private bool isnfshtFlashing = false; //set the flashing flag
+        private bool isnfshtinHigh = false; //set the gear flag
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private bool areStrobesOn = false; // track strobe lights
-        private Coroutine hazardsCoroutine; // Coroutine variable to control the strobe flashing
-        //array of lights
-        private Light[] lights;
+        private bool areStrobesOn = false; // track police lights
+        private Coroutine strobeCoroutine; // Coroutine variable to control the strobe flashing
+        private Transform nfshthazard1Object;
+        private Transform nfshthazard2Object;
+        private Transform nfshthazard3Object;
+        private Transform nfshthazard4Object;
 
-        // Array of strobe lights
-        private List<Light> strobeLights = new List<Light>();
-
-        private readonly string[] compatibleGames = { "vr.zip" };
+        private readonly string[] compatibleGames = { "Need For Speed HEAT Takedown" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -149,143 +130,73 @@ namespace WIGUx.Modules.vfMotionSim
             GameObject cameraObject = GameObject.Find("OVRCameraRig");
 
             // Find gfpce2X object in hierarchy
-            vfXObject = transform.Find("vfX");
-            if (vfXObject != null)
+            nfshtXObject = transform.Find("nfshtX");
+            if (nfshtXObject != null)
             {
-                logger.Info("vfX object found.");
-                vfXStartPosition = vfXObject.position;
-                vfXStartRotation = vfXObject.rotation;
+                logger.Info("nfshtX object found.");
+                nfshtXStartPosition = nfshtXObject.position;
+                nfshtXStartRotation = nfshtXObject.rotation;
 
-                // Find vfY object under vfX
-                vfYObject = vfXObject.Find("vfY");
-                if (vfYObject != null)
+                // Find nfshtY object under nfshtX
+                nfshtYObject = nfshtXObject.Find("nfshtY");
+                if (nfshtYObject != null)
                 {
-                    logger.Info("vfY object found.");
-                    vfYStartPosition = vfYObject.position;
-                    vfYStartRotation = vfYObject.rotation;
+                    logger.Info("nfshtY object found.");
+                    nfshtYStartPosition = nfshtYObject.position;
+                    nfshtYStartRotation = nfshtYObject.rotation;
 
-                    // Find vfZ object under vfY
-                    vfZObject = vfYObject.Find("vfZ");
-                    if (vfZObject != null)
+                    // Find nfshtZ object under nfshtY
+                    nfshtZObject = nfshtYObject.Find("nfshtZ");
+                    if (nfshtZObject != null)
                     {
-                        logger.Info("vfZ object found.");
-                        vfZStartPosition = vfZObject.position;
-                        vfZStartRotation = vfZObject.rotation;
+                        logger.Info("nfshtZ object found.");
+                        nfshtZStartPosition = nfshtZObject.position;
+                        nfshtZStartRotation = nfshtZObject.rotation;
 
-                        // Find vfhazard object under vfZ
-                        vfhazardObject = vfZObject.Find("vfhazard");
-                        if (vfhazardObject != null)
+                        // Find nfshtControllerX under nfshtZ
+                        nfshtControllerX = nfshtZObject.Find("nfshtControllerX");
+                        if (nfshtControllerX != null)
                         {
-                            logger.Info("vfhazard object found.");
-
-                            // Ensure the vfhazard object's emission is initially off for all materials
-                            Renderer renderer = vfhazardObject.GetComponent<Renderer>();
-                            if (renderer != null)
-                            {
-                                Material[] materials = renderer.materials; // Get all materials
-                                foreach (Material mat in materials)
-                                {
-                                    if (mat != null)
-                                    {
-                                        mat.DisableKeyword("_EMISSION");
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                logger.Debug("Renderer component is not found on vfhazard object.");
-                            }
-                        }
-                        else
-                        {
-                            logger.Debug("vfhazard object not found under vfZ.");
-                        }
-
-
-                        // Find vfControllerX under vfZ
-                        vfControllerX = vfZObject.Find("vfControllerX");
-                        if (vfControllerX != null)
-                        {
-                            logger.Info("vfControllerX object found.");
+                            logger.Info("nfshtControllerX object found.");
                             // Store initial position and rotation of the stick
-                            vfControllerXStartPosition = vfControllerX.transform.position; // these could cause the controller to mess up
-                            vfControllerXStartRotation = vfControllerX.transform.rotation;
+                            nfshtControllerXStartPosition = nfshtControllerX.transform.position; // these could cause the controller to mess up
+                            nfshtControllerXStartRotation = nfshtControllerX.transform.rotation;
 
-                            // Find vfControllerY under vfControllerX
-                            vfControllerY = vfControllerX.Find("vfControllerY");
-                            if (vfControllerY != null)
+                            // Find nfshtControllerY under nfshtControllerX
+                            nfshtControllerY = nfshtControllerX.Find("nfshtControllerY");
+                            if (nfshtControllerY != null)
                             {
-                                logger.Info("vfControllerY object found.");
+                                logger.Info("nfshtControllerY object found.");
                                 // Store initial position and rotation of the stick
-                                vfControllerYStartPosition = vfControllerY.transform.position;
-                                vfControllerYStartRotation = vfControllerY.transform.rotation;
+                                nfshtControllerYStartPosition = nfshtControllerY.transform.position;
+                                nfshtControllerYStartRotation = nfshtControllerY.transform.rotation;
 
-                                // Find vfControllerZ under vfControllerY
-                                vfControllerZ = vfControllerY.Find("vfControllerZ");
-                                if (vfControllerZ != null)
+                                // Find nfshtControllerZ under nfshtControllerY
+                                nfshtControllerZ = nfshtControllerY.Find("nfshtControllerZ");
+                                if (nfshtControllerZ != null)
                                 {
-                                    logger.Info("vfControllerZ object found.");
+                                    logger.Info("nfshtControllerZ object found.");
                                     // Store initial position and rotation of the stick
-                                    vfControllerZStartPosition = vfControllerZ.transform.position;
-                                    vfControllerZStartRotation = vfControllerZ.transform.rotation;
+                                    nfshtControllerZStartPosition = nfshtControllerZ.transform.position;
+                                    nfshtControllerZStartRotation = nfshtControllerZ.transform.rotation;
                                 }
                                 else
                                 {
-                                    logger.Error("vfControllerZ object not found under vfControllerY!");
+                                    logger.Error("nfshtControllerZ object not found under nfshtControllerY!");
                                 }
                             }
                             else
                             {
-                                logger.Error("vfControllerY object not found under vfControllerX!");
+                                logger.Error("nfshtControllerY object not found under nfshtControllerX!");
                             }
                         }
                         else
                         {
-                            logger.Error("vfControllerX object not found under vfZ!");
+                            logger.Error("nfshtControllerX object not found under nfshtZ!");
                         }
-                        // Gets all Light components in the target object and its children
-                        Light[] allLights = vfZObject.GetComponentsInChildren<Light>();
-
-                        // Log the names of the objects containing the Light components and filter out unwanted lights
-                        foreach (Light light in allLights)
-                        {
-                            if (light.gameObject.name == "vfbrakelight1")
-                            {
-                                vfbrakelight1 = light;
-                                logger.Info("Included Light found in object: " + light.gameObject.name);
-                            }
-                            else if (light.gameObject.name == "vfbrakelight2")
-                            {
-                                vfbrakelight2 = light;
-                                logger.Info("Included Light found in object: " + light.gameObject.name);
-                            }
-                            else if (light.gameObject.name == "strobe1_light")
-                            {
-                                strobe1_light = light;
-                                logger.Info("Included Light found in object: " + light.gameObject.name);
-                            }
-                            else if (light.gameObject.name == "strobe2_light")
-                            {
-                                strobe2_light = light;
-                                logger.Info("Included Light found in object: " + light.gameObject.name);
-                            }
-                            else if (light.gameObject.name == "strobe3_light")
-                            {
-                                strobe3_light = light;
-                                logger.Info("Included Light found in object: " + light.gameObject.name);
-                            }
-                            else if (light.gameObject.name == "strobe4_light")
-                            {
-                                strobe4_light = light;
-                                logger.Info("Included Light found in object: " + light.gameObject.name);
-                            }
-                            else
-                            {
-                                logger.Info("Excluded Light found in object: " + light.gameObject.name);
-                            }
-                        }
+                  
                         // Find cockpit camera under cockpit
-                        cockpitCam = vfZObject.Find("eyes/cockpitcam")?.gameObject;
+                        cockpitCam = nfshtZObject.Find("eyes/cockpitcam")?.gameObject;
                         if (cockpitCam != null)
                         {
                             logger.Info("Cockpitcam object found.");
@@ -296,56 +207,164 @@ namespace WIGUx.Modules.vfMotionSim
                         }
                         else
                         {
-                            logger.Error("Cockpitcam object not found under vfZ!");
+                            logger.Error("Cockpitcam object not found under nfshtZ!");
                         }
                     }
                     else
                     {
-                        logger.Error("vfZ object not found under vfY!");
+                        logger.Error("nfshtZ object not found under nfshtY!");
                     }
                 }
                 else
                 {
-                    logger.Error("vfY object not found under vfX!");
+                    logger.Error("nfshtY object not found under nfshtX!");
                 }
             }
             else
             {
-                logger.Error("vfX object not found!");
+                logger.Error("nfshtX object not found!");
             }
-            hazzardEmissiveObjects = new Renderer[1];
-            //leftEmissiveObjects = new Renderer[1];
-            //rightEmissiveObjects = new Renderer[1];
+            // Find nfshthazard1 object under sharrierX
+            nfshthazard1Object = transform.Find("nfshthazard1");
+            if (nfshthazard1Object != null)
+            {
+                logger.Info("nfshthazard1 object found.");
+                // Ensure the nfshthazard1 object is initially off
+                Renderer renderer = nfshthazard1Object.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on nfshthazard1 object.");
+                }
+            }
+            else
+            {
+                logger.Debug("nfshthazard1object not found.");
+            }
+            // Find nfshthazard2 object under sharrierX
+            nfshthazard2Object = transform.Find("nfshthazard2");
+            if (nfshthazard2Object != null)
+            {
+                logger.Info("nfshthazard2 object found.");
+                // Ensure the nfshthazard2 object is initially off
+                Renderer renderer = nfshthazard2Object.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on nfshthazard2 object.");
+                }
+            }
+            else
+            {
+                logger.Debug("nfshthazard2object not found.");
+            }
+            // Find nfshthazard2 object under sharrierX
+            nfshthazard3Object = transform.Find("nfshthazard3");
+            if (nfshthazard3Object != null)
+            {
+                logger.Info("nfshthazard3 object found.");
+                // Ensure the nfshthazard3 object is initially off
+                Renderer renderer = nfshthazard3Object.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on nfshthazard3 object.");
+                }
+            }
+            else
+            {
+                logger.Debug("nfshthazard3object not found.");
+            }
+            // Find nfshthazard4 object under sharrierX
+            nfshthazard4Object = transform.Find("nfshthazard4");
+            if (nfshthazard4Object != null)
+            {
+                logger.Info("nfshthazard4 object found.");
+                // Ensure the nfshthazard4 object is initially off
+                Renderer renderer = nfshthazard4Object.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on nfshthazard4 object.");
+                }
+            }
+            else
+            {
+                logger.Debug("nfshthazard4object not found.");
+            }
 
-            hazzardEmissiveObjects[0] = vfZObject.Find("vfhazard")?.GetComponent<Renderer>();
-            //hazzardEmissiveObjects[1] = vfZObject.Find("vfhazardl")?.GetComponent<Renderer>();
-            // hazzardEmissiveObjects[2] = vfZObject.Find("vfhazardr")?.GetComponent<Renderer>();
+            // Initialize the hazardRenderers array with the corresponding hazard renderers
+            hazardRenderers = new Renderer[]
+            {
+                nfshthazard1Object.GetComponent<Renderer>(),
+                nfshthazard2Object.GetComponent<Renderer>(),
+                nfshthazard3Object.GetComponent<Renderer>(),
+                nfshthazard4Object.GetComponent<Renderer>()
+            };
 
+            // Ensure all hazards are initially turned off
+            foreach (var renderer in hazardRenderers)
+            {
+                if (renderer != null)
+                {
+                    ToggleEmissive(renderer, false);
+                }
+            }
+            // Gets all Light components in the target object and its children
+            // Initialize the strobes array with all strobe lights
+            // Gets all Light components in the target object and its children
+            Light[] allLights = transform.GetComponentsInChildren<Light>();
 
-            //leftEmissiveObjects[0] = vfZObject.Find("left1")?.GetComponent<Renderer>();
-            //leftEmissiveObjects[1] = vfZObject.Find("left2")?.GetComponent<Renderer>();
-            // leftEmissiveObjects[2] = vfZObject.Find("left3")?.GetComponent<Renderer>();
+            // Log the names of the objects containing the Light components and filter out unwanted lights
+            foreach (Light light in allLights)
+            {
+                if (light.gameObject.name == "strobe1_light")
+                {
+                    strobe1_light = light;
+                    logger.Info("Included Light found in object: " + light.gameObject.name);
+                }
+                else if (light.gameObject.name == "strobe2_light")
+                {
+                    strobe2_light = light;
+                    logger.Info("Included Light found in object: " + light.gameObject.name);
+                }
+                else if (light.gameObject.name == "strobe3_light")
+                {
+                    strobe3_light = light;
+                    logger.Info("Included Light found in object: " + light.gameObject.name);
+                }
+                else if (light.gameObject.name == "strobe4_light")
+                {
+                    strobe4_light = light;
+                    logger.Info("Included Light found in object: " + light.gameObject.name);
+                }
+                else
+                {
+                    logger.Info("Excluded Light found in object: " + light.gameObject.name);
+                }
+            }
 
-            //rightEmissiveObjects[0] = vfZObject.Find("right1")?.GetComponent<Renderer>();
-            //rightEmissiveObjects[1] = vfZObject.Find("right2")?.GetComponent<Renderer>();
-            //rightEmissiveObjects[2] = vfZObject.Find("right3")?.GetComponent<Renderer>();
-            // Set lights to start
-
-            StartAttractPattern();
-            ToggleLight1(false);
-            ToggleLight2(false);
+            // StartAttractPattern();
+            TurnOffAllStrobes();
         }
 
         void Update()
         {
             bool inputDetected = false;
             bool throttleDetected = false;// Initialize at the beginning of the Update method
-            if (Input.GetKeyDown(KeyCode.Y))
-            {
-                logger.Info("Resetting Positions");
-                ResetPositions();
-            }
-                /*
+           /*
                 // Check if the "L" key is pressed
                 if (Input.GetKeyDown(KeyCode.L))
                 {
@@ -368,7 +387,8 @@ namespace WIGUx.Modules.vfMotionSim
                     // Toggle the strobe state
                     areStrobesOn = !areStrobesOn;
                 }
-                */
+
+            */
                 if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
                 string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
@@ -404,15 +424,11 @@ namespace WIGUx.Modules.vfMotionSim
         {
             string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
             logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Starting Virtua Racing-Virtua Formula...");
-            logger.Info("Virtua Racing Motion Sim starting...Wow Chunky polygons!");
-            logger.Info("Ready, Go!...");
+            logger.Info("Compatible Rom Dectected, Need For Speed HEAT Takedown!...");
+            logger.Info("Need For Speed HEAT Takedown Motion Sim starting...Take them all down!");
+            logger.Info("Watch out for cops!...");
             cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
             cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
-            StopCurrentPatterns();
-            //  strobeCoroutine = StartCoroutine(FlashStrobes());
-            // StopCoroutine(strobeCoroutine);
-            //  StartDangerPattern();
             // Set objects as children of cockpit cam for focus mode
 
             if (cockpitCam != null)
@@ -460,28 +476,25 @@ namespace WIGUx.Modules.vfMotionSim
             // Restore original parents of objects
             RestoreOriginalParent(playerCamera, "PlayerCamera");
             RestoreOriginalParent(playerVRSetup, "PlayerVRSetup.PlayerRig");
-            // StopCoroutine(strobeCoroutine);
-            // TurnOffAllStrobes();
-            StartAttractPattern();
-
-            // Reset vfX to initial positions and rotations
-            if (vfXObject != null)
+  
+            // Reset nfshtX to initial positions and rotations
+            if (nfshtXObject != null)
             {
-                vfXObject.position = vfXStartPosition;
-                vfXObject.rotation = vfXStartRotation;
+                nfshtXObject.position = nfshtXStartPosition;
+                nfshtXObject.rotation = nfshtXStartRotation;
             }
 
-            // Reset vfY object to initial position and rotation
-            if (vfYObject != null)
+            // Reset nfshtY object to initial position and rotation
+            if (nfshtYObject != null)
             {
-                vfYObject.position = vfYStartPosition;
-                vfYObject.rotation = vfYStartRotation;
+                nfshtYObject.position = nfshtYStartPosition;
+                nfshtYObject.rotation = nfshtYStartRotation;
             }
-            // Reset vfZ object to initial position and rotation
-            if (vfZObject != null)
+            // Reset nfshtZ object to initial position and rotation
+            if (nfshtZObject != null)
             {
-                vfZObject.position = vfZStartPosition;
-                vfZObject.rotation = vfZStartRotation;
+                nfshtZObject.position = nfshtZStartPosition;
+                nfshtZObject.rotation = nfshtZStartRotation;
             }
 
             // Reset cockpit cam to initial position and rotation
@@ -491,8 +504,14 @@ namespace WIGUx.Modules.vfMotionSim
                 cockpitCam.transform.rotation = cockpitCamStartRotation;
             }
             logger.Info("Resetting Positions");
+            if (strobeCoroutine != null)
+            {
+                StopCoroutine(strobeCoroutine);
+                strobeCoroutine = null;
+                isnfshtFlashing = false;
+            }
+            TurnOffAllStrobes();
             ResetPositions();
-
             inFocusMode = false;  // Clear focus mode flag
         }
 
@@ -606,7 +625,7 @@ namespace WIGUx.Modules.vfMotionSim
 
                     if (currentRotationX - rotateX > -rotationLimitX)
                     {
-                        vfXObject.Rotate(rotateX, 0, 0);
+                        nfshtXObject.Rotate(rotateX, 0, 0);
                         currentRotationX -= rotateX;
                         throttleDetected = true;
                     }
@@ -617,7 +636,7 @@ namespace WIGUx.Modules.vfMotionSim
 
                     if (currentRotationX + rotateX < rotationLimitX)
                     {
-                        vfXObject.Rotate(-rotateX, 0, 0);
+                        nfshtXObject.Rotate(-rotateX, 0, 0);
                         currentRotationX += rotateX;
                         throttleDetected = true;
                     }
@@ -625,18 +644,31 @@ namespace WIGUx.Modules.vfMotionSim
                 // LeftTrigger           
                 if (XInput.GetDown(XInput.Button.LIndexTrigger))
                 {
-                    ToggleBrakeEmissive(true);
-                    ToggleLight1(true);
-                    ToggleLight2(true);
                     throttleDetected = true;
                 }
                 // Reset position on button release
                 if (XInput.GetUp(XInput.Button.LIndexTrigger))
                 {
-                    ToggleBrakeEmissive(false);
-                    ToggleLight1(false);
-                    ToggleLight2(false);
                     throttleDetected = true;
+                }
+                // Thunbstick button pressed
+                if (XInput.GetDown(XInput.Button.LThumbstick))
+                {
+                    if (!isnfshtFlashing)
+                    {
+                        // Start the flashing if not already flashing
+                        strobeCoroutine = StartCoroutine(FlashStrobes());
+                        isnfshtFlashing = true;
+                    }
+                    else
+                    {
+                        // Stop the flashing if it's currently active
+                        StopCoroutine(strobeCoroutine);
+                        TurnOffAllStrobes();
+                        strobeCoroutine = null;
+                        isnfshtFlashing = false;
+                    }
+                    inputDetected = true;
                 }
                 // Handle RB button press for plunger position
                 if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
@@ -663,144 +695,144 @@ namespace WIGUx.Modules.vfMotionSim
                     inputDetected = true;
                 }
             }
-
-            // Fire1
-            if (Input.GetButtonDown("Fire1"))
-            {
-                inputDetected = true;
-            }
-
-            // Reset position on button release
-            if (Input.GetButtonUp("Fire1"))
-            {
-                inputDetected = true;
-            }
             /*
-            // Fire2
-            if (Input.GetButtonDown("Fire2"))
-            {
-                // Set lights to bright
-                ToggleBrightness1(true);
-                ToggleBrightness2(true);
-                ToggleBrakeEmissive(true);
-                ToggleLight1(true);
-                ToggleLight2(true);
-                inputDetected = true;
-            }
+                 // Fire1
+                 if (Input.GetButtonDown("Fire1"))
+                 {
+                     inputDetected = true;
+                 }
 
-            // Reset position on button release
-            if (Input.GetButtonUp("Fire2"))
-            {
-                ToggleBrakeEmissive(false);
-                ToggleBrightness1(false);
-                ToggleBrightness2(false);
-                ToggleLight1(false);
-                ToggleLight2(false);
-                ToggleBrightness(false);
-                inputDetected = true;
-            }
-            */
-            // Fire3
-            if (Input.GetButtonDown("Fire3"))
-            {
-                inputDetected = true;
-            }
+                 // Reset position on button release
+                 if (Input.GetButtonUp("Fire1"))
+                 {
+                     inputDetected = true;
+                 }
 
-            // Reset position on button release
-            if (Input.GetButtonUp("Fire3"))
-            {
-                inputDetected = true;
-            }
+                 // Fire2
+                 if (Input.GetButtonDown("Fire2"))
+                 {
+                     // Set lights to bright
+                     ToggleBrightness1(true);
+                     ToggleBrightness2(true);
+                     ToggleBrakeEmissive(true);
+                     ToggleLight1(true);
+                     ToggleLight2(true);
+                     inputDetected = true;
+                 }
 
-            // Jump
-            if (Input.GetButtonDown("Jump"))
-            {
-                inputDetected = true;
-            }
+                 // Reset position on button release
+                 if (Input.GetButtonUp("Fire2"))
+                 {
+                     ToggleBrakeEmissive(false);
+                     ToggleBrightness1(false);
+                     ToggleBrightness2(false);
+                     ToggleLight1(false);
+                     ToggleLight2(false);
+                     ToggleBrightness(false);
+                     inputDetected = true;
+                 }
 
-            // Reset position on button release
-            if (Input.GetButtonUp("Jump"))
-            {
+                 // Fire3
+                 if (Input.GetButtonDown("Fire3"))
+                 {
+                     inputDetected = true;
+                 }
 
-                inputDetected = true;
-            }
+                 // Reset position on button release
+                 if (Input.GetButtonUp("Fire3"))
+                 {
+                     inputDetected = true;
+                 }
 
-            // Handle X rotation for vfYObject and vfControllerX (Down Arrow or primaryThumbstick.y > 0)
+                 // Jump
+                 if (Input.GetButtonDown("Jump"))
+                 {
+                     inputDetected = true;
+                 }
+
+                 // Reset position on button release
+                 if (Input.GetButtonUp("Jump"))
+                 {
+
+                     inputDetected = true;
+                 }
+               
+            // Handle X rotation for nfshtYObject and nfshtControllerX (Down Arrow or primaryThumbstick.y > 0)
             // Thumbstick direction: down
-            /*
+
             if ((Input.GetKey(KeyCode.DownArrow) || primaryThumbstick.y > 0))
             {
                 if (currentRotationX > -rotationLimitX)
                 {
                     float rotateX = (Input.GetKey(KeyCode.DownArrow) ? keyboardVelocityX : primaryThumbstick.y * vrVelocity) * Time.deltaTime;
-                    vfXObject.Rotate(rotateX, 0, 0);
+                    nfshtXObject.Rotate(rotateX, 0, 0);
                     currentRotationX -= rotateX;
                     inputDetected = true;
                 }
                 if (currentControllerRotationX > -controllerrotationLimitX)
                 {
                     float controllerRotateX = (Input.GetKey(KeyCode.DownArrow) ? keyboardControllerVelocityX : primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                    vfControllerX.Rotate(controllerRotateX, 0, 0);
+                    nfshtControllerX.Rotate(controllerRotateX, 0, 0);
                     currentControllerRotationX -= controllerRotateX;
                     inputDetected = true;
                 }
             }
 
-            // Handle X rotation for vfYObject and vfControllerX (Up Arrow or primaryThumbstick.y < 0)
+            // Handle X rotation for nfshtYObject and nfshtControllerX (Up Arrow or primaryThumbstick.y < 0)
             // Thumbstick direction: up
             if ((Input.GetKey(KeyCode.UpArrow) || primaryThumbstick.y < 0))
             {
                 if (currentRotationX < rotationLimitX)
                 {
                     float rotateX = (Input.GetKey(KeyCode.UpArrow) ? keyboardVelocityX : -primaryThumbstick.y * vrVelocity) * Time.deltaTime;
-                    vfXObject.Rotate(-rotateX, 0, 0);
+                    nfshtXObject.Rotate(-rotateX, 0, 0);
                     currentRotationX += rotateX;
                     inputDetected = true;
                 }
                 if (currentControllerRotationX < controllerrotationLimitX)
                 {
                     float controllerRotateX = (Input.GetKey(KeyCode.UpArrow) ? keyboardControllerVelocityX : -primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                    vfControllerX.Rotate(-controllerRotateX, 0, 0);
+                    nfshtControllerX.Rotate(-controllerRotateX, 0, 0);
                     currentControllerRotationX += controllerRotateX;
                     inputDetected = true;
                 }
             }
-            */
-            // Handle Z rotation for vfXObject and vfControllerZ (Down Arrow or primaryThumbstick.y < 0)
+              */
+            // Handle Z rotation for nfshtXObject and nfshtControllerZ (Down Arrow or primaryThumbstick.y < 0)
             // Thumbstick direction: Left
             if ((Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0))
             {
                 if (currentRotationZ > -rotationLimitZ)
                 {
                     float rotateZ = (Input.GetKey(KeyCode.LeftArrow) ? keyboardVelocityZ : -primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    vfZObject.Rotate(0, 0, rotateZ);
+                    nfshtZObject.Rotate(0, 0, rotateZ);
                     currentRotationZ -= rotateZ;
                     inputDetected = true;
                 }
                 if (currentControllerRotationZ > -controllerrotationLimitZ)
                 {
                     float controllerRotateZ = (Input.GetKey(KeyCode.LeftArrow) ? keyboardControllerVelocityZ : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                    vfControllerZ.Rotate(0, 0, controllerRotateZ);
+                    nfshtControllerZ.Rotate(0, 0, controllerRotateZ);
                     currentControllerRotationZ -= controllerRotateZ;
                     inputDetected = true;
                 }
             }
 
-            // Handle Z rotation for vfXObject and vfControllerZ (Up Arrow or primaryThumbstick.y > 0)
+            // Handle Z rotation for nfshtXObject and nfshtControllerZ (Up Arrow or primaryThumbstick.y > 0)
             // Thumbstick direction: right
             if ((Input.GetKey(KeyCode.RightArrow) || primaryThumbstick.x > 0))
             {
                 if (currentRotationZ < rotationLimitZ)
                 {
                     float rotateZ = (Input.GetKey(KeyCode.RightArrow) ? keyboardVelocityZ : primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    vfZObject.Rotate(0, 0, -rotateZ);
+                    nfshtZObject.Rotate(0, 0, -rotateZ);
                     currentRotationZ += rotateZ;
                     inputDetected = true;
                 }
                 if (currentControllerRotationZ < controllerrotationLimitZ)
                 {
                     float controllerRotateZ = (Input.GetKey(KeyCode.RightArrow) ? keyboardControllerVelocityZ : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                    vfControllerZ.Rotate(0, 0, -controllerRotateZ);
+                    nfshtControllerZ.Rotate(0, 0, -controllerRotateZ);
                     currentControllerRotationZ += controllerRotateZ;
                     inputDetected = true;
                 }
@@ -810,7 +842,7 @@ namespace WIGUx.Modules.vfMotionSim
             if (primaryThumbstick.x < 0 && currentRotationY < rotationLimitY) // Note the change in condition
             {
                 float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                vfYObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
+                nfshtYObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
                 currentRotationY -= rotateY;  // Update current rotation (subtracting because the direction is swapped)
                 inputDetected = true;
             }
@@ -819,7 +851,7 @@ namespace WIGUx.Modules.vfMotionSim
             if (primaryThumbstick.x > 0 && currentRotationY > -rotationLimitY) // Note the change in condition
             {
                 float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                vfYObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
+                nfshtYObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
                 currentRotationY -= rotateY;  // Update current rotation (subtracting because the direction is swapped)
                 inputDetected = true;
             }
@@ -853,37 +885,38 @@ namespace WIGUx.Modules.vfMotionSim
             currentRotationY = 0f;
             currentRotationZ = 0f;
         }
+
         void CenterThrottle()
         {
             // Center X-axis
             if (currentRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, currentRotationX);
-                vfXObject.Rotate(unrotateX, 0, 0);
+                nfshtXObject.Rotate(unrotateX, 0, 0);
                 currentRotationX -= unrotateX;
             }
-            else if (currentRotationX < 0)
+            else if (currentRotationX< 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, -currentRotationX);
-                vfXObject.Rotate(-unrotateX, 0, 0);
+                nfshtXObject.Rotate(-unrotateX, 0, 0);
                 currentRotationX += unrotateX;
             }
         }
+
+
         void CenterRotation()
         {
-
-
             // Center Y-axis
             if (currentRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, currentRotationY);
-                vfYObject.Rotate(0, unrotateY, 0);
+                nfshtYObject.Rotate(0, unrotateY, 0);
                 currentRotationY -= unrotateY;
             }
             else if (currentRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, -currentRotationY);
-                vfYObject.Rotate(0, -unrotateY, 0);
+                nfshtYObject.Rotate(0, -unrotateY, 0);
                 currentRotationY += unrotateY;
             }
 
@@ -891,13 +924,13 @@ namespace WIGUx.Modules.vfMotionSim
             if (currentRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, currentRotationZ);
-                vfZObject.Rotate(0, 0, unrotateZ);
+                nfshtZObject.Rotate(0, 0, unrotateZ);
                 currentRotationZ -= unrotateZ;
             }
             else if (currentRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, -currentRotationZ);
-                vfZObject.Rotate(0, 0, -unrotateZ);
+                nfshtZObject.Rotate(0, 0, -unrotateZ);
                 currentRotationZ += unrotateZ;
             }
             //Centering for contoller
@@ -906,13 +939,13 @@ namespace WIGUx.Modules.vfMotionSim
             if (currentControllerRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, currentControllerRotationY);
-                vfControllerY.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
+                nfshtControllerY.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
                 currentControllerRotationY -= unrotateY;    // Reducing the positive rotation
             }
             else if (currentControllerRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, -currentControllerRotationY);
-                vfControllerY.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
+                nfshtControllerY.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
                 currentControllerRotationY += unrotateY;    // Reducing the negative rotation
             }
 
@@ -920,13 +953,13 @@ namespace WIGUx.Modules.vfMotionSim
             if (currentControllerRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, currentControllerRotationX);
-                vfControllerX.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
+                nfshtControllerX.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentControllerRotationX -= unrotateX;    // Reducing the positive rotation
             }
             else if (currentControllerRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, -currentControllerRotationX);
-                vfControllerX.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
+                nfshtControllerX.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentControllerRotationX += unrotateX;    // Reducing the positive rotation
             }
 
@@ -934,13 +967,13 @@ namespace WIGUx.Modules.vfMotionSim
             if (currentControllerRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, currentControllerRotationZ);
-                vfControllerZ.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
+                nfshtControllerZ.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
                 currentControllerRotationZ -= unrotateZ;    // Reducing the positive rotation
             }
             else if (currentControllerRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, -currentControllerRotationZ);
-                vfControllerZ.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
+                nfshtControllerZ.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
                 currentControllerRotationZ += unrotateZ;    // Reducing the positive rotation
             }
         }
@@ -1032,116 +1065,39 @@ namespace WIGUx.Modules.vfMotionSim
             }
         }
 
-        // Method to change the brightness of the lights
-        void ToggleBrightness(bool isBright)
-        {
-            for (int i = 0; i < lights.Length; i++)
-            {
-                lights[i].intensity = isBright ? brightIntensity : dimIntensity;
-            }
-
-            logger.Info($"Lights set to {(isBright ? "bright" : "dim")}.");
-        }
-
-        // Method to change the brightness of fire1 light
-        void ToggleBrightness1(bool isBright)
-        {
-            if (vfbrakelight1!= null)
-            {
-                vfbrakelight1.intensity = isBright ? brightIntensity : dimIntensity;
-                // logger.Info($"{vfbrakelight1.name} light set to {(isBright ? "bright" : "dim")}.");
-            }
-            else
-            {
-                logger.Debug("vfbrakelight1 light component is not found.");
-            }
-        }
-
-        // Method to change the brightness of fire2 light
-        void ToggleBrightness2(bool isBright)
-        {
-            if (vfbrakelight2 != null)
-            {
-                vfbrakelight2.intensity = isBright ? brightIntensity : dimIntensity;
-                // logger.Info($"{vfbrakelight2.name} light set to {(isBright ? "bright" : "dim")}.");
-            }
-            else
-            {
-                logger.Debug("vfbrakelight2 light component is not found.");
-            }
-        }
-
-        // Method to toggle the lights
-        void ToggleLights(bool isActive)
-        {
-            for (int i = 0; i < lights.Length; i++)
-            {
-                lights[i].enabled = isActive;
-            }
-
-            logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
-        }
-
-        // Method to toggle the vfbrakelight1 light
-        void ToggleLight1(bool isActive)
-        {
-            if (vfbrakelight1 != null)
-            {
-                vfbrakelight1.enabled = isActive;
-                //          logger.Info($"{vfbrakelight1.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug("vfbrakelight1 light component is not found.");
-            }
-        }
-
-        // Method to toggle the vfbrakelight2 light
-        void ToggleLight2(bool isActive)
-        {
-            if (vfbrakelight2 != null)
-            {
-                vfbrakelight2.enabled = isActive;
-                //       logger.Info($"{vfbrakelight2.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug("vfbrakelight2 light component is not found.");
-            }
-        }
-
         IEnumerator FlashStrobes()
         {
             while (true)
             {
-                // Choose a random strobe light to flash
-                int randomIndex = Random.Range(0, 4);
-                Light strobeLight = null;
+                // Randomly select a pair (0 for 1 & 3, 1 for 2 & 4)
+                int pairIndex = Random.Range(0, 2);
 
-                switch (randomIndex)
+                // Get the strobes for the selected pair
+                Light strobeLight1 = null;
+                Light strobeLight2 = null;
+
+                switch (pairIndex)
                 {
-                    case 0:
-                        strobeLight = strobe1_light;
+                    case 0: // Pair 1 and 3
+                        strobeLight1 = strobe1_light;
+                        strobeLight2 = strobe3_light;
                         break;
-                    case 1:
-                        strobeLight = strobe2_light;
-                        break;
-                    case 2:
-                        strobeLight = strobe3_light;
-                        break;
-                    case 3:
-                        strobeLight = strobe4_light;
+                    case 1: // Pair 2 and 4
+                        strobeLight1 = strobe2_light;
+                        strobeLight2 = strobe4_light;
                         break;
                 }
 
-                // Turn on the chosen strobe light
-                ToggleStrobeLight(strobeLight, true);
+                // Turn on both strobes in the selected pair
+                ToggleStrobeLight(strobeLight1, true);
+                ToggleStrobeLight(strobeLight2, true);
 
                 // Wait for the flash duration
                 yield return new WaitForSeconds(flashDuration);
 
-                // Turn off the chosen strobe light
-                ToggleStrobeLight(strobeLight, false);
+                // Turn off both strobes
+                ToggleStrobeLight(strobeLight1, false);
+                ToggleStrobeLight(strobeLight2, false);
 
                 // Wait for the next flash interval
                 yield return new WaitForSeconds(flashInterval - flashDuration);
@@ -1168,156 +1124,6 @@ namespace WIGUx.Modules.vfMotionSim
             ToggleStrobeLight(strobe4_light, false);
         }
 
-        void ToggleStrobe1(bool isActive)
-        {
-            ToggleStrobeLight(strobe1_light, isActive);
-        }
-
-        void ToggleStrobe2(bool isActive)
-        {
-            ToggleStrobeLight(strobe2_light, isActive);
-        }
-
-        void ToggleStrobe3(bool isActive)
-        {
-            ToggleStrobeLight(strobe3_light, isActive);
-        }
-
-        void ToggleStrobe4(bool isActive)
-        {
-            ToggleStrobeLight(strobe4_light, isActive);
-        }
-        // Method to toggle the fireemissive object
-        void ToggleBrakeEmissive(bool isActive)
-        {
-            if (vfhazardObject != null)
-            {
-                Renderer renderer = vfhazardObject.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    Material[] materials = renderer.materials; // Get all materials
-                    foreach (Material mat in materials)
-                    {
-                        if (mat != null)
-                        {
-                            if (isActive)
-                            {
-                                mat.EnableKeyword("_EMISSION");
-                            }
-                            else
-                            {
-                                mat.DisableKeyword("_EMISSION");
-                            }
-                        }
-                    }
-                    // logger.Info($"vfhazardObject object emission turned {(isActive ? "on" : "off")}.");
-                }
-                else
-                {
-                    logger.Debug("Renderer component is not found on vfhazardObject object.");
-                }
-            }
-            else
-            {
-                logger.Debug("vfhazardObject object is not assigned.");
-            }
-        }
-
-        // Method to disable emission
-        void DisableEmission(Renderer[] emissiveObjects)
-        {
-            foreach (var renderer in emissiveObjects)
-            {
-                if (renderer != null)
-                {
-                    renderer.material.DisableKeyword("_EMISSION");
-                }
-                else
-                {
-                    logger.Debug("Renderer component not found on one of the emissive objects.");
-                }
-            }
-        }
-
-        // Method to log missing objects
-        void LogMissingObject(Renderer[] emissiveObjects, string arrayName)
-        {
-            for (int i = 0; i < emissiveObjects.Length; i++)
-            {
-                if (emissiveObjects[i] == null)
-                {
-                    logger.Debug($"{arrayName} object at index {i} not found under vfZ.");
-                }
-            }
-        }
-
-        IEnumerator vfFrontAttractPattern()
-        {
-            while (true)
-            {
-                ToggleEmissive(hazzardEmissiveObjects[0], true);
-               // ToggleEmissive(hazzardEmissiveObjects[1], false);
-                yield return new WaitForSeconds(frontFlashDuration);
-
-                ToggleEmissive(hazzardEmissiveObjects[0], false);
-               // ToggleEmissive(hazzardEmissiveObjects[1], true);
-                yield return new WaitForSeconds(frontFlashDuration);
-            }
-        }
-
-        IEnumerator SideAttractPattern(Renderer[] emissiveObjects)
-        {
-            while (true)
-            {
-                ToggleEmissive(emissiveObjects[0], true);
-                ToggleEmissive(emissiveObjects[1], false);
-                ToggleEmissive(emissiveObjects[2], false);
-                yield return new WaitForSeconds(sideFlashDuration);
-
-                ToggleEmissive(emissiveObjects[0], false);
-                ToggleEmissive(emissiveObjects[1], true);
-                ToggleEmissive(emissiveObjects[2], false);
-                yield return new WaitForSeconds(sideFlashDuration);
-
-                ToggleEmissive(emissiveObjects[0], false);
-                ToggleEmissive(emissiveObjects[1], false);
-                ToggleEmissive(emissiveObjects[2], true);
-                yield return new WaitForSeconds(sideFlashDuration);
-            }
-        }
-
-        IEnumerator vfFrontHazzardPattern()
-        {
-            while (true)
-            {
-                ToggleEmissive(hazzardEmissiveObjects[0], true);
-                // ToggleEmissive(hazzardEmissiveObjects[1], true);
-                // ToggleEmissive(hazzardEmissiveObjects[2], true);
-                yield return new WaitForSeconds(frontDangerDuration);
-
-                ToggleEmissive(hazzardEmissiveObjects[0], false);
-                // ToggleEmissive(hazzardEmissiveObjects[1], false);
-                // ToggleEmissive(hazzardEmissiveObjects[2], false);
-                yield return new WaitForSeconds(frontDangerDelay);
-            }
-        }
-
-        IEnumerator SideDangerPattern(Renderer[] emissiveObjects)
-        {
-            while (true)
-            {
-                ToggleEmissive(emissiveObjects[0], true);
-                ToggleEmissive(emissiveObjects[1], false);
-                ToggleEmissive(emissiveObjects[2], true);
-                yield return new WaitForSeconds(sideDangerDuration);
-
-                ToggleEmissive(emissiveObjects[0], false);
-                ToggleEmissive(emissiveObjects[1], true);
-                ToggleEmissive(emissiveObjects[2], false);
-                yield return new WaitForSeconds(sideDangerDelay);
-            }
-        }
-
         void ToggleEmissive(Renderer renderer, bool isOn)
         {
             if (renderer != null)
@@ -1338,66 +1144,21 @@ namespace WIGUx.Modules.vfMotionSim
                     }
                 }
             }
-        }
-
-        public void TurnAllOff()
-        {
-            foreach (var renderer in hazzardEmissiveObjects)
+            else
             {
-                ToggleEmissive(renderer, false);
-            }
-
-            foreach (var renderer in leftEmissiveObjects)
-            {
-                ToggleEmissive(renderer, false);
-            }
-
-            foreach (var renderer in rightEmissiveObjects)
-            {
-                ToggleEmissive(renderer, false);
+                logger.Debug("Renderer component not found on hazard object.");
             }
         }
 
-        public void StartAttractPattern()
+        // Method to log missing objects
+        void LogMissingObject(Renderer[] emissiveObjects, string arrayName)
         {
-            // Stop any currently running coroutines
-            StopCurrentPatterns();
-
-            // Start the attract pattern for front, left, and right
-            frontCoroutine = StartCoroutine(vfFrontHazzardPattern());
-         //   leftCoroutine = StartCoroutine(SideAttractPattern(leftEmissiveObjects));
-         //   rightCoroutine = StartCoroutine(SideAttractPattern(rightEmissiveObjects));
-        }
-
-        public void StartDangerPattern()
-        {
-            // Stop any currently running coroutines
-            StopCurrentPatterns();
-
-            // Start the danger pattern for front, left, and right
-            frontCoroutine = StartCoroutine(vfFrontAttractPattern());
-          //  leftCoroutine = StartCoroutine(SideDangerPattern(leftEmissiveObjects));
-          //  rightCoroutine = StartCoroutine(SideDangerPattern(rightEmissiveObjects));
-        }
-
-        private void StopCurrentPatterns()
-        {
-            if (frontCoroutine != null)
+            for (int i = 0; i < emissiveObjects.Length; i++)
             {
-                StopCoroutine(frontCoroutine);
-                frontCoroutine = null;
-            }
-
-            if (leftCoroutine != null)
-            {
-                StopCoroutine(leftCoroutine);
-                leftCoroutine = null;
-            }
-
-            if (rightCoroutine != null)
-            {
-                StopCoroutine(rightCoroutine);
-                rightCoroutine = null;
+                if (emissiveObjects[i] == null)
+                {
+                    logger.Debug($"{arrayName} object at index {i} not found under nfshtZ.");
+                }
             }
         }
 

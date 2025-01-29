@@ -338,7 +338,8 @@ namespace WIGUx.Modules.id7MotionSim
 
         void Update()
         {
-            bool inputDetected = false; // Initialize at the beginning of the Update method
+            bool inputDetected = false;
+            bool throttleDetected = false;// Initialize at the beginning of the Update method
             if (Input.GetKeyDown(KeyCode.Y))
             {
                 logger.Info("Resetting Positions");
@@ -395,7 +396,7 @@ namespace WIGUx.Modules.id7MotionSim
             if (inFocusMode)
             {
                 HandleTransformAdjustment();
-                HandleInput(ref inputDetected);  // Pass by reference
+                HandleInput(ref inputDetected, ref throttleDetected); // Pass by reference
             }
         }
 
@@ -495,7 +496,7 @@ namespace WIGUx.Modules.id7MotionSim
             inFocusMode = false;  // Clear focus mode flag
         }
 
-        void HandleInput(ref bool inputDetected)
+        void HandleInput(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
         {
             if (!inFocusMode) return;
 
@@ -598,18 +599,7 @@ namespace WIGUx.Modules.id7MotionSim
 
                 // Get the trigger axis values
                 // Detect input from Xbox triggers
-                /*
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
-                {
-                 //   inputDetected = true;
-                }
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
-                {
-                    //   inputDetected = true;
-                }
-                */
+
                 if (XInput.Get(XInput.Button.RIndexTrigger))
                 {
                     float rotateX = keyboardVelocityX * Time.deltaTime;
@@ -618,7 +608,7 @@ namespace WIGUx.Modules.id7MotionSim
                     {
                         id7XObject.Rotate(rotateX, 0, 0);
                         currentRotationX -= rotateX;
-                        inputDetected = true;
+                        throttleDetected = true;
                     }
                 }
                 if (XInput.Get(XInput.Button.LIndexTrigger))
@@ -629,7 +619,7 @@ namespace WIGUx.Modules.id7MotionSim
                     {
                         id7XObject.Rotate(-rotateX, 0, 0);
                         currentRotationX += rotateX;
-                        inputDetected = true;
+                        throttleDetected = true;
                     }
                 }
                 // LeftTrigger           
@@ -638,7 +628,7 @@ namespace WIGUx.Modules.id7MotionSim
                     ToggleBrakeEmissive(true);
                     ToggleLight1(true);
                     ToggleLight2(true);
-                    inputDetected = true;
+                    throttleDetected = true;
                 }
                 // Reset position on button release
                 if (XInput.GetUp(XInput.Button.LIndexTrigger))
@@ -646,7 +636,7 @@ namespace WIGUx.Modules.id7MotionSim
                     ToggleBrakeEmissive(false);
                     ToggleLight1(false);
                     ToggleLight2(false);
-                    inputDetected = true;
+                    throttleDetected = true;
                 }
                 // Handle RB button press for plunger position
                 if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
@@ -840,6 +830,10 @@ namespace WIGUx.Modules.id7MotionSim
             {
                 CenterRotation();
             }
+            if (!throttleDetected)
+            {
+                CenterThrottle();
+            }
         }
 
         void ResetPositions()
@@ -860,7 +854,7 @@ namespace WIGUx.Modules.id7MotionSim
             currentRotationZ = 0f;
         }
 
-        void CenterRotation()
+        void CenterThrottle()
         {
             // Center X-axis
             if (currentRotationX > 0)
@@ -875,6 +869,10 @@ namespace WIGUx.Modules.id7MotionSim
                 id7XObject.Rotate(-unrotateX, 0, 0);
                 currentRotationX += unrotateX;
             }
+        }
+
+        void CenterRotation()
+        {
 
             // Center Y-axis
             if (currentRotationY > 0)

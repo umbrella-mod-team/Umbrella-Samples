@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using EmuVR.InputManager;
 using System.Collections;
 using System.Runtime.InteropServices.ComTypes;
+using System.Xml.Linq;
 
 namespace WIGUx.Modules.indyMotionSim
 {
@@ -132,7 +133,7 @@ namespace WIGUx.Modules.indyMotionSim
         // Array of strobe lights
         private List<Light> strobeLights = new List<Light>();
 
-        private readonly string[] compatibleGames = { "indy500" };
+        private readonly string[] compatibleGames = { "Indianpolis 500" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -338,7 +339,8 @@ namespace WIGUx.Modules.indyMotionSim
 
         void Update()
         {
-            bool inputDetected = false; // Initialize at the beginning of the Update method
+            bool inputDetected = false;
+            bool throttleDetected = false;// Initialize at the beginning of the Update method
             if (Input.GetKeyDown(KeyCode.Y))
             {
                 logger.Info("Resetting Positions");
@@ -395,7 +397,7 @@ namespace WIGUx.Modules.indyMotionSim
             if (inFocusMode)
             {
                 HandleTransformAdjustment();
-                HandleInput(ref inputDetected);  // Pass by reference
+                HandleInput(ref inputDetected, ref throttleDetected); // Pass by reference
             }
         }
 
@@ -495,7 +497,7 @@ namespace WIGUx.Modules.indyMotionSim
             inFocusMode = false;  // Clear focus mode flag
         }
 
-        void HandleInput(ref bool inputDetected)
+        void HandleInput(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
         {
             if (!inFocusMode) return;
 
@@ -598,18 +600,7 @@ namespace WIGUx.Modules.indyMotionSim
 
                 // Get the trigger axis values
                 // Detect input from Xbox triggers
-                /*
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
-                {
-                 //   inputDetected = true;
-                }
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
-                {
-                    //   inputDetected = true;
-                }
-                */
+
                 if (XInput.Get(XInput.Button.RIndexTrigger))
                 {
                     float rotateX = keyboardVelocityX * Time.deltaTime;
@@ -618,7 +609,7 @@ namespace WIGUx.Modules.indyMotionSim
                     {
                         indyXObject.Rotate(rotateX, 0, 0);
                         currentRotationX -= rotateX;
-                        inputDetected = true;
+                        throttleDetected = true;
                     }
                 }
                 if (XInput.Get(XInput.Button.LIndexTrigger))
@@ -629,7 +620,7 @@ namespace WIGUx.Modules.indyMotionSim
                     {
                         indyXObject.Rotate(-rotateX, 0, 0);
                         currentRotationX += rotateX;
-                        inputDetected = true;
+                        throttleDetected = true;
                     }
                 }
                 // LeftTrigger           
@@ -637,16 +628,16 @@ namespace WIGUx.Modules.indyMotionSim
                 {
                     ToggleBrakeEmissive(true);
                     ToggleLight1(true);
-                 //   ToggleLight2(true);
-                    inputDetected = true;
+                    //   ToggleLight2(true);
+                    throttleDetected = true;
                 }
                 // Reset position on button release
                 if (XInput.GetUp(XInput.Button.LIndexTrigger))
                 {
                     ToggleBrakeEmissive(false);
                     ToggleLight1(false);
-                  //  ToggleLight2(false);
-                    inputDetected = true;
+                    //  ToggleLight2(false);
+                    throttleDetected = true;
                 }
                 // Handle RB button press for plunger position
                 if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
@@ -840,6 +831,10 @@ namespace WIGUx.Modules.indyMotionSim
             {
                 CenterRotation();
             }
+            if (!throttleDetected)
+            {
+                CenterThrottle();
+            }
         }
 
         void ResetPositions()
@@ -860,7 +855,7 @@ namespace WIGUx.Modules.indyMotionSim
             currentRotationZ = 0f;
         }
 
-        void CenterRotation()
+        void CenterThrottle()
         {
             // Center X-axis
             if (currentRotationX > 0)
@@ -875,7 +870,11 @@ namespace WIGUx.Modules.indyMotionSim
                 indyXObject.Rotate(-unrotateX, 0, 0);
                 currentRotationX += unrotateX;
             }
+        }
 
+        void CenterRotation()
+        {
+           
             // Center Y-axis
             if (currentRotationY > 0)
             {

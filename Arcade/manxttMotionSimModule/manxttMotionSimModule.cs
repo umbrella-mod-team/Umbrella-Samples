@@ -22,7 +22,7 @@ namespace WIGUx.Modules.manxttMotionSim
 
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
 
-        private float rotationLimitX = 3f;  // Rotation limit for X-axis
+        private float rotationLimitX = 0f;  // Rotation limit for X-axis
         private float rotationLimitY = 10f;  // Rotation limit for Y-axis
         private float rotationLimitZ = 30f;  // Rotation limit for Z-axis
 
@@ -190,7 +190,7 @@ namespace WIGUx.Modules.manxttMotionSim
                         {
                             logger.Debug("manxtttaillight1 object not found under manxttZ.");
                         }
-
+                        /*
                         // Find manxtttaillight2 object under manxttZ
                         manxtttaillight2Object = manxttZObject.Find("manxtttaillight2");
                         if (manxtttaillight2Object != null)
@@ -211,7 +211,7 @@ namespace WIGUx.Modules.manxttMotionSim
                         {
                             logger.Debug("manxtttaillight2 object not found under manxttZ.");
                         }
-
+                        */
                         // Find manxttControllerX under manxttZ
                         manxttControllerX = transform.Find("manxttControllerX");
                         if (manxttControllerX != null)
@@ -341,10 +341,10 @@ namespace WIGUx.Modules.manxttMotionSim
             // Set lights to start
 
          //   StartAttractPattern();
-              ToggleLight1(true);
-              ToggleLight2(true);
-              ToggleBrightness1(false);
-              ToggleBrightness2(false);
+              ToggleLight1(false);
+            //  ToggleLight2(true);
+            //  ToggleBrightness1(false);
+            //  ToggleBrightness2(false);
         }
 
         void Update()
@@ -676,11 +676,11 @@ namespace WIGUx.Modules.manxttMotionSim
             if (Input.GetButtonDown("Fire2"))
             {
                 // Set lights to bright
-                ToggleBrightness1(true);
-                ToggleBrightness2(true);
+                //ToggleBrightness1(true);
+                //ToggleBrightness2(true);
                 ToggleBrakeEmissive(true);
                 ToggleLight1(true);
-                ToggleLight2(true);
+                //ToggleLight2(true);
                 inputDetected = true;
             }
 
@@ -688,11 +688,11 @@ namespace WIGUx.Modules.manxttMotionSim
             if (Input.GetButtonUp("Fire2"))
             {
                 ToggleBrakeEmissive(false);
-                ToggleBrightness1(false);
-                ToggleBrightness2(false);
+               // ToggleBrightness1(false);
+               // ToggleBrightness2(false);
                 ToggleLight1(false);
-                ToggleLight2(false);
-                ToggleBrightness(false);
+                //ToggleLight2(false);
+                //ToggleBrightness(false);
                 inputDetected = true;
             }
 

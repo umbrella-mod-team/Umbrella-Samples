@@ -338,37 +338,33 @@ namespace WIGUx.Modules.out2MotionSim
 
         void Update()
         {
-            bool inputDetected = false; // Initialize at the beginning of the Update method
-            if (Input.GetKeyDown(KeyCode.Y))
+            bool inputDetected = false;
+            bool throttleDetected = false;// Initialize at the beginning of the Update method
+            /*
+            // Check if the "L" key is pressed
+            if (Input.GetKeyDown(KeyCode.L))
             {
-                logger.Info("Resetting Positions");
-                ResetPositions();
-            }
-                /*
-                // Check if the "L" key is pressed
-                if (Input.GetKeyDown(KeyCode.L))
+                if (areStrobesOn)
                 {
-                    if (areStrobesOn)
-                    {
-                        // Strobe lights are currently on, stop the coroutine to turn them off
-                        logger.Info("Stopping strobes");
-                        StopCoroutine(strobeCoroutine);
-                        strobeCoroutine = null;
-                        TurnAllOff(); // Turn all emissives off
-                        TurnOffAllStrobes();
-                    }
-                    else
-                    {
-                        // Strobe lights are currently off, start the coroutine to flash them
-                        logger.Info("Starting strobes");
-                        strobeCoroutine = StartCoroutine(FlashStrobes());
-                    }
-
-                    // Toggle the strobe state
-                    areStrobesOn = !areStrobesOn;
+                    // Strobe lights are currently on, stop the coroutine to turn them off
+                    logger.Info("Stopping strobes");
+                    StopCoroutine(strobeCoroutine);
+                    strobeCoroutine = null;
+                    TurnAllOff(); // Turn all emissives off
+                    TurnOffAllStrobes();
                 }
-                */
-                if (GameSystem.ControlledSystem != null && !inFocusMode)
+                else
+                {
+                    // Strobe lights are currently off, start the coroutine to flash them
+                    logger.Info("Starting strobes");
+                    strobeCoroutine = StartCoroutine(FlashStrobes());
+                }
+
+                // Toggle the strobe state
+                areStrobesOn = !areStrobesOn;
+            }
+            */
+            if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
                 string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
                 bool containsString = false;
@@ -395,7 +391,7 @@ namespace WIGUx.Modules.out2MotionSim
             if (inFocusMode)
             {
                 HandleTransformAdjustment();
-                HandleInput(ref inputDetected);  // Pass by reference
+                HandleInput(ref inputDetected, ref throttleDetected); // Pass by reference
             }
         }
 
@@ -495,7 +491,7 @@ namespace WIGUx.Modules.out2MotionSim
             inFocusMode = false;  // Clear focus mode flag
         }
 
-        void HandleInput(ref bool inputDetected)
+        void HandleInput(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
         {
             if (!inFocusMode) return;
 
@@ -598,18 +594,7 @@ namespace WIGUx.Modules.out2MotionSim
 
                 // Get the trigger axis values
                 // Detect input from Xbox triggers
-                /*
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
-                {
-                 //   inputDetected = true;
-                }
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
-                {
-                    //   inputDetected = true;
-                }
-                */
+  
                 if (XInput.Get(XInput.Button.RIndexTrigger))
                 {
                     float rotateX = keyboardVelocityX * Time.deltaTime;
@@ -618,7 +603,7 @@ namespace WIGUx.Modules.out2MotionSim
                     {
                         out2XObject.Rotate(rotateX, 0, 0);
                         currentRotationX -= rotateX;
-                        inputDetected = true;
+                        throttleDetected = true;
                     }
                 }
                 if (XInput.Get(XInput.Button.LIndexTrigger))
@@ -629,7 +614,7 @@ namespace WIGUx.Modules.out2MotionSim
                     {
                         out2XObject.Rotate(-rotateX, 0, 0);
                         currentRotationX += rotateX;
-                        inputDetected = true;
+                        throttleDetected = true;
                     }
                 }
                 // LeftTrigger           
@@ -638,7 +623,7 @@ namespace WIGUx.Modules.out2MotionSim
                     ToggleBrakeEmissive(true);
                     ToggleLight1(true);
                     ToggleLight2(true);
-                    inputDetected = true;
+                    throttleDetected = true;
                 }
                 // Reset position on button release
                 if (XInput.GetUp(XInput.Button.LIndexTrigger))
@@ -646,7 +631,7 @@ namespace WIGUx.Modules.out2MotionSim
                     ToggleBrakeEmissive(false);
                     ToggleLight1(false);
                     ToggleLight2(false);
-                    inputDetected = true;
+                    throttleDetected = true;
                 }
                 // Handle RB button press for plunger position
                 if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
@@ -840,6 +825,10 @@ namespace WIGUx.Modules.out2MotionSim
             {
                 CenterRotation();
             }
+            if (!throttleDetected)
+            {
+                CenterThrottle();
+            }
         }
 
         void ResetPositions()
@@ -859,8 +848,7 @@ namespace WIGUx.Modules.out2MotionSim
             currentRotationY = 0f;
             currentRotationZ = 0f;
         }
-
-        void CenterRotation()
+        void CenterThrottle()
         {
             // Center X-axis
             if (currentRotationX > 0)
@@ -875,6 +863,9 @@ namespace WIGUx.Modules.out2MotionSim
                 out2XObject.Rotate(-unrotateX, 0, 0);
                 currentRotationX += unrotateX;
             }
+        }
+        void CenterRotation()
+        {
 
             // Center Y-axis
             if (currentRotationY > 0)

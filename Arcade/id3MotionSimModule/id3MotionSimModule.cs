@@ -350,37 +350,33 @@ namespace WIGUx.Modules.id3MotionSim
 
         void Update()
         {
-            bool inputDetected = false; // Initialize at the beginning of the Update method
-            if (Input.GetKeyDown(KeyCode.Y))
+            bool inputDetected = false;
+            bool throttleDetected = false;// Initialize at the beginning of the Update method
+            /*
+            // Check if the "L" key is pressed
+            if (Input.GetKeyDown(KeyCode.L))
             {
-                logger.Info("Resetting Positions");
-                ResetPositions();
-            }
-                /*
-                // Check if the "L" key is pressed
-                if (Input.GetKeyDown(KeyCode.L))
+                if (areStrobesOn)
                 {
-                    if (areStrobesOn)
-                    {
-                        // Strobe lights are currently on, stop the coroutine to turn them off
-                        logger.Info("Stopping strobes");
-                        StopCoroutine(strobeCoroutine);
-                        strobeCoroutine = null;
-                        TurnAllOff(); // Turn all emissives off
-                        TurnOffAllStrobes();
-                    }
-                    else
-                    {
-                        // Strobe lights are currently off, start the coroutine to flash them
-                        logger.Info("Starting strobes");
-                        strobeCoroutine = StartCoroutine(FlashStrobes());
-                    }
-
-                    // Toggle the strobe state
-                    areStrobesOn = !areStrobesOn;
+                    // Strobe lights are currently on, stop the coroutine to turn them off
+                    logger.Info("Stopping strobes");
+                    StopCoroutine(strobeCoroutine);
+                    strobeCoroutine = null;
+                    TurnAllOff(); // Turn all emissives off
+                    TurnOffAllStrobes();
                 }
-                */
-                if (GameSystem.ControlledSystem != null && !inFocusMode)
+                else
+                {
+                    // Strobe lights are currently off, start the coroutine to flash them
+                    logger.Info("Starting strobes");
+                    strobeCoroutine = StartCoroutine(FlashStrobes());
+                }
+
+                // Toggle the strobe state
+                areStrobesOn = !areStrobesOn;
+            }
+            */
+            if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
                 string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
                 bool containsString = false;
@@ -407,7 +403,7 @@ namespace WIGUx.Modules.id3MotionSim
             if (inFocusMode)
             {
                 HandleTransformAdjustment();
-                HandleInput(ref inputDetected);  // Pass by reference
+                HandleInput(ref inputDetected, ref throttleDetected); // Pass by reference
             }
         }
 
@@ -507,7 +503,7 @@ namespace WIGUx.Modules.id3MotionSim
             inFocusMode = false;  // Clear focus mode flag
         }
 
-        void HandleInput(ref bool inputDetected)
+        void HandleInput(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
         {
             if (!inFocusMode) return;
 
@@ -611,29 +607,6 @@ namespace WIGUx.Modules.id3MotionSim
                 // Get the trigger axis values
                 // Detect input from Xbox triggers
 
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
-                {
-
-                }
-
-                // LeftTrigger
-                if (XInput.GetDown(XInput.Button.LIndexTrigger))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on button release
-                if (XInput.GetUp(XInput.Button.LIndexTrigger))
-                {
-
-                }
                 if (XInput.Get(XInput.Button.LIndexTrigger))
                 {
                     float rotateY = vrVelocity * Time.deltaTime;
@@ -642,7 +615,7 @@ namespace WIGUx.Modules.id3MotionSim
                     {
                         id3YObject.Rotate(0, rotateY, 0);
                         currentRotationY -= rotateY;
-                        inputDetected = true;
+                        throttleDetected = true;
                     }
                 }
                 if (XInput.Get(XInput.Button.RIndexTrigger))
@@ -653,7 +626,7 @@ namespace WIGUx.Modules.id3MotionSim
                     {
                         id3YObject.Rotate(0, -rotateY, 0);
                         currentRotationY += rotateY;
-                        inputDetected = true;
+                        throttleDetected = true;
                     }
                 }
                 // Handle RB button press for plunger position
@@ -869,6 +842,10 @@ namespace WIGUx.Modules.id3MotionSim
             {
                 CenterRotation();
             }
+            if (!throttleDetected)
+            {
+                CenterThrottle();
+            }
         }
 
         void ResetPositions()
@@ -888,8 +865,7 @@ namespace WIGUx.Modules.id3MotionSim
             currentRotationY = 0f;
             currentRotationZ = 0f;
         }
-
-        void CenterRotation()
+        void CenterThrottle()
         {
             // Center X-axis
             if (currentRotationX > 0)
@@ -918,7 +894,10 @@ namespace WIGUx.Modules.id3MotionSim
                 id3YObject.Rotate(0, -unrotateY, 0);
                 currentRotationY += unrotateY;
             }
+        }
 
+        void CenterRotation()
+        {
             // Center Z-axis
             if (currentRotationZ > 0)
             {

@@ -59,6 +59,8 @@ namespace WIGUx.Modules.starbladeSim
         //lights
         private Light starblade_firelight;
         private Transform starblade_fireemissiveObject;
+        private Transform starblade_light_leftObject;
+        private Transform starblade_light_rightObject;
         private Transform lightsObject;
         public Light[] starbladeLights = new Light[2]; // Array to store lights
         public Light starblade1_light;
@@ -88,6 +90,36 @@ namespace WIGUx.Modules.starbladeSim
             {
                 logger.Error("lightsObject object not found!");
                 return; // Early exit if lightsObject is not found
+            }
+            starblade_light_leftObject = lightsObject.Find("light_left");
+            if (starblade_light_leftObject != null)
+            {
+                logger.Info("light_left object found.");
+                // Ensure the light_left object is initially off
+                Renderer renderer = starblade_light_leftObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on light_left object.");
+                }
+            }
+            starblade_light_rightObject = lightsObject.Find("light_right");
+            if (starblade_light_rightObject != null)
+            {
+                logger.Info("light_right object found.");
+                // Ensure the light_right object is initially off
+                Renderer renderer = starblade_light_rightObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on light_right object.");
+                }
             }
             // Gets all Light components in the target object and its children
             Light[] allLights = lightsObject.GetComponentsInChildren<Light>();
@@ -892,8 +924,63 @@ namespace WIGUx.Modules.starbladeSim
                     logger.Debug("fireemissive object is not assigned.");
                 }
             }
+        void ToggleleftlightEmissive(bool isActive)
+        {
+            if (starblade_light_leftObject != null)
+            {
+                Renderer renderer = starblade_light_leftObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    if (isActive)
+                    {
+                        renderer.material.EnableKeyword("_EMISSION");
+                    }
+                    else
+                    {
+                        renderer.material.DisableKeyword("_EMISSION");
+                    }
+                    //     logger.Info($"starblade_light_leftObject emission turned {(isActive ? "on" : "off")}.");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on starblade_light_leftObject.");
+                }
+            }
+            else
+            {
+                logger.Debug("starblade_light_leftObject is not assigned.");
+            }
+        }
+        void TogglerightlightEmissive(bool isActive)
+        {
+            if (starblade_light_rightObject != null)
+            {
+                Renderer renderer = starblade_light_rightObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    if (isActive)
+                    {
+                        renderer.material.EnableKeyword("_EMISSION");
+                    }
+                    else
+                    {
+                        renderer.material.DisableKeyword("_EMISSION");
+                    }
+                    //     logger.Info($"starblade_light_rightObject emission turned {(isActive ? "on" : "off")}.");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on starblade_light_rightObject.");
+                }
+            }
+            else
+            {
+                logger.Debug("starblade_light_rightObject is not assigned.");
+            }
+        }
 
-            void ToggleFireLight(bool isActive)
+
+        void ToggleFireLight(bool isActive)
             {
                 // Toggle the light directly if the component is valid
                 if (starblade_firelight != null)
@@ -917,44 +1004,60 @@ namespace WIGUx.Modules.starbladeSim
               //  logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
             }
 
-            IEnumerator FlashstarbladeLights()
+        IEnumerator FlashstarbladeLights()
+        {
+            int currentIndex = 0; // Start with the first light in the array
+
+            while (true)
             {
-                int currentIndex = 0; // Start with the first light in the array
+                // Select the current light
+                Light light = starbladeLights[currentIndex];
 
-                while (true)
+                // Check if the light is not null
+                if (light != null)
                 {
-                    // Select the current light
-                    Light light = starbladeLights[currentIndex];
+                    // Log the chosen light
+                    // logger.Debug($"Flashing {light.name}");
 
-                    // Check if the light is not null
-                    if (light != null)
+                    // Turn on the chosen light
+                    TogglestarbladeLight(light, true);
+
+                    // Toggle the corresponding emissive
+                    if (currentIndex == 0) // Light 1 (paired with left emissive)
                     {
-                        // Log the chosen light
-                        // logger.Debug($"Flashing {light.name}");
-
-                        // Turn on the chosen light
-                        TogglestarbladeLight(light, true);
-
-                        // Wait for the flash duration
-                        yield return new WaitForSeconds(flashDuration);
-
-                        // Turn off the chosen light
-                        TogglestarbladeLight(light, false);
-
-                        // Wait for the next flash interval
-                        yield return new WaitForSeconds(flashInterval - flashDuration);
+                        ToggleleftlightEmissive(true);
+                        TogglerightlightEmissive(false);
                     }
-                    else
+                    else if (currentIndex == 1) // Light 2 (paired with right emissive)
                     {
-                        logger.Debug("Light is null.");
+                        ToggleleftlightEmissive(false);
+                        TogglerightlightEmissive(true);
                     }
 
-                    // Move to the next light in the array
-                    currentIndex = (currentIndex + 1) % starbladeLights.Length;
+                    // Wait for the flash duration
+                    yield return new WaitForSeconds(flashDuration);
+
+                    // Turn off the chosen light
+                    TogglestarbladeLight(light, false);
+
+                    // Turn off both emissives
+                    ToggleleftlightEmissive(false);
+                    TogglerightlightEmissive(false);
+
+                    // Wait for the next flash interval
+                    yield return new WaitForSeconds(flashInterval - flashDuration);
                 }
-            }
+                else
+                {
+                    logger.Debug("Light is null.");
+                }
 
-            void TogglestarbladeLight(Light light, bool isActive)
+                // Move to the next light in the array
+                currentIndex = (currentIndex + 1) % starbladeLights.Length;
+            }
+        }
+
+        void TogglestarbladeLight(Light light, bool isActive)
             {
                 if (light != null)
                 {

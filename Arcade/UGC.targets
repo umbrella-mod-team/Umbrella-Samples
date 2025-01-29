@@ -1,0 +1,115 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <EmuVrPath>..\..\..\</EmuVrPath>
+        <EmuVRModulePath>$(EmuVrPath)WIGUx\Modules</EmuVRModulePath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <OutputPath>$(EmuVRModulePath)</OutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="UnityEditor">
+          <HintPath>C:\Program Files\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
+      
+      <Reference Include="UnityEngine.TextRenderingModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+        <Private>False</Private>
+      </Reference>
+
+        <Reference Include="UnityEngine.ParticleSystemModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="0Harmony">
+        <HintPath>$(EmuVrPath)\MelonLoader\net35\0Harmony.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="Assembly-CSharp">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\Assembly-CSharp.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="MelonLoader">
+        <HintPath>$(EmuVrPath)\MelonLoader\net35\MelonLoader.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="Mirror">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\Mirror.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="Oculus.VR, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+        <SpecificVersion>False</SpecificVersion>
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\Oculus.VR.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+        <SpecificVersion>False</SpecificVersion>
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\Newtonsoft.Json.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+
+        <Reference Include="Unity.TextMeshPro">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.AnimationModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.AudioModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.ImageConversionModule">
+          <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.UnityWebRequestWWWModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.AssetBundleModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.PhysicsModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.VehiclesModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.VehiclesModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.UI">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.UI.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.IMGUIModule">
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.VRModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+        <SpecificVersion>False</SpecificVersion>
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.VRModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.XRModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+        <SpecificVersion>False</SpecificVersion>
+        <HintPath>$(EmuVrPath)\EmuVR_Data\Managed\UnityEngine.XRModule.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+        <Reference Include="WIGUx">
+        <SpecificVersion>False</SpecificVersion>
+        <HintPath>$(EmuVrPath)\Mods\WIGU.dll</HintPath>
+        <Private>False</Private>
+        </Reference>
+    </ItemGroup>
+</Project>

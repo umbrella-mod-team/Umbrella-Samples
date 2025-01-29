@@ -4,76 +4,75 @@ using WIGU;
 using System.Collections.Generic;
 using EmuVR.InputManager;
 using System.Collections;
-using System.Runtime.InteropServices.ComTypes;
 
-namespace WIGUx.Modules.vfMotionSim
+namespace WIGUx.Modules.motoraidMotionSim
 {
-    public class vfMotionSimController : MonoBehaviour
+    public class motoraidMotionSimController : MonoBehaviour
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        private readonly float keyboardVelocityX = 1f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 30f;        // Velocity for VR controller input
+        private readonly float keyboardVelocityX = 50.5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityY = 50.5f;  // Velocity for keyboard input
+        private readonly float keyboardVelocityZ = 50.5f;  // Velocity for keyboard input
+        private readonly float vrVelocity = 40.5f;        // Velocity for VR controller input
 
-        private readonly float centeringVelocityX = 15f;  // Velocity for centering rotation
-        private readonly float centeringVelocityY = 30f;  // Velocity for centering rotation
-        private readonly float centeringVelocityZ = 30f;  // Velocity for centering rotation
+        private readonly float centeringVelocityX = 55.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityY = 55.5f;  // Velocity for centering rotation
+        private readonly float centeringVelocityZ = 55.5f;  // Velocity for centering rotation
 
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
 
-        private float rotationLimitX = 3f;  // Rotation limit for X-axis
+        private float rotationLimitX = 0f;  // Rotation limit for X-axis
         private float rotationLimitY = 10f;  // Rotation limit for Y-axis
-        private float rotationLimitZ = 10f;  // Rotation limit for Z-axis
+        private float rotationLimitZ = 30f;  // Rotation limit for Z-axis
 
         private float currentRotationX = 0f;  // Current rotation for X-axis
         private float currentRotationY = 0f;  // Current rotation for Y-axis
         private float currentRotationZ = 0f;  // Current rotation for Z-axis
 
-        private Transform vfXObject; // Reference to the main X object
-        private Transform vfYObject; // Reference to the main Y object
-        private Transform vfZObject; // Reference to the main Z object
+        private Transform motoraidXObject; // Reference to the main X object
+        private Transform motoraidYObject; // Reference to the main Y object
+        private Transform motoraidZObject; // Reference to the main Z object
         private GameObject cockpitCam;    // Reference to the cockpit camera
 
         // Initial positions and rotations for resetting
-        private Vector3 vfXStartPosition;
-        private Quaternion vfXStartRotation;
-        private Vector3 vfYStartPosition;
-        private Quaternion vfYStartRotation;
-        private Vector3 vfZStartPosition;
-        private Quaternion vfZStartRotation;
+        private Vector3 motoraidXStartPosition;
+        private Quaternion motoraidXStartRotation;
+        private Vector3 motoraidYStartPosition;
+        private Quaternion motoraidYStartRotation;
+        private Vector3 motoraidZStartPosition;
+        private Quaternion motoraidZStartRotation;
         private Vector3 cockpitCamStartPosition;
         private Quaternion cockpitCamStartRotation;
 
         // Controller animation 
         // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 400f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 400f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 400f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 350f;        // Velocity for VR controller input
+        private readonly float keyboardControllerVelocityX = 150.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityY = 150.5f;  // Velocity for keyboard input
+        private readonly float keyboardControllerVelocityZ = 150.5f;  // Velocity for keyboard input
+        private readonly float vrControllerVelocity = 150.5f;        // Velocity for VR controller input
 
         private float controllerrotationLimitX = 0f;  // Rotation limit for X-axis (stick or wheel)
         private float controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
-        private float controllerrotationLimitZ = 80f;  // Rotation limit for Z-axis (stick or wheel)
+        private float controllerrotationLimitZ = 30f;  // Rotation limit for Z-axis (stick or wheel)
 
         private float currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
         private float currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
         private float currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
 
-        private readonly float centeringControllerVelocityX = 400f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityY = 400f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityZ = 400f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityX = 150.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityY = 150.5f;  // Velocity for centering rotation (stick or wheel)
+        private readonly float centeringControllerVelocityZ = 150.5f;  // Velocity for centering rotation (stick or wheel)
 
-        private Transform vfControllerX; // Reference to the main animated controller (wheel)
-        private Vector3 vfControllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion vfControllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform vfControllerY; // Reference to the main animated controller (wheel)
-        private Vector3 vfControllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion vfControllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform vfControllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 vfControllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion vfControllerZStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform motoraidControllerX; // Reference to the main animated controller (wheel)
+        private Vector3 motoraidControllerXStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion motoraidControllerXStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform motoraidControllerY; // Reference to the main animated controller (wheel)
+        private Vector3 motoraidControllerYStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion motoraidControllerYStartRotation; // Initial controlller positions and rotations for resetting
+        private Transform motoraidControllerZ; // Reference to the main animated controller (wheel)
+        private Vector3 motoraidControllerZStartPosition; // Initial controller positions and rotations for resetting
+        private Quaternion motoraidControllerZStartRotation; // Initial controlller positions and rotations for resetting
 
         // Initial positions and rotations for VR setup
         private Vector3 playerCameraStartPosition;
@@ -89,19 +88,18 @@ namespace WIGUx.Modules.vfMotionSim
 
 
         //Lights and Emissives
-        private Transform vftaillight1Object;
-        private Transform vftaillight2Object;
-        private Transform vfhazardObject;
-        private Transform vfhazardlObject;
-        private Transform vfhazardrObject;
+        private Transform motoraidtaillight1Object;
+        private Transform motoraidtaillight2Object;
+        private Transform motoraidhazardlObject;
+        private Transform motoraidhazardrObject;
         public float brightIntensity = 5.0f; // Set the brightness intensity level
         public float dimIntensity = 1.0f;    // Set the dim intensity level
         public string fire1Button = "Fire1"; // Name of the fire button
         public string fire2Button = "Fire2"; // Name of the fire button 
         public string fire3Button = "Fire3"; // Name of the fire button 
         public string JumpButton = "Jump"; // Name of the fire button 
-        public Light vfbrakelight1;
-        public Light vfbrakelight2;
+        public Light motoraidbrakelight1;
+        public Light motoraidbrakelight2;
         public Light strobe1_light;
         public Light strobe2_light;
         public Light strobe3_light;
@@ -132,7 +130,7 @@ namespace WIGUx.Modules.vfMotionSim
         // Array of strobe lights
         private List<Light> strobeLights = new List<Light>();
 
-        private readonly string[] compatibleGames = { "vr.zip" };
+        private readonly string[] compatibleGames = { "motoraid" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -149,114 +147,126 @@ namespace WIGUx.Modules.vfMotionSim
             GameObject cameraObject = GameObject.Find("OVRCameraRig");
 
             // Find gfpce2X object in hierarchy
-            vfXObject = transform.Find("vfX");
-            if (vfXObject != null)
+            motoraidXObject = transform.Find("motoraidX");
+            if (motoraidXObject != null)
             {
-                logger.Info("vfX object found.");
-                vfXStartPosition = vfXObject.position;
-                vfXStartRotation = vfXObject.rotation;
+                logger.Info("motoraidX object found.");
+                motoraidXStartPosition = motoraidXObject.position;
+                motoraidXStartRotation = motoraidXObject.rotation;
 
-                // Find vfY object under vfX
-                vfYObject = vfXObject.Find("vfY");
-                if (vfYObject != null)
+                // Find motoraidY object under motoraidX
+                motoraidYObject = motoraidXObject.Find("motoraidY");
+                if (motoraidYObject != null)
                 {
-                    logger.Info("vfY object found.");
-                    vfYStartPosition = vfYObject.position;
-                    vfYStartRotation = vfYObject.rotation;
+                    logger.Info("motoraidY object found.");
+                    motoraidYStartPosition = motoraidYObject.position;
+                    motoraidYStartRotation = motoraidYObject.rotation;
 
-                    // Find vfZ object under vfY
-                    vfZObject = vfYObject.Find("vfZ");
-                    if (vfZObject != null)
+                    // Find motoraidZ object under motoraidY
+                    motoraidZObject = motoraidYObject.Find("motoraidZ");
+                    if (motoraidZObject != null)
                     {
-                        logger.Info("vfZ object found.");
-                        vfZStartPosition = vfZObject.position;
-                        vfZStartRotation = vfZObject.rotation;
+                        logger.Info("motoraidZ object found.");
+                        motoraidZStartPosition = motoraidZObject.position;
+                        motoraidZStartRotation = motoraidZObject.rotation;
 
-                        // Find vfhazard object under vfZ
-                        vfhazardObject = vfZObject.Find("vfhazard");
-                        if (vfhazardObject != null)
+                        // Find motoraidtaillight1 object under motoraidZ
+                        motoraidtaillight1Object = motoraidZObject.Find("motoraidtaillight1");
+                        if (motoraidtaillight1Object != null)
                         {
-                            logger.Info("vfhazard object found.");
-
-                            // Ensure the vfhazard object's emission is initially off for all materials
-                            Renderer renderer = vfhazardObject.GetComponent<Renderer>();
+                            logger.Info("motoraidtaillight1 object found.");
+                            // Ensure the motoraidtaillight1 object is initially off
+                            Renderer renderer = motoraidtaillight1Object.GetComponent<Renderer>();
                             if (renderer != null)
                             {
-                                Material[] materials = renderer.materials; // Get all materials
-                                foreach (Material mat in materials)
-                                {
-                                    if (mat != null)
-                                    {
-                                        mat.DisableKeyword("_EMISSION");
-                                    }
-                                }
+                                renderer.material.DisableKeyword("_EMISSION");
                             }
                             else
                             {
-                                logger.Debug("Renderer component is not found on vfhazard object.");
+                                logger.Debug("Renderer component is not found on motoraidtaillight1 object.");
                             }
                         }
                         else
                         {
-                            logger.Debug("vfhazard object not found under vfZ.");
+                            logger.Debug("motoraidtaillight1 object not found under motoraidZ.");
                         }
-
-
-                        // Find vfControllerX under vfZ
-                        vfControllerX = vfZObject.Find("vfControllerX");
-                        if (vfControllerX != null)
+                        /*
+                        // Find motoraidtaillight2 object under motoraidZ
+                        motoraidtaillight2Object = motoraidZObject.Find("motoraidtaillight2");
+                        if (motoraidtaillight2Object != null)
                         {
-                            logger.Info("vfControllerX object found.");
-                            // Store initial position and rotation of the stick
-                            vfControllerXStartPosition = vfControllerX.transform.position; // these could cause the controller to mess up
-                            vfControllerXStartRotation = vfControllerX.transform.rotation;
-
-                            // Find vfControllerY under vfControllerX
-                            vfControllerY = vfControllerX.Find("vfControllerY");
-                            if (vfControllerY != null)
+                            logger.Info("motoraidtaillight2 object found.");
+                            // Ensure the motoraidtaillight2 object is initially off
+                            Renderer renderer = motoraidtaillight2Object.GetComponent<Renderer>();
+                            if (renderer != null)
                             {
-                                logger.Info("vfControllerY object found.");
-                                // Store initial position and rotation of the stick
-                                vfControllerYStartPosition = vfControllerY.transform.position;
-                                vfControllerYStartRotation = vfControllerY.transform.rotation;
+                                renderer.material.DisableKeyword("_EMISSION");
+                            }
+                            else
+                            {
+                                logger.Debug("Renderer component is not found on motoraidtaillight2 object.");
+                            }
+                        }
+                        else
+                        {
+                            logger.Debug("motoraidtaillight2 object not found under motoraidZ.");
+                        }
+                        */
+                        // Find motoraidControllerX under motoraidZ
+                        motoraidControllerX = transform.Find("motoraidControllerX");
+                        if (motoraidControllerX != null)
+                        {
+                            logger.Info("motoraidControllerX object found.");
+                            // Store initial position and rotation of the stick
+                            motoraidControllerXStartPosition = motoraidControllerX.transform.position; // these could cause the controller to mess up
+                            motoraidControllerXStartRotation = motoraidControllerX.transform.rotation;
 
-                                // Find vfControllerZ under vfControllerY
-                                vfControllerZ = vfControllerY.Find("vfControllerZ");
-                                if (vfControllerZ != null)
+                            // Find motoraidControllerY under motoraidControllerX
+                            motoraidControllerY = motoraidControllerX.Find("motoraidControllerY");
+                            if (motoraidControllerY != null)
+                            {
+                                logger.Info("motoraidControllerY object found.");
+                                // Store initial position and rotation of the stick
+                                motoraidControllerYStartPosition = motoraidControllerY.transform.position;
+                                motoraidControllerYStartRotation = motoraidControllerY.transform.rotation;
+
+                                // Find motoraidControllerZ under motoraidControllerY
+                                motoraidControllerZ = motoraidControllerY.Find("motoraidControllerZ");
+                                if (motoraidControllerZ != null)
                                 {
-                                    logger.Info("vfControllerZ object found.");
+                                    logger.Info("motoraidControllerZ object found.");
                                     // Store initial position and rotation of the stick
-                                    vfControllerZStartPosition = vfControllerZ.transform.position;
-                                    vfControllerZStartRotation = vfControllerZ.transform.rotation;
+                                    motoraidControllerZStartPosition = motoraidControllerZ.transform.position;
+                                    motoraidControllerZStartRotation = motoraidControllerZ.transform.rotation;
                                 }
                                 else
                                 {
-                                    logger.Error("vfControllerZ object not found under vfControllerY!");
+                                    logger.Error("motoraidControllerZ object not found under motoraidControllerY!");
                                 }
                             }
                             else
                             {
-                                logger.Error("vfControllerY object not found under vfControllerX!");
+                                logger.Error("motoraidControllerY object not found under motoraidControllerX!");
                             }
                         }
                         else
                         {
-                            logger.Error("vfControllerX object not found under vfZ!");
+                            logger.Error("motoraidControllerX object not found under motoraidZ!");
                         }
                         // Gets all Light components in the target object and its children
-                        Light[] allLights = vfZObject.GetComponentsInChildren<Light>();
+                        Light[] allLights = motoraidZObject.GetComponentsInChildren<Light>();
 
                         // Log the names of the objects containing the Light components and filter out unwanted lights
                         foreach (Light light in allLights)
                         {
-                            if (light.gameObject.name == "vfbrakelight1")
+                            if (light.gameObject.name == "motoraidbrakelight1")
                             {
-                                vfbrakelight1 = light;
+                                motoraidbrakelight1 = light;
                                 logger.Info("Included Light found in object: " + light.gameObject.name);
                             }
-                            else if (light.gameObject.name == "vfbrakelight2")
+                            else if (light.gameObject.name == "motoraidbrakelight2")
                             {
-                                vfbrakelight2 = light;
+                                motoraidbrakelight2 = light;
                                 logger.Info("Included Light found in object: " + light.gameObject.name);
                             }
                             else if (light.gameObject.name == "strobe1_light")
@@ -285,7 +295,7 @@ namespace WIGUx.Modules.vfMotionSim
                             }
                         }
                         // Find cockpit camera under cockpit
-                        cockpitCam = vfZObject.Find("eyes/cockpitcam")?.gameObject;
+                        cockpitCam = motoraidZObject.Find("eyes/cockpitcam")?.gameObject;
                         if (cockpitCam != null)
                         {
                             logger.Info("Cockpitcam object found.");
@@ -296,50 +306,50 @@ namespace WIGUx.Modules.vfMotionSim
                         }
                         else
                         {
-                            logger.Error("Cockpitcam object not found under vfZ!");
+                            logger.Error("Cockpitcam object not found under motoraidZ!");
                         }
                     }
                     else
                     {
-                        logger.Error("vfZ object not found under vfY!");
+                        logger.Error("motoraidZ object not found under motoraidY!");
                     }
                 }
                 else
                 {
-                    logger.Error("vfY object not found under vfX!");
+                    logger.Error("motoraidY object not found under motoraidX!");
                 }
             }
             else
             {
-                logger.Error("vfX object not found!");
+                logger.Error("motoraidX object not found!");
             }
-            hazzardEmissiveObjects = new Renderer[1];
+            // hazzardEmissiveObjects = new Renderer[3];
             //leftEmissiveObjects = new Renderer[1];
             //rightEmissiveObjects = new Renderer[1];
 
-            hazzardEmissiveObjects[0] = vfZObject.Find("vfhazard")?.GetComponent<Renderer>();
-            //hazzardEmissiveObjects[1] = vfZObject.Find("vfhazardl")?.GetComponent<Renderer>();
-            // hazzardEmissiveObjects[2] = vfZObject.Find("vfhazardr")?.GetComponent<Renderer>();
+           // hazzardEmissiveObjects[0] = motoraidZObject.Find("motoraidhazardl")?.GetComponent<Renderer>();
+          //  hazzardEmissiveObjects[1] = motoraidZObject.Find("motoraidhazardr")?.GetComponent<Renderer>();
+          //  hazzardEmissiveObjects[2] = motoraidZObject.Find("motoraidhazard")?.GetComponent<Renderer>();
 
+            //leftEmissiveObjects[0] = motoraidZObject.Find("left1")?.GetComponent<Renderer>();
+            //leftEmissiveObjects[1] = motoraidZObject.Find("left2")?.GetComponent<Renderer>();
+            // leftEmissiveObjects[2] = motoraidZObject.Find("left3")?.GetComponent<Renderer>();
 
-            //leftEmissiveObjects[0] = vfZObject.Find("left1")?.GetComponent<Renderer>();
-            //leftEmissiveObjects[1] = vfZObject.Find("left2")?.GetComponent<Renderer>();
-            // leftEmissiveObjects[2] = vfZObject.Find("left3")?.GetComponent<Renderer>();
-
-            //rightEmissiveObjects[0] = vfZObject.Find("right1")?.GetComponent<Renderer>();
-            //rightEmissiveObjects[1] = vfZObject.Find("right2")?.GetComponent<Renderer>();
-            //rightEmissiveObjects[2] = vfZObject.Find("right3")?.GetComponent<Renderer>();
+            //rightEmissiveObjects[0] = motoraidZObject.Find("right1")?.GetComponent<Renderer>();
+            //rightEmissiveObjects[1] = motoraidZObject.Find("right2")?.GetComponent<Renderer>();
+            //rightEmissiveObjects[2] = motoraidZObject.Find("right3")?.GetComponent<Renderer>();
             // Set lights to start
 
-            StartAttractPattern();
-            ToggleLight1(false);
-            ToggleLight2(false);
+         //   StartAttractPattern();
+              ToggleLight1(false);
+          //    ToggleLight2(true);
+          //    ToggleBrightness1(false);
+          //    ToggleBrightness2(false);
         }
 
         void Update()
         {
-            bool inputDetected = false;
-            bool throttleDetected = false;// Initialize at the beginning of the Update method
+            bool inputDetected = false; // Initialize at the beginning of the Update method
             if (Input.GetKeyDown(KeyCode.Y))
             {
                 logger.Info("Resetting Positions");
@@ -396,7 +406,7 @@ namespace WIGUx.Modules.vfMotionSim
             if (inFocusMode)
             {
                 HandleTransformAdjustment();
-                HandleInput(ref inputDetected, ref throttleDetected); // Pass by reference
+                HandleInput(ref inputDetected);  // Pass by reference
             }
         }
 
@@ -404,9 +414,9 @@ namespace WIGUx.Modules.vfMotionSim
         {
             string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
             logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Starting Virtua Racing-Virtua Formula...");
-            logger.Info("Virtua Racing Motion Sim starting...Wow Chunky polygons!");
-            logger.Info("Ready, Go!...");
+            logger.Info("Compatible Rom Dectected, Starting Motor Raid ...");
+            logger.Info("Motor Raid Sim starting...Road Rash in the future!");
+            logger.Info("Watch yourself out there!...");
             cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
             cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
             StopCurrentPatterns();
@@ -462,26 +472,26 @@ namespace WIGUx.Modules.vfMotionSim
             RestoreOriginalParent(playerVRSetup, "PlayerVRSetup.PlayerRig");
             // StopCoroutine(strobeCoroutine);
             // TurnOffAllStrobes();
-            StartAttractPattern();
+            // StartAttractPattern();
 
-            // Reset vfX to initial positions and rotations
-            if (vfXObject != null)
+            // Reset motoraidX to initial positions and rotations
+            if (motoraidXObject != null)
             {
-                vfXObject.position = vfXStartPosition;
-                vfXObject.rotation = vfXStartRotation;
+                motoraidXObject.position = motoraidXStartPosition;
+                motoraidXObject.rotation = motoraidXStartRotation;
             }
 
-            // Reset vfY object to initial position and rotation
-            if (vfYObject != null)
+            // Reset motoraidY object to initial position and rotation
+            if (motoraidYObject != null)
             {
-                vfYObject.position = vfYStartPosition;
-                vfYObject.rotation = vfYStartRotation;
+                motoraidYObject.position = motoraidYStartPosition;
+                motoraidYObject.rotation = motoraidYStartRotation;
             }
-            // Reset vfZ object to initial position and rotation
-            if (vfZObject != null)
+            // Reset motoraidZ object to initial position and rotation
+            if (motoraidZObject != null)
             {
-                vfZObject.position = vfZStartPosition;
-                vfZObject.rotation = vfZStartRotation;
+                motoraidZObject.position = motoraidZStartPosition;
+                motoraidZObject.rotation = motoraidZStartRotation;
             }
 
             // Reset cockpit cam to initial position and rotation
@@ -496,7 +506,7 @@ namespace WIGUx.Modules.vfMotionSim
             inFocusMode = false;  // Clear focus mode flag
         }
 
-        void HandleInput(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
+        void HandleInput(ref bool inputDetected)
         {
             if (!inFocusMode) return;
 
@@ -600,44 +610,30 @@ namespace WIGUx.Modules.vfMotionSim
                 // Get the trigger axis values
                 // Detect input from Xbox triggers
 
-                if (XInput.Get(XInput.Button.RIndexTrigger))
+                // Handle RT press (assuming RT is mapped to a button in your XInput class)
+                if (XInput.GetDown(XInput.Button.RIndexTrigger))
                 {
-                    float rotateX = keyboardVelocityX * Time.deltaTime;
-
-                    if (currentRotationX - rotateX > -rotationLimitX)
-                    {
-                        vfXObject.Rotate(rotateX, 0, 0);
-                        currentRotationX -= rotateX;
-                        throttleDetected = true;
-                    }
+                    inputDetected = true;
                 }
-                if (XInput.Get(XInput.Button.LIndexTrigger))
+
+                // Reset position on RT release
+                if (XInput.GetUp(XInput.Button.RIndexTrigger))
                 {
-                    float rotateX = vrVelocity * Time.deltaTime;
-
-                    if (currentRotationX + rotateX < rotationLimitX)
-                    {
-                        vfXObject.Rotate(-rotateX, 0, 0);
-                        currentRotationX += rotateX;
-                        throttleDetected = true;
-                    }
+                    inputDetected = true;
                 }
-                // LeftTrigger           
+
+                // LeftTrigger
                 if (XInput.GetDown(XInput.Button.LIndexTrigger))
                 {
-                    ToggleBrakeEmissive(true);
-                    ToggleLight1(true);
-                    ToggleLight2(true);
-                    throttleDetected = true;
+                    inputDetected = true;
                 }
+
                 // Reset position on button release
                 if (XInput.GetUp(XInput.Button.LIndexTrigger))
                 {
-                    ToggleBrakeEmissive(false);
-                    ToggleLight1(false);
-                    ToggleLight2(false);
-                    throttleDetected = true;
+                    inputDetected = true;
                 }
+
                 // Handle RB button press for plunger position
                 if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
                 {
@@ -664,8 +660,8 @@ namespace WIGUx.Modules.vfMotionSim
                 }
             }
 
-            // Fire1
-            if (Input.GetButtonDown("Fire1"))
+                // Fire1
+                if (Input.GetButtonDown("Fire1"))
             {
                 inputDetected = true;
             }
@@ -675,16 +671,16 @@ namespace WIGUx.Modules.vfMotionSim
             {
                 inputDetected = true;
             }
-            /*
+
             // Fire2
             if (Input.GetButtonDown("Fire2"))
             {
                 // Set lights to bright
-                ToggleBrightness1(true);
-                ToggleBrightness2(true);
+                //ToggleBrightness1(true);
+                //ToggleBrightness2(true);
                 ToggleBrakeEmissive(true);
                 ToggleLight1(true);
-                ToggleLight2(true);
+                //ToggleLight2(true);
                 inputDetected = true;
             }
 
@@ -692,14 +688,14 @@ namespace WIGUx.Modules.vfMotionSim
             if (Input.GetButtonUp("Fire2"))
             {
                 ToggleBrakeEmissive(false);
-                ToggleBrightness1(false);
-                ToggleBrightness2(false);
+                //ToggleBrightness1(false);
+                //ToggleBrightness2(false);
                 ToggleLight1(false);
-                ToggleLight2(false);
-                ToggleBrightness(false);
+                //ToggleLight2(false);
+                //ToggleBrightness(false);
                 inputDetected = true;
             }
-            */
+
             // Fire3
             if (Input.GetButtonDown("Fire3"))
             {
@@ -725,92 +721,90 @@ namespace WIGUx.Modules.vfMotionSim
                 inputDetected = true;
             }
 
-            // Handle X rotation for vfYObject and vfControllerX (Down Arrow or primaryThumbstick.y > 0)
+            // Handle X rotation for motoraidXObject and motoraidControllerX (Down Arrow or primaryThumbstick.y > 0)
             // Thumbstick direction: down
-            /*
             if ((Input.GetKey(KeyCode.DownArrow) || primaryThumbstick.y > 0))
             {
                 if (currentRotationX > -rotationLimitX)
                 {
                     float rotateX = (Input.GetKey(KeyCode.DownArrow) ? keyboardVelocityX : primaryThumbstick.y * vrVelocity) * Time.deltaTime;
-                    vfXObject.Rotate(rotateX, 0, 0);
+                    motoraidXObject.Rotate(rotateX, 0, 0);
                     currentRotationX -= rotateX;
                     inputDetected = true;
                 }
                 if (currentControllerRotationX > -controllerrotationLimitX)
                 {
                     float controllerRotateX = (Input.GetKey(KeyCode.DownArrow) ? keyboardControllerVelocityX : primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                    vfControllerX.Rotate(controllerRotateX, 0, 0);
+                    motoraidControllerX.Rotate(controllerRotateX, 0, 0);
                     currentControllerRotationX -= controllerRotateX;
                     inputDetected = true;
                 }
             }
 
-            // Handle X rotation for vfYObject and vfControllerX (Up Arrow or primaryThumbstick.y < 0)
+            // Handle X rotation for motoraidXObject and motoraidControllerX (Up Arrow or primaryThumbstick.y < 0)
             // Thumbstick direction: up
             if ((Input.GetKey(KeyCode.UpArrow) || primaryThumbstick.y < 0))
             {
                 if (currentRotationX < rotationLimitX)
                 {
                     float rotateX = (Input.GetKey(KeyCode.UpArrow) ? keyboardVelocityX : -primaryThumbstick.y * vrVelocity) * Time.deltaTime;
-                    vfXObject.Rotate(-rotateX, 0, 0);
+                    motoraidXObject.Rotate(-rotateX, 0, 0);
                     currentRotationX += rotateX;
                     inputDetected = true;
                 }
                 if (currentControllerRotationX < controllerrotationLimitX)
                 {
                     float controllerRotateX = (Input.GetKey(KeyCode.UpArrow) ? keyboardControllerVelocityX : -primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                    vfControllerX.Rotate(-controllerRotateX, 0, 0);
+                    motoraidControllerX.Rotate(-controllerRotateX, 0, 0);
                     currentControllerRotationX += controllerRotateX;
                     inputDetected = true;
                 }
             }
-            */
-            // Handle Z rotation for vfXObject and vfControllerZ (Down Arrow or primaryThumbstick.y < 0)
+
+            // Handle Z rotation for motoraidZObject and motoraidControllerZ (Left Arrow or primaryThumbstick.y < 0)
             // Thumbstick direction: Left
             if ((Input.GetKey(KeyCode.LeftArrow) || primaryThumbstick.x < 0))
             {
                 if (currentRotationZ > -rotationLimitZ)
                 {
                     float rotateZ = (Input.GetKey(KeyCode.LeftArrow) ? keyboardVelocityZ : -primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    vfZObject.Rotate(0, 0, rotateZ);
+                    motoraidZObject.Rotate(0, 0, rotateZ);
                     currentRotationZ -= rotateZ;
                     inputDetected = true;
                 }
                 if (currentControllerRotationZ > -controllerrotationLimitZ)
                 {
                     float controllerRotateZ = (Input.GetKey(KeyCode.LeftArrow) ? keyboardControllerVelocityZ : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                    vfControllerZ.Rotate(0, 0, controllerRotateZ);
+                    motoraidControllerZ.Rotate(0, 0, controllerRotateZ);
                     currentControllerRotationZ -= controllerRotateZ;
                     inputDetected = true;
                 }
             }
 
-            // Handle Z rotation for vfXObject and vfControllerZ (Up Arrow or primaryThumbstick.y > 0)
+            // Handle Z rotation for motoraidXObject and motoraidControllerZ (Right Arrow or primaryThumbstick.y > 0)
             // Thumbstick direction: right
             if ((Input.GetKey(KeyCode.RightArrow) || primaryThumbstick.x > 0))
             {
                 if (currentRotationZ < rotationLimitZ)
                 {
                     float rotateZ = (Input.GetKey(KeyCode.RightArrow) ? keyboardVelocityZ : primaryThumbstick.x * vrVelocity) * Time.deltaTime;
-                    vfZObject.Rotate(0, 0, -rotateZ);
+                    motoraidZObject.Rotate(0, 0, -rotateZ);
                     currentRotationZ += rotateZ;
                     inputDetected = true;
                 }
                 if (currentControllerRotationZ < controllerrotationLimitZ)
                 {
                     float controllerRotateZ = (Input.GetKey(KeyCode.RightArrow) ? keyboardControllerVelocityZ : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                    vfControllerZ.Rotate(0, 0, -controllerRotateZ);
+                    motoraidControllerZ.Rotate(0, 0, -controllerRotateZ);
                     currentControllerRotationZ += controllerRotateZ;
                     inputDetected = true;
                 }
             }
-
             // Handle left rotation (Thumbstick left)
             if (primaryThumbstick.x < 0 && currentRotationY < rotationLimitY) // Note the change in condition
             {
                 float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                vfYObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
+                motoraidYObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
                 currentRotationY -= rotateY;  // Update current rotation (subtracting because the direction is swapped)
                 inputDetected = true;
             }
@@ -819,20 +813,17 @@ namespace WIGUx.Modules.vfMotionSim
             if (primaryThumbstick.x > 0 && currentRotationY > -rotationLimitY) // Note the change in condition
             {
                 float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                vfYObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
+                motoraidYObject.Rotate(0, rotateY, 0);  // Rotate Y in the opposite direction
                 currentRotationY -= rotateY;  // Update current rotation (subtracting because the direction is swapped)
                 inputDetected = true;
             }
+
 
             // Center the rotation if no input is detected (i think this is redundant)
 
             if (!inputDetected)
             {
                 CenterRotation();
-            }
-            if (!throttleDetected)
-            {
-                CenterThrottle();
             }
         }
 
@@ -853,37 +844,34 @@ namespace WIGUx.Modules.vfMotionSim
             currentRotationY = 0f;
             currentRotationZ = 0f;
         }
-        void CenterThrottle()
+
+        void CenterRotation()
         {
             // Center X-axis
             if (currentRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, currentRotationX);
-                vfXObject.Rotate(unrotateX, 0, 0);
+                motoraidXObject.Rotate(unrotateX, 0, 0);
                 currentRotationX -= unrotateX;
             }
             else if (currentRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, -currentRotationX);
-                vfXObject.Rotate(-unrotateX, 0, 0);
+                motoraidXObject.Rotate(-unrotateX, 0, 0);
                 currentRotationX += unrotateX;
             }
-        }
-        void CenterRotation()
-        {
-
 
             // Center Y-axis
             if (currentRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, currentRotationY);
-                vfYObject.Rotate(0, unrotateY, 0);
+                motoraidYObject.Rotate(0, unrotateY, 0);
                 currentRotationY -= unrotateY;
             }
             else if (currentRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, -currentRotationY);
-                vfYObject.Rotate(0, -unrotateY, 0);
+                motoraidYObject.Rotate(0, -unrotateY, 0);
                 currentRotationY += unrotateY;
             }
 
@@ -891,13 +879,13 @@ namespace WIGUx.Modules.vfMotionSim
             if (currentRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, currentRotationZ);
-                vfZObject.Rotate(0, 0, unrotateZ);
+                motoraidZObject.Rotate(0, 0, unrotateZ);
                 currentRotationZ -= unrotateZ;
             }
             else if (currentRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, -currentRotationZ);
-                vfZObject.Rotate(0, 0, -unrotateZ);
+                motoraidZObject.Rotate(0, 0, -unrotateZ);
                 currentRotationZ += unrotateZ;
             }
             //Centering for contoller
@@ -906,13 +894,13 @@ namespace WIGUx.Modules.vfMotionSim
             if (currentControllerRotationY > 0)
             {
                 float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, currentControllerRotationY);
-                vfControllerY.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
+                motoraidControllerY.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
                 currentControllerRotationY -= unrotateY;    // Reducing the positive rotation
             }
             else if (currentControllerRotationY < 0)
             {
                 float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, -currentControllerRotationY);
-                vfControllerY.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
+                motoraidControllerY.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
                 currentControllerRotationY += unrotateY;    // Reducing the negative rotation
             }
 
@@ -920,13 +908,13 @@ namespace WIGUx.Modules.vfMotionSim
             if (currentControllerRotationX > 0)
             {
                 float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, currentControllerRotationX);
-                vfControllerX.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
+                motoraidControllerX.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentControllerRotationX -= unrotateX;    // Reducing the positive rotation
             }
             else if (currentControllerRotationX < 0)
             {
                 float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, -currentControllerRotationX);
-                vfControllerX.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
+                motoraidControllerX.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
                 currentControllerRotationX += unrotateX;    // Reducing the positive rotation
             }
 
@@ -934,13 +922,13 @@ namespace WIGUx.Modules.vfMotionSim
             if (currentControllerRotationZ > 0)
             {
                 float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, currentControllerRotationZ);
-                vfControllerZ.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
+                motoraidControllerZ.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
                 currentControllerRotationZ -= unrotateZ;    // Reducing the positive rotation
             }
             else if (currentControllerRotationZ < 0)
             {
                 float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, -currentControllerRotationZ);
-                vfControllerZ.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
+                motoraidControllerZ.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
                 currentControllerRotationZ += unrotateZ;    // Reducing the positive rotation
             }
         }
@@ -1046,28 +1034,28 @@ namespace WIGUx.Modules.vfMotionSim
         // Method to change the brightness of fire1 light
         void ToggleBrightness1(bool isBright)
         {
-            if (vfbrakelight1!= null)
+            if (motoraidbrakelight1!= null)
             {
-                vfbrakelight1.intensity = isBright ? brightIntensity : dimIntensity;
-                // logger.Info($"{vfbrakelight1.name} light set to {(isBright ? "bright" : "dim")}.");
+                motoraidbrakelight1.intensity = isBright ? brightIntensity : dimIntensity;
+                // logger.Info($"{motoraidbrakelight1.name} light set to {(isBright ? "bright" : "dim")}.");
             }
             else
             {
-                logger.Debug("vfbrakelight1 light component is not found.");
+                logger.Debug("motoraidbrakelight1 light component is not found.");
             }
         }
 
         // Method to change the brightness of fire2 light
         void ToggleBrightness2(bool isBright)
         {
-            if (vfbrakelight2 != null)
+            if (motoraidbrakelight2 != null)
             {
-                vfbrakelight2.intensity = isBright ? brightIntensity : dimIntensity;
-                // logger.Info($"{vfbrakelight2.name} light set to {(isBright ? "bright" : "dim")}.");
+                motoraidbrakelight2.intensity = isBright ? brightIntensity : dimIntensity;
+                // logger.Info($"{motoraidbrakelight2.name} light set to {(isBright ? "bright" : "dim")}.");
             }
             else
             {
-                logger.Debug("vfbrakelight2 light component is not found.");
+                logger.Debug("motoraidbrakelight2 light component is not found.");
             }
         }
 
@@ -1082,31 +1070,31 @@ namespace WIGUx.Modules.vfMotionSim
             logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
         }
 
-        // Method to toggle the vfbrakelight1 light
+        // Method to toggle the motoraidbrakelight1 light
         void ToggleLight1(bool isActive)
         {
-            if (vfbrakelight1 != null)
+            if (motoraidbrakelight1 != null)
             {
-                vfbrakelight1.enabled = isActive;
-                //          logger.Info($"{vfbrakelight1.name} light turned {(isActive ? "on" : "off")}.");
+                motoraidbrakelight1.enabled = isActive;
+                //          logger.Info($"{motoraidbrakelight1.name} light turned {(isActive ? "on" : "off")}.");
             }
             else
             {
-                logger.Debug("vfbrakelight1 light component is not found.");
+                logger.Debug("motoraidbrakelight1 light component is not found.");
             }
         }
 
-        // Method to toggle the vfbrakelight2 light
+        // Method to toggle the motoraidbrakelight2 light
         void ToggleLight2(bool isActive)
         {
-            if (vfbrakelight2 != null)
+            if (motoraidbrakelight2 != null)
             {
-                vfbrakelight2.enabled = isActive;
-                //       logger.Info($"{vfbrakelight2.name} light turned {(isActive ? "on" : "off")}.");
+                motoraidbrakelight2.enabled = isActive;
+                //       logger.Info($"{motoraidbrakelight2.name} light turned {(isActive ? "on" : "off")}.");
             }
             else
             {
-                logger.Debug("vfbrakelight2 light component is not found.");
+                logger.Debug("motoraidbrakelight2 light component is not found.");
             }
         }
 
@@ -1190,36 +1178,53 @@ namespace WIGUx.Modules.vfMotionSim
         // Method to toggle the fireemissive object
         void ToggleBrakeEmissive(bool isActive)
         {
-            if (vfhazardObject != null)
+            if (motoraidtaillight1Object != null)
             {
-                Renderer renderer = vfhazardObject.GetComponent<Renderer>();
+                Renderer renderer = motoraidtaillight1Object.GetComponent<Renderer>();
                 if (renderer != null)
                 {
-                    Material[] materials = renderer.materials; // Get all materials
-                    foreach (Material mat in materials)
+                    if (isActive)
                     {
-                        if (mat != null)
-                        {
-                            if (isActive)
-                            {
-                                mat.EnableKeyword("_EMISSION");
-                            }
-                            else
-                            {
-                                mat.DisableKeyword("_EMISSION");
-                            }
-                        }
+                        renderer.material.EnableKeyword("_EMISSION");
                     }
-                    // logger.Info($"vfhazardObject object emission turned {(isActive ? "on" : "off")}.");
+                    else
+                    {
+                        renderer.material.DisableKeyword("_EMISSION");
+                    }
+                    //    logger.Info($"motoraidtaillight1Object object emission turned {(isActive ? "on" : "off")}.");
                 }
                 else
                 {
-                    logger.Debug("Renderer component is not found on vfhazardObject object.");
+                    logger.Debug("Renderer component is not found on motoraidtaillight1Object object.");
                 }
             }
             else
             {
-                logger.Debug("vfhazardObject object is not assigned.");
+                logger.Debug("motoraidtaillight1Object object is not assigned.");
+            }
+            if (motoraidtaillight2Object != null)
+            {
+                Renderer renderer = motoraidtaillight2Object.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    if (isActive)
+                    {
+                        renderer.material.EnableKeyword("_EMISSION");
+                    }
+                    else
+                    {
+                        renderer.material.DisableKeyword("_EMISSION");
+                    }
+                    //           logger.Info($"motoraidtaillight2Object object emission turned {(isActive ? "on" : "off")}.");
+                }
+                else
+                {
+                    logger.Debug("Renderer component is not found on motoraidtaillight2Object object.");
+                }
+            }
+            else
+            {
+                logger.Debug("motoraidtaillight2Object object is not assigned.");
             }
         }
 
@@ -1246,21 +1251,21 @@ namespace WIGUx.Modules.vfMotionSim
             {
                 if (emissiveObjects[i] == null)
                 {
-                    logger.Debug($"{arrayName} object at index {i} not found under vfZ.");
+                    logger.Debug($"{arrayName} object at index {i} not found under motoraidZ.");
                 }
             }
         }
 
-        IEnumerator vfFrontAttractPattern()
+        IEnumerator motoraidFrontAttractPattern()
         {
             while (true)
             {
                 ToggleEmissive(hazzardEmissiveObjects[0], true);
-               // ToggleEmissive(hazzardEmissiveObjects[1], false);
+                ToggleEmissive(hazzardEmissiveObjects[1], false);
                 yield return new WaitForSeconds(frontFlashDuration);
 
                 ToggleEmissive(hazzardEmissiveObjects[0], false);
-               // ToggleEmissive(hazzardEmissiveObjects[1], true);
+                ToggleEmissive(hazzardEmissiveObjects[1], true);
                 yield return new WaitForSeconds(frontFlashDuration);
             }
         }
@@ -1286,18 +1291,18 @@ namespace WIGUx.Modules.vfMotionSim
             }
         }
 
-        IEnumerator vfFrontHazzardPattern()
+        IEnumerator motoraidFrontHazzardPattern()
         {
             while (true)
             {
                 ToggleEmissive(hazzardEmissiveObjects[0], true);
-                // ToggleEmissive(hazzardEmissiveObjects[1], true);
-                // ToggleEmissive(hazzardEmissiveObjects[2], true);
+                ToggleEmissive(hazzardEmissiveObjects[1], true);
+                ToggleEmissive(hazzardEmissiveObjects[2], true);
                 yield return new WaitForSeconds(frontDangerDuration);
 
                 ToggleEmissive(hazzardEmissiveObjects[0], false);
-                // ToggleEmissive(hazzardEmissiveObjects[1], false);
-                // ToggleEmissive(hazzardEmissiveObjects[2], false);
+                ToggleEmissive(hazzardEmissiveObjects[1], false);
+                ToggleEmissive(hazzardEmissiveObjects[2], false);
                 yield return new WaitForSeconds(frontDangerDelay);
             }
         }
@@ -1320,23 +1325,13 @@ namespace WIGUx.Modules.vfMotionSim
 
         void ToggleEmissive(Renderer renderer, bool isOn)
         {
-            if (renderer != null)
+            if (isOn)
             {
-                Material[] materials = renderer.materials; // Get all materials
-                foreach (Material mat in materials)
-                {
-                    if (mat != null)
-                    {
-                        if (isOn)
-                        {
-                            mat.EnableKeyword("_EMISSION");
-                        }
-                        else
-                        {
-                            mat.DisableKeyword("_EMISSION");
-                        }
-                    }
-                }
+                renderer.material.EnableKeyword("_EMISSION");
+            }
+            else
+            {
+                renderer.material.DisableKeyword("_EMISSION");
             }
         }
 
@@ -1364,7 +1359,7 @@ namespace WIGUx.Modules.vfMotionSim
             StopCurrentPatterns();
 
             // Start the attract pattern for front, left, and right
-            frontCoroutine = StartCoroutine(vfFrontHazzardPattern());
+            frontCoroutine = StartCoroutine(motoraidFrontHazzardPattern());
          //   leftCoroutine = StartCoroutine(SideAttractPattern(leftEmissiveObjects));
          //   rightCoroutine = StartCoroutine(SideAttractPattern(rightEmissiveObjects));
         }
@@ -1375,7 +1370,7 @@ namespace WIGUx.Modules.vfMotionSim
             StopCurrentPatterns();
 
             // Start the danger pattern for front, left, and right
-            frontCoroutine = StartCoroutine(vfFrontAttractPattern());
+          //  frontCoroutine = StartCoroutine(motoraidFrontAttractPattern());
           //  leftCoroutine = StartCoroutine(SideDangerPattern(leftEmissiveObjects));
           //  rightCoroutine = StartCoroutine(SideDangerPattern(rightEmissiveObjects));
         }

@@ -130,7 +130,7 @@ namespace WIGUx.Modules.fzeroaxMotionSim
         // Array of strobe lights
         private List<Light> strobeLights = new List<Light>();
 
-        private readonly string[] compatibleGames = { "Zero AX" };
+        private readonly string[] compatibleGames = { "F-Zero" };
 
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
@@ -348,37 +348,33 @@ namespace WIGUx.Modules.fzeroaxMotionSim
 
         void Update()
         {
-            bool inputDetected = false; // Initialize at the beginning of the Update method
-            if (Input.GetKeyDown(KeyCode.Y))
+            bool inputDetected = false;
+            bool throttleDetected = false;// Initialize at the beginning of the Update method
+            /*
+            // Check if the "L" key is pressed
+            if (Input.GetKeyDown(KeyCode.L))
             {
-                logger.Info("Resetting Positions");
-                ResetPositions();
-            }
-                /*
-                // Check if the "L" key is pressed
-                if (Input.GetKeyDown(KeyCode.L))
+                if (areStrobesOn)
                 {
-                    if (areStrobesOn)
-                    {
-                        // Strobe lights are currently on, stop the coroutine to turn them off
-                        logger.Info("Stopping strobes");
-                        StopCoroutine(strobeCoroutine);
-                        strobeCoroutine = null;
-                        TurnAllOff(); // Turn all emissives off
-                        TurnOffAllStrobes();
-                    }
-                    else
-                    {
-                        // Strobe lights are currently off, start the coroutine to flash them
-                        logger.Info("Starting strobes");
-                        strobeCoroutine = StartCoroutine(FlashStrobes());
-                    }
-
-                    // Toggle the strobe state
-                    areStrobesOn = !areStrobesOn;
+                    // Strobe lights are currently on, stop the coroutine to turn them off
+                    logger.Info("Stopping strobes");
+                    StopCoroutine(strobeCoroutine);
+                    strobeCoroutine = null;
+                    TurnAllOff(); // Turn all emissives off
+                    TurnOffAllStrobes();
                 }
-                */
-                if (GameSystem.ControlledSystem != null && !inFocusMode)
+                else
+                {
+                    // Strobe lights are currently off, start the coroutine to flash them
+                    logger.Info("Starting strobes");
+                    strobeCoroutine = StartCoroutine(FlashStrobes());
+                }
+
+                // Toggle the strobe state
+                areStrobesOn = !areStrobesOn;
+            }
+            */
+            if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
                 string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
                 bool containsString = false;
@@ -405,7 +401,7 @@ namespace WIGUx.Modules.fzeroaxMotionSim
             if (inFocusMode)
             {
                 HandleTransformAdjustment();
-                HandleInput(ref inputDetected);  // Pass by reference
+                HandleInput(ref inputDetected, ref throttleDetected); // Pass by reference
             }
         }
 
@@ -505,7 +501,7 @@ namespace WIGUx.Modules.fzeroaxMotionSim
             inFocusMode = false;  // Clear focus mode flag
         }
 
-        void HandleInput(ref bool inputDetected)
+        void HandleInput(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
         {
             if (!inFocusMode) return;
 
@@ -609,54 +605,6 @@ namespace WIGUx.Modules.fzeroaxMotionSim
                 // Get the trigger axis values
                 // Detect input from Xbox triggers
 
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
-                {
-
-                }
-
-                // LeftTrigger
-                if (XInput.GetDown(XInput.Button.LIndexTrigger))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on button release
-                if (XInput.GetUp(XInput.Button.LIndexTrigger))
-                {
-
-                }
-
-                // Handle RB button press for plunger position
-                if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
-                {
-
-                    inputDetected = true;
-                }
-
-                // Reset position on RB button release
-                if (XInput.GetUp(XInput.Button.RShoulder) || Input.GetKeyUp(KeyCode.JoystickButton5))
-                {
-
-                }
-
-                // Handle LB button press for plunger position
-                if (XInput.GetDown(XInput.Button.LShoulder) || Input.GetKeyDown(KeyCode.JoystickButton4))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on LB button release
-                if (XInput.GetUp(XInput.Button.LShoulder) || Input.GetKeyUp(KeyCode.JoystickButton4))
-                {
-
-                }
             }
 
             // Fire2 (positive Z rotation)
@@ -668,7 +616,7 @@ namespace WIGUx.Modules.fzeroaxMotionSim
                 {
                     fzeroaxYObject.Rotate(0, -rotateY, 0);
                     currentRotationY += rotateY;
-                    inputDetected = true;
+                    throttleDetected = true;
                 }
             }
 
@@ -682,7 +630,7 @@ namespace WIGUx.Modules.fzeroaxMotionSim
                     {
                     fzeroaxXObject.Rotate(rotateX, 0, 0);
                     currentRotationX -= rotateX;
-                    inputDetected = true;
+                    throttleDetected = true;
                 }
             }
 
@@ -695,7 +643,6 @@ namespace WIGUx.Modules.fzeroaxMotionSim
                 //ToggleBrightness2(true);
                 ToggleLight1(true);
                 ToggleLight2(true);
-                inputDetected = true;
             }
             // Reset position on button release
             if (Input.GetButtonUp("Fire3") || XInput.GetUp(XInput.Button.X))
@@ -715,7 +662,6 @@ namespace WIGUx.Modules.fzeroaxMotionSim
                 //ToggleBrightness2(true);
                 ToggleLight1(true);
                 ToggleLight2(true);
-                inputDetected = true;
             }
             // Reset position on button release
             if (Input.GetButtonUp("Jump") || XInput.GetDown(XInput.Button.Y))
@@ -735,7 +681,7 @@ namespace WIGUx.Modules.fzeroaxMotionSim
                 {
                     fzeroaxYObject.Rotate(0, rotateY, 0);
                     currentRotationY -= rotateY;
-                    inputDetected = true;
+                    throttleDetected = true;
                 }
             }
 
@@ -845,6 +791,10 @@ namespace WIGUx.Modules.fzeroaxMotionSim
             {
                 CenterRotation();
             }
+            if (!throttleDetected)
+            {
+                CenterThrottle();
+            }
         }
 
         void ResetPositions()
@@ -864,8 +814,7 @@ namespace WIGUx.Modules.fzeroaxMotionSim
             currentRotationY = 0f;
             currentRotationZ = 0f;
         }
-
-        void CenterRotation()
+        void CenterThrottle()
         {
             // Center X-axis
             if (currentRotationX > 0)
@@ -894,7 +843,10 @@ namespace WIGUx.Modules.fzeroaxMotionSim
                 fzeroaxYObject.Rotate(0, -unrotateY, 0);
                 currentRotationY += unrotateY;
             }
+        }
 
+        void CenterRotation()
+        {
             // Center Z-axis
             if (currentRotationZ > 0)
             {
