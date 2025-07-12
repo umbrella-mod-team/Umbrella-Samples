@@ -1466,6 +1466,11 @@
     <ApplicationPath>AlpineRacer.xml</ApplicationPath>  
     <Emulator>sdaemon.exe</Emulator>
   </Game>
+    <Game>
+    <Title>Super Dragon Ball Z</Title>
+    <ApplicationPath>superdbz.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
   <Game>
     <Title>Super Monkey Ball - Ticket Blitz</Title>
     <ApplicationPath>Mballblitz.xml</ApplicationPath>  
@@ -1515,6 +1520,11 @@
     <Title>Target Toss Pro Bags</Title>
     <ApplicationPath>TargetTossProBags.xml</ApplicationPath>  
     <Emulator>budgieloader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Tatsunoko vs. Capcom</Title>
+    <ApplicationPath>tatsuvscap.xml</ApplicationPath>  
+    <Emulator>Dolphin.exe</Emulator>
   </Game>
   <Game>
     <Title>Tekken 4</Title>
@@ -1621,6 +1631,7 @@
     <ApplicationPath>KingofFighters98UltimateMatchFinalEditionNesica.xml</ApplicationPath>  
     <Emulator>game.exe</Emulator>
   </Game>
+  <Game>
   <Title>The King of Fighters 2002 - Unlimited Match (NESiCAxLive)</Title>
     <ApplicationPath>KingofFighters2002.xml</ApplicationPath>  
     <Emulator>game.exe</Emulator>
