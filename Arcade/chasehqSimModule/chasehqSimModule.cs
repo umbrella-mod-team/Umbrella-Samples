@@ -1,14 +1,10 @@
 ﻿using UnityEngine;
-using UnityEngine.XR;
-using WIGU;
 using System.Collections.Generic;
-using EmuVR.InputManager;
-using System.Collections;
-using static XInput;
-using Valve.VR;
-using static SteamVR_Utils;
 using System.IO;
-using MelonLoader.ICSharpCode.SharpZipLib.GZip;
+using WIGU;
+using System;
+using WIGUx.Modules.MameHookModule;
+using System.Reflection;
 
 namespace WIGUx.Modules.chasehqSim
 {
@@ -16,519 +12,289 @@ namespace WIGUx.Modules.chasehqSim
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        private readonly float keyboardVelocityX = 25.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 25.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 25.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 30.5f;        // Velocity for VR controller input
+        [Header("Object Settings")]
+        private Transform WheelObject; // Reference to shifter
+        private Transform ShifterObject; // Reference to shifter
+        private Transform GasObject; // Reference to the throttle mirroring object
+        private Transform BrakeObject; // Reference to the throttle mirroring object
+        private Transform Light1Object; // Reference to the left light
+        private Transform Light2Object; // Reference to the right light
 
+        [Header("Input Settings")]
+        public string primaryThumbstickHorizontal = "Horizontal"; // Input axis for primary thumbstick horizontal
+        public string primaryThumbstickVertical = "Vertical"; // Input axis for primary thumbstick vertical
+        public string secondaryThumbstickHorizontal = "RightStickHorizontal"; // Input axis for secondary thumbstick horizontal
+        public string secondaryThumbstickVertical = "RightStickVertical"; // Input axis for secondary thumbstick forward/backward
+        public string leftTrigger = "LIndexTrigger";
+        public string rightTrigger = "RIndexTrigger";
+
+        [Header("Velocity Multiplier Settings")]        // Speeds for the animation of the in game flight stick or wheel
+        private float primaryThumbstickRotationMultiplier = 50f; // Multiplier for primary thumbstick rotation intensity
+        private float secondaryThumbstickRotationMultiplier = 25f; // Multiplier for secondary thumbstick rotation intensity
+        private float triggerRotationMultiplier = 20f; // Multiplier for trigger rotation intensity
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
+        private float WheelRotationDegrees = 100f; // Degrees for wheel rotation, adjust as needed
+        private readonly float rotationSmoothness = 5f;  //sets the smoothness of the rotation
+        private readonly float thumbstickVelocity = 30f;  // Velocity for keyboard input
 
-        // Controller animation 
+        [Header("Position Settings")]     // Initial positions setup
+        private Vector3 WheelStartPosition;  // Initial wheel positions for resetting
+        private Vector3 ShifterStartPosition;  // Initial shifter positions for resetting
+        private Vector3 GasStartPosition;  // Initial gas positions for resetting
+        private Vector3 BrakeStartPosition;  // Initial brake positions for resetting
 
-        // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 400.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 400.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 400.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 400.5f;        // Velocity for VR/Controller input
+        [Header("Rotation Settings")]     // Initial rotations setup
+        private Quaternion WheelStartRotation;  // Initial wheel rotations for resetting
+        private Quaternion ShifterStartRotation;  // Initial shifter rotations for resetting
+        private Quaternion GasStartRotation;  // Initial Gas rotations for resetting
+        private Quaternion BrakeStartRotation;  // Initial Brake rotations for resetting
 
-        // player 1
+        [Header("Lights and Emissives")]     // Setup Emissive and Lights
+        Dictionary<string, int> lastLampStates = new Dictionary<string, int>
+    {
+        { "genout5", 0 }, { "genout6", 0 }
+    };
+        private Light genout5_light;
+        private Light genout6_light;
+        private Light startlight;
+        private Light[] lights;
 
-        //p1 sticks
-
-        private float chasehqp1controllerrotationLimitX = 270f;  // Rotation limit for X-axis (stick or wheel)
-        private float chasehqp1controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
-        private float chasehqp1controllerrotationLimitZ = 0f;  // Rotation limit for Z-axis (stick or wheel)
-
-        private float chasehqp1currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
-        private float chasehqp1currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
-        private float chasehqp1currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
-
-        private readonly float chasehqp1centeringControllerVelocityX = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float chasehqp1centeringControllerVelocityY = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float chasehqp1centeringControllerVelocityZ = 400.5f;  // Velocity for centering rotation (stick or wheel)
-
-        private Transform chasehqshifter; // Reference to shifter
-        private Vector3 chasehqshifterStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion chasehqshifterStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform chasehqp1controllerX; // Reference to the main animated controller (wheel)
-        private Vector3 chasehqp1controllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion chasehqp1controllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform chasehqp1controllerY; // Reference to the main animated controller (wheel)
-        private Vector3 chasehqp1controllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion chasehqp1controllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform chasehqp1controllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 chasehqp1controllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion chasehqp1controllerZStartRotation; // Initial controlller positions and rotations for resetting
-
-        //lights
-        private Transform lightsObject;
-        public Light[] chasehqLights = new Light[2]; // Array to store lights
-        public Light chasehq1_light;
-        public Light chasehq2_light;
-        public Light chasehq3_light;
-        public Light chasehq4_light;
-        private float flashDuration = 0.15f;
-        private float flashInterval = 0.15f;
-        private float lightDuration = 0.5f; // Duration during which the lights will be on
-        private bool arechasehqLighsOn = false; // track strobe lights
-        private Coroutine chasehqCoroutine; // Coroutine variable to control the strobe flashing
-        private Light[] lights;  
-        private bool isChaseHqFlashing = false; //set the flashing flag
-        private bool isChaseHqinHigh = false; //set the flashing flag
+        [Header("Timers and States")]  // Store last states and timers
+        private bool isHigh = true; //set the flashing flag
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private readonly string[] compatibleGames = { "chasehq" };
-        private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
-                                                                                                              // Public property to access the Game instance
+        private GameSystemState systemState;
+
+        [Header("Rom Check")]
+        private GameSystem gameSystem;  // Cached GameSystem for this cabinet.
+        private string insertedGameName = string.Empty;
+        private string controlledGameName = string.Empty;
+        private string configPath;
+
         void Start()
         {
-            logger.Info("Looking For Lights In Chase HQ");
-            lightsObject = transform.Find("lights");
-            if (lightsObject != null)
-            {
-                logger.Info("lightsObject found.");
-            }
-            else
-            {
-                logger.Error("lightsObject object not found!");
-                return; // Early exit if lightsObject is not found
-            }
-            // Gets all Light components in the target object and its children
-            Light[] allLights = lightsObject.GetComponentsInChildren<Light>();
-
-            // Log the names of the objects containing the Light components and filter out unwanted lights
-            foreach (Light light in allLights)
-            {
-                logger.Info($"Light found: {light.gameObject.name}");
-                switch (light.gameObject.name)
-                {
-                    case "chasehq1_light":
-                        chasehq1_light = light;
-                        chasehqLights[0] = light;
-                        logger.Info("Included Light found in object: " + light.gameObject.name);
-                        break;
-                    case "chasehq2_light":
-                        chasehq2_light = light;
-                        chasehqLights[1] = light;
-                        logger.Info("Included Light found in object: " + light.gameObject.name);
-                        break;
-                    default:
-                        logger.Info("Excluded Light found in object: " + light.gameObject.name);
-                        break;
-                }
-            }
-
-            // Log the assigned lights for verification
-            for (int i = 0; i < chasehqLights.Length; i++)
-            {
-                if (chasehqLights[i] != null)
-                {
-                    logger.Info($"chasehqLights[{i}] assigned to: {chasehqLights[i].name}");
-                }
-                else
-                {
-                    logger.Error($"chasehqLights[{i}] is not assigned!");
-                }
-            }
-            chasehqshifter = transform.Find("chasehqshifter");
-            if (chasehqshifter != null)
-            {
-                logger.Info("chasehqshifter object found.");
-                chasehqshifterStartPosition = chasehqshifter.transform.position;
-                chasehqshifterStartRotation = chasehqshifter.transform.rotation;
-            }
-            // Find chasehqcontrollerX for player 1
-            chasehqp1controllerX = transform.Find("chasehqp1controllerX");
-            if (chasehqp1controllerX != null)
-            {
-                logger.Info("chasehqp1controllerX object found.");
-                // Store initial position and rotation of the stick
-                chasehqp1controllerXStartPosition = chasehqp1controllerX.transform.position;
-                chasehqp1controllerXStartRotation = chasehqp1controllerX.transform.rotation;
-
-                // Find chasehqp1controllerY under chasehqp1controllerX
-                chasehqp1controllerY = chasehqp1controllerX.Find("chasehqp1controllerY");
-                if (chasehqp1controllerY != null)
-                {
-                    logger.Info("chasehqp1controllerY object found.");
-                    // Store initial position and rotation of the stick
-                    chasehqp1controllerYStartPosition = chasehqp1controllerY.transform.position;
-                    chasehqp1controllerYStartRotation = chasehqp1controllerY.transform.rotation;
-
-                    // Find chasehqp1controllerZ under chasehqp1controllerY
-                    chasehqp1controllerZ = chasehqp1controllerY.Find("chasehqp1controllerZ");
-                    if (chasehqp1controllerZ != null)
-                    {
-                        logger.Info("chasehqp1controllerZ object found.");
-                        // Store initial position and rotation of the stick
-                        chasehqp1controllerZStartPosition = chasehqp1controllerZ.transform.position;
-                        chasehqp1controllerZStartRotation = chasehqp1controllerZ.transform.rotation;
-                    }
-                    else
-                    {
-                        logger.Error("chasehqp1controllerZ object not found under controllerY!");
-                    }
-                }
-                else
-                {
-                    logger.Error("chasehqp1controllerY object not found under controllerX!");
-                }
-            }
-            else
-            {
-                logger.Error("chasehqp1controllerX object not found!!");
-            }
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            configPath = $"./Emulators/MAME/inputs/{insertedGameName}.ini";
+            gameSystem = GetComponent<GameSystem>();
+            InitializeLights();
+            InitializeObjects();
+            // Initialize lamp states
+            if (genout5_light) ToggleLight(genout5_light, false);
+            if (genout6_light) ToggleLight(genout6_light, false);
         }
-
         void Update()
         {
-
-            bool inputDetected = false;  // Initialize at the beginning of the Update method
-          
-            if (GameSystem.ControlledSystem != null && !inFocusMode)
+            bool inputDetected = false;  // Initialize for centering
+            bool throttleDetected = false;// Initialize for centering
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            if (WIGUx.Modules.MameHookModule.MameHookController.ActiveRomsList != null)
             {
-                string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-                bool containsString = false;
-
-                foreach (var gameString in compatibleGames)
+                foreach (var rom in WIGUx.Modules.MameHookModule.MameHookController.ActiveRomsList)
                 {
-                    if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
-                    {
-                        containsString = true;
-                        break;
-                    }
-                }
-
-                if (containsString)
-                {
-                    StartFocusMode();
+                    if (rom == insertedGameName)
+                        ReadData();
                 }
             }
-
+            // Enter focus when names match
+            if (!string.IsNullOrEmpty(insertedGameName)
+                && !string.IsNullOrEmpty(controlledGameName)
+                && insertedGameName == controlledGameName
+                && !inFocusMode)
+            {
+                StartFocusMode();
+            }
             if (GameSystem.ControlledSystem == null && inFocusMode)
             {
                 EndFocusMode();
             }
-
             if (inFocusMode)
             {
-                HandleInput(ref inputDetected);  // Pass by reference
-                HandleKBInput();
-                HandleVRInput();
-                HandleXInput();
+                MapThumbsticks(ref inputDetected, ref throttleDetected);
             }
         }
-
-        private void HandleKBInput()
-        {
-
-        }
-
-        private void HandleVRInput()
-        {
-            var leftController = VRControllerHelper.GetController(HandType.Left);
-            var rightController = VRControllerHelper.GetController(HandType.Right);
-        }
-
-        private void HandleXInput()
-        {
-            Vector2 primaryThumbstick = Vector2.zero;
-            Vector2 secondaryThumbstick = Vector2.zero;
-
-            if (XInput.IsConnected)
-            {
-                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
-
-                Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
-
-                // Combine VR and Xbox inputs
-                primaryThumbstick += xboxPrimaryThumbstick;
-                secondaryThumbstick += xboxSecondaryThumbstick;
-                /*
-                // Handle RT press
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
-                {
-                    logger.Info("XInput Right Trigger pressed");
-                }
-
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
-                {
-                    logger.Info("XInput Right Trigger released");
-                }
-
-                // Handle LT press
-                if (XInput.GetDown(XInput.Button.LIndexTrigger))
-                {
-                    logger.Info("XInput Left Trigger pressed");
-                }
-
-                // Reset position on LT release
-                if (XInput.GetUp(XInput.Button.LIndexTrigger))
-                {
-                    logger.Info("XInput Left Trigger released");
-                }
-
-                // Handle A button
-                if (XInput.GetDown(XInput.Button.A))
-                {
-                    logger.Info("XInput Button A pressed");
-                }
-
-                // Handle B button
-                if (XInput.GetDown(XInput.Button.B))
-                {
-                    logger.Info("XInput Button B pressed");
-                }
-
-                // Handle X button
-                if (XInput.GetDown(XInput.Button.X))
-                {
-                    logger.Info("XInput Button X pressed");
-                }
-
-                // Handle Y button
-                if (XInput.GetDown(XInput.Button.Y))
-                {
-                    logger.Info("XInput Button Y pressed");
-                }
-
-                // Handle Start button
-                if (XInput.GetDown(XInput.Button.Start))
-                {
-                    logger.Info("XInput Start Button pressed");
-                }
-
-                // Handle Back button
-                if (XInput.GetDown(XInput.Button.Back))
-                {
-                    logger.Info("XInput Back Button pressed");
-                }
-
-                // Handle Left Shoulder
-                if (XInput.GetDown(XInput.Button.LShoulder))
-                {
-                    logger.Info("XInput Left Shoulder Button pressed");
-                }
-
-                // Handle Right Shoulder
-                if (XInput.GetDown(XInput.Button.RShoulder))
-                {
-                    logger.Info("XInput Right Shoulder Button pressed");
-                }
-                */
-            }
-        }
-
-
-        public static class VRControllerHelper
-        {
-            public static SteamVR_Controller.Device GetController(HandType handType)
-            {
-                int index = -1;
-
-                // Get the device index based on the hand type
-                switch (handType)
-                {
-                    case HandType.Left:
-                        index = SteamVR_Controller.GetDeviceIndex(SteamVR_Controller.DeviceRelation.Leftmost);
-                        break;
-                    case HandType.Right:
-                        index = SteamVR_Controller.GetDeviceIndex(SteamVR_Controller.DeviceRelation.Rightmost);
-                        break;
-                }
-
-                // Return the controller device if a valid index was found
-                if (index != -1)
-                {
-                    return SteamVR_Controller.Input(index);
-                }
-                return null;
-            }
-        }
-
 
         void StartFocusMode()
         {
-            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Ready to Chase... ");
-            logger.Info("Chase HQ Module starting...");
-            logger.Info("Be on the Lookout!...");
-            // Reset controllers to initial positions and rotations
-            if (chasehqp1controllerX != null)
-            {
-                chasehqp1controllerX.position = chasehqp1controllerXStartPosition;
-                chasehqp1controllerX.rotation = chasehqp1controllerXStartRotation;
-            }
-            if (chasehqp1controllerY != null)
-            {
-                chasehqp1controllerY.position = chasehqp1controllerYStartPosition;
-                chasehqp1controllerY.rotation = chasehqp1controllerYStartRotation;
-            }
-            if (chasehqp1controllerZ != null)
-            {
-                chasehqp1controllerZ.position = chasehqp1controllerZStartPosition;
-                chasehqp1controllerZ.rotation = chasehqp1controllerZStartRotation;
-            }
-            if (chasehqshifter != null)
-            {
-                chasehqshifter.position = chasehqshifterStartPosition;
-                chasehqshifter.rotation = chasehqshifterStartRotation;
-            }
-
-
-            // Reset rotation allowances and current rotation values
-            //player 1
-            chasehqp1currentControllerRotationX = 0f;
-            chasehqp1currentControllerRotationY = 0f;
-            chasehqp1currentControllerRotationZ = 0f;
-            //player 2
-
+            logger.Debug($"{gameObject.name} Starting Focus Mode...");
+            // StopCurrentPatterns();
+            logger.Debug("Chase HQ Module starting...");
+            logger.Debug("Be on the Lookout!...");
             inFocusMode = true;  // Set focus mode flag
         }
 
         void EndFocusMode()
         {
-            // Reset controllers to initial positions and rotations
-            if (chasehqp1controllerX != null)
+            if (WheelObject != null)
             {
-                chasehqp1controllerX.position = chasehqp1controllerXStartPosition;
-                chasehqp1controllerX.rotation = chasehqp1controllerXStartRotation;
+                WheelObject.localPosition = WheelStartPosition;
+                WheelObject.localRotation = WheelStartRotation;
             }
-            if (chasehqp1controllerY != null)
+            if (ShifterObject != null)
             {
-                chasehqp1controllerY.position = chasehqp1controllerYStartPosition;
-                chasehqp1controllerY.rotation = chasehqp1controllerYStartRotation;
+                ShifterObject.localPosition = ShifterStartPosition;
+                ShifterObject.localRotation = ShifterStartRotation;
             }
-            if (chasehqp1controllerZ != null)
+            if (GasObject != null)
             {
-                chasehqp1controllerZ.position = chasehqp1controllerZStartPosition;
-                chasehqp1controllerZ.rotation = chasehqp1controllerZStartRotation;
+                GasObject.localPosition = GasStartPosition;
+                GasObject.localRotation = GasStartRotation;
             }
-
-            StopCoroutine(chasehqCoroutine);
-            TogglechasehqLight1(false);
-            TogglechasehqLight2(false);
+            if (BrakeObject != null)
+            {
+                BrakeObject.localPosition = BrakeStartPosition;
+                BrakeObject.localRotation = BrakeStartRotation;
+            }
+            if (genout5_light) ToggleLight(genout5_light, false);
+            if (genout6_light) ToggleLight(genout6_light, false);
 
             inFocusMode = false;  // Clear focus mode flag
         }
 
-        //sexy new combined input handler
-        void HandleInput(ref bool inputDetected)
+        public void ReadData()
+        {
+            // 1) Your original “zeroed” lamp list:
+            var currentLampStates = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "genout5", 0 }, { "genout6", 0 }
+    };
+            // 2) Reflectively fetch the lamp list (falling back if needed)
+            IEnumerable<string> lampList = null;
+            var hookType = Type.GetType(
+                "WIGUx.Modules.MameHookModule.MameHookController, WIGUx.Modules.MameHookModule"
+            );
+            if (hookType != null)
+            {
+                var lampProp = hookType.GetProperty(
+                    "currentLampState",
+                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                );
+                lampList = lampProp?.GetValue(null) as IEnumerable<string>;
+            }
+            if (lampList == null)
+                lampList = MameHookController.currentLampState;
+
+            // 3) Parse into your state dictionary
+            if (lampList != null)
+            {
+                foreach (var entry in lampList)
+                {
+                    var parts = entry.Split('|');
+                    if (parts.Length != 2) continue;
+
+                    string lamp = parts[0].Trim();
+                    if (currentLampStates.ContainsKey(lamp)
+                        && int.TryParse(parts[1].Trim(), out int value))
+                    {
+                        currentLampStates[lamp] = value;
+                    }
+                }
+            }
+
+            // 4) Dispatch only those lamps to your existing logic
+            foreach (var kv in currentLampStates)
+            {
+                // matches: void ProcessLampState(string lampKey, Dictionary<string,int> currentStates)
+                ProcessLampState(kv.Key, currentLampStates);
+            }
+
+        }
+
+        // 🔹 Helper function for safe lamp processing
+        void ProcessLampState(string lampKey, Dictionary<string, int> currentStates)
+        {
+            if (!lastLampStates.ContainsKey(lampKey))
+            {
+                lastLampStates[lampKey] = 0;
+                logger.Debug($"{gameObject.name} Added missing key '{lampKey}' to lastLampStates.");
+            }
+
+            if (currentStates.TryGetValue(lampKey, out int newValue))
+            {
+                if (lastLampStates[lampKey] != newValue)
+                {
+                    lastLampStates[lampKey] = newValue;
+
+                    // Call the corresponding function dynamically
+                    switch (lampKey)
+                    {
+                        case "genout5":
+                            ProcessLamp0(newValue);
+                            break;
+                        case "genout6":
+                            ProcessLamp1(newValue);
+                            break;
+                        default:
+                            logger.Debug($"{gameObject.name} No processing function for '{lampKey}'");
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Lamp key '{lampKey}' not found in current states.");
+            }
+        }
+
+        // Individual function for lamp0
+        void ProcessLamp0(int state)
+        {
+            logger.Debug($"{gameObject.name} genout6 updated: {state}");
+            // Update lights
+            if (genout5_light) ToggleLight(genout5_light, state == 1);
+            // Update emissive material
+            // if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, state == 1);
+        }
+        // Individual function for lamp1
+        void ProcessLamp1(int state)
+        {
+            logger.Debug($"{gameObject.name} genout5 updated: {state}");
+            // Update lights
+            if (genout6_light) ToggleLight(genout6_light, state == 1);
+            // Update emissive material
+            // if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, state == 1);
+
+        }
+
+        private const float THUMBSTICK_DEADZONE = 0.13f; // Adjust as needed
+
+        private Vector2 ApplyDeadzone(Vector2 input, float deadzone)
+        {
+            input.x = Mathf.Abs(input.x) < deadzone ? 0f : input.x;
+            input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
+            return input;
+        }
+
+        private void MapThumbsticks(ref bool inputDetected, ref bool throttleDetected)
         {
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
 
-            // VR controller input
+            // Declare variables for triggers or extra inputs
+            float primaryIndexTrigger = 0f, secondaryIndexTrigger = 0f;
+            float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
+            float xboxLIndexTrigger = 0f, xboxRIndexTrigger = 0f;
+
+            // === INPUT SELECTION WITH DEADZONE ===
+            // VR CONTROLLERS
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
                 primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
                 secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
-                Vector2 ovrPrimaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
-                Vector2 ovrSecondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
-                float ovrPrimaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-                float ovrSecondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
-                float ovrPrimaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
-                float ovrSecondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
+                // Oculus-specific inputs
+                primaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                secondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
+                secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
-                // Check if the A button on the right controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.One))
-                {
-                    logger.Info("OVR A button pressed");
-                }
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
 
-                // Check if the B button on the right controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Two))
-                {
-                    logger.Info("OVR B button pressed");
-                }
-
-                // Check if the X button on the left controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Three))
-                {
-                    logger.Info("OVR X button pressed");
-                }
-
-                // Check if the Y button on the left controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Four))
-                {
-                    logger.Info("OVR Y button pressed");
-                }
-
-                // Check if the primary index trigger on the right controller is pressed
-                if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger))
-                {
-                    logger.Info("OVR Primary index trigger pressed");
-                }
-
-                // Check if the primary hand trigger on the right controller is pressed
-                if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger))
-                {
-                    logger.Info("OVR Primary hand trigger pressed");
-
-                }
-                // Check if the primary thumbstick is pressed
-                if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstick))
-                {
-                    logger.Info("OVR Primary thumbstick pressed");
-                    {
-                        if (!isChaseHqFlashing)
-                        {
-                            // Start the flashing if not already flashing
-                            chasehqCoroutine = StartCoroutine(FlashchasehqLights());
-                            isChaseHqFlashing = true;
-                        }
-                        else
-                        {
-                            // Stop the flashing if it's currently active
-                            StopCoroutine(chasehqCoroutine);
-                            TogglechasehqLight1(false);
-                            TogglechasehqLight2(false);
-                            chasehqCoroutine = null;
-                            isChaseHqFlashing = false;
-                        }
-
-                        inputDetected = true;
-                    }
-                }
-
-                // Check if the secondary index trigger on the left controller is pressed
-                if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger))
-                {
-                    logger.Info("OVR Secondary index trigger pressed");
-                }
-
-                // Check if the secondary hand trigger on the righttroller is pressed
-                if (OVRInput.Get(OVRInput.Button.SecondaryHandTrigger))
-                {
-                    if (SteamVRInput.GetDown(SteamVRInput.Button.RGrip))
-                    {
-                        logger.Info("RGrip pressed");
-                        if (!isChaseHqinHigh)
-                        {
-                            // Start the flashing if not already flashing
-                            chasehqshifter.Rotate(0, 0, 45f);
-                            isChaseHqinHigh = true;
-                        }
-                        else
-                        {
-                            chasehqshifter.Rotate(0, 0, -45f);
-                            isChaseHqinHigh = false;
-                        }
-                        inputDetected = true;
-                    }
-                }
-
-                // Check if the secondary thumbstick is pressed
-                if (OVRInput.GetDown(OVRInput.Button.SecondaryThumbstick))
-                {
-                    logger.Info("OVR Secondary thumbstick pressed");
-                }
+                // --- Your oculus-specific mapping logic goes here, using the above values ---
             }
             else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
@@ -536,344 +302,283 @@ namespace WIGUx.Modules.chasehqSim
                 var rightController = SteamVRInput.GetController(HandType.Right);
                 primaryThumbstick = leftController.GetAxis();
                 secondaryThumbstick = rightController.GetAxis();
-                if (SteamVRInput.GetDown(SteamVRInput.Button.RGrip))
-                {
-                    logger.Info("RGrip pressed");
-                    if (!isChaseHqinHigh)
-                    {
-                        // Start the flashing if not already flashing
-                        chasehqshifter.Rotate(0, 0, 45f);
-                        isChaseHqinHigh = true;
-                    }
-                    else
-                    {
-                        chasehqshifter.Rotate(0, 0, -45f);
-                        isChaseHqinHigh = false;
-                    }
-                    inputDetected = true;
-                }
-                
-            }
 
-            // Ximput controller input
-            if (XInput.IsConnected)
+                // If you need extra OpenVR/SteamVR inputs, grab them here.
+
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+
+                // --- Your OpenVR-specific mapping logic goes here ---
+            }
+            // XBOX CONTROLLER (only if NOT in VR)
+            else if (XInput.IsConnected)
             {
                 primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
-                // Combine VR and Xbox inputs
-                primaryThumbstick += xboxPrimaryThumbstick;
-                secondaryThumbstick += xboxSecondaryThumbstick;
-                // Get the trigger axis values
-                // Detect input from Xbox triggers
+                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
+                xboxLIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
+                xboxRIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
 
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
-                {
-                    inputDetected = true;
-                }
+                // Optionally use Unity Input axes as backup:
+                // primaryThumbstick   = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                // secondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
 
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
-                {
-                    inputDetected = true;
-                }
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
 
-                // LeftTrigger
-                if (XInput.GetDown(XInput.Button.LIndexTrigger))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on button release
-                if (XInput.GetUp(XInput.Button.LIndexTrigger))
-                {
-                    inputDetected = true;
-                }
-
-                // Handle RB button press for plunger position
-                if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
-                {
-
-                    inputDetected = true;
-                }
-
-                // Reset position on RB button release
-                if (XInput.GetUp(XInput.Button.RShoulder) || Input.GetKeyUp(KeyCode.JoystickButton5))
-                {
-                    inputDetected = true;
-                }
-
-                // Handle LB button press for plunger position
-                if (XInput.GetDown(XInput.Button.LShoulder) || Input.GetKeyDown(KeyCode.JoystickButton4))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on LB button release
-                if (XInput.GetUp(XInput.Button.LShoulder) || Input.GetKeyUp(KeyCode.JoystickButton4))
-                {
-                    inputDetected = true;
-                }
+                // --- Your Xbox-specific mapping logic goes here, using xboxLIndexTrigger etc. ---
             }
 
-            /*
-            // Thumbstick direction: Y
-            // Thumbstick direction: Right
-            if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && p1currentControllerRotationY < p1controllerrotationLimitY)
+            // Map primary thumbstick to wheel
+            if (WheelObject)
             {
-                float p1controllerRotateY = (Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) ? keyboardControllerVelocityY : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                p1controllerY.Rotate(0, -p1controllerRotateY, 0);
-                p1currentControllerRotationY += p1controllerRotateY;
-                inputDetected = true;
-            }
-            // Thumbstick direction: Left
-            if ((Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) || primaryThumbstick.x < 0) && p1currentControllerRotationY > -p1controllerrotationLimitY)
-            {
-                float p1controllerRotateY = (Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) ? keyboardControllerVelocityY : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                p1controllerY.Rotate(0, p1controllerRotateY, 0);
-                p1currentControllerRotationY -= p1controllerRotateY;
-                inputDetected = true;
-            }
-            */
-
-                // Thumbstick direction: X
-                // Thumbstick direction: right
-                if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && chasehqp1currentControllerRotationX < chasehqp1controllerrotationLimitX)
-            {
-                float p1controllerRotateX = (Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) ? keyboardControllerVelocityX : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                chasehqp1controllerX.Rotate(-p1controllerRotateX, 0, 0);
-                chasehqp1currentControllerRotationX += p1controllerRotateX;
-                inputDetected = true;
-            }
-            // Thumbstick direction: left
-            if ((Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) || primaryThumbstick.x < 0) && chasehqp1currentControllerRotationX > -chasehqp1controllerrotationLimitX)
-            {
-                float p1controllerRotateX = (Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) ? keyboardControllerVelocityX : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                chasehqp1controllerX.Rotate(p1controllerRotateX, 0, 0);
-                chasehqp1currentControllerRotationX -= p1controllerRotateX;
-                inputDetected = true;
-            }
-            /*
-            // Thumbstick direction: Z
-            // Thumbstick or D-pad direction: Up
-            if ((primaryThumbstick.y > 0 || XInput.Get(XInput.Button.DpadUp)) && p1currentControllerRotationZ < p1controllerrotationLimitZ)
-            {
-                float p1controllerRotateZ = (Input.GetKey(KeyCode.UpArrow) || XInput.Get(XInput.Button.DpadUp) ? keyboardControllerVelocityZ : primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p1controllerZ.Rotate(0, 0, -p1controllerRotateZ);
-                p1currentControllerRotationZ += p1controllerRotateZ;
-                inputDetected = true;
+                Quaternion primaryRotation = Quaternion.Euler(
+                    0f,
+                    0f,
+                    -primaryThumbstick.x * WheelRotationDegrees
+                );
+                WheelObject.localRotation = WheelStartRotation * primaryRotation;
             }
 
-            // Thumbstick or D-pad direction: Down
-            if ((primaryThumbstick.y < 0 || XInput.Get(XInput.Button.DpadDown)) && p1currentControllerRotationZ > -p1controllerrotationLimitZ)
+            // Map triggers for gas and brake rotation on X-axis
+            if (GasObject)
             {
-                float p1controllerRotateZ = (Input.GetKey(KeyCode.DownArrow) || XInput.Get(XInput.Button.DpadDown) ? keyboardControllerVelocityZ : -primaryThumbstick.y * vrControllerVelocity) * Time.deltaTime;
-                p1controllerZ.Rotate(0, 0, p1controllerRotateZ);
-                p1currentControllerRotationZ -= p1controllerRotateZ;
-                inputDetected = true;
-            */
-
-            // Check if the primary index trigger on the right controller is pressed
-            if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger))
-            {
-            //    logger.Info("OVR Primary index trigger pressed");
+                float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+                Quaternion gasRotation = Quaternion.Euler(
+                    RIndexTrigger * triggerRotationMultiplier,
+                    0f,
+                    0f
+                );
+                GasObject.localRotation = GasStartRotation * gasRotation;
             }
-          
-            // Thunbstick button pressed
-            if (XInput.GetDown(XInput.Button.LThumbstick))
+            if (BrakeObject)
             {
-                if (!isChaseHqFlashing)
-                {
-                    // Start the flashing if not already flashing
-                    chasehqCoroutine = StartCoroutine(FlashchasehqLights());
-                    isChaseHqFlashing = true;
-                }
-                else
-                {
-                    // Stop the flashing if it's currently active
-                    StopCoroutine(chasehqCoroutine);
-                    TogglechasehqLight1(false);
-                    TogglechasehqLight2(false);
-                    chasehqCoroutine = null;
-                    isChaseHqFlashing = false;
-                }
-                inputDetected = true;
+                float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
+                Quaternion brakeRotation = Quaternion.Euler(
+                    LIndexTrigger * triggerRotationMultiplier,
+                    0f,
+                    0f
+                );
+                BrakeObject.localRotation = BrakeStartRotation * brakeRotation;
             }
+            // Calculate a new rotation from the thumbstick input.
             // shift button pressed
             if (XInput.GetDown(XInput.Button.Y))
             {
-                if (!isChaseHqinHigh)
+                if (!isHigh)
                 {
-                    // Start the flashing if not already flashing
-                    chasehqshifter.Rotate(0, 0, 45f);
-                    isChaseHqinHigh = true;
+                    ShifterObject.Rotate(0, 0, 45f);
+                    isHigh = true;
                 }
                 else
                 {
-                    chasehqshifter.Rotate(0, 0, -45f);
-                    isChaseHqinHigh = false;
+                    ShifterObject.Rotate(0, 0, -45f);
+                    isHigh = false;
                 }
-                inputDetected = true;
-            }
-    
-            if (!inputDetected)
-            {
-                CenterRotation();
+                inputDetected = true; 
+ isCenteringRotation = false;
             }
         }
 
-        void CenterRotation()
+        private void CheckInsertedGameName()
         {
-            //Centering for contoller 1
+            if (gameSystem != null && gameSystem.Game != null && !string.IsNullOrEmpty(gameSystem.Game.path))
+                insertedGameName = FileNameHelper.GetFileName(gameSystem.Game.path);
+            else
+                insertedGameName = string.Empty;
+        }
 
-            // Center X-Axis Controller rotation
-            if (chasehqp1currentControllerRotationX > 0)
-            {
-                float p1unrotateX = Mathf.Min(chasehqp1centeringControllerVelocityX * Time.deltaTime, chasehqp1currentControllerRotationX);
-                chasehqp1controllerX.Rotate(p1unrotateX, 0, 0);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationX -= p1unrotateX;    // Reducing the positive rotation
-            }
-            else if (chasehqp1currentControllerRotationX < 0)
-            {
-                float p1unrotateX = Mathf.Min(chasehqp1centeringControllerVelocityX * Time.deltaTime, -chasehqp1currentControllerRotationX);
-                chasehqp1controllerX.Rotate(-p1unrotateX, 0, 0);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationX += p1unrotateX;    // Reducing the positive rotation
-            }
+        private void CheckControlledGameName()
+        {
+            if (GameSystem.ControlledSystem != null && GameSystem.ControlledSystem.Game != null
+                && !string.IsNullOrEmpty(GameSystem.ControlledSystem.Game.path))
+                controlledGameName = FileNameHelper.GetFileName(GameSystem.ControlledSystem.Game.path);
+            else
+                controlledGameName = string.Empty;
+        }
 
-            // Center Y-axis Controller rotation
-            if (chasehqp1currentControllerRotationY > 0)
+        // Helper class to extract and sanitize file names.
+        public static class FileNameHelper
+        {
+            // Extracts the file name without the extension and replaces invalid file characters with underscores.
+            public static string GetFileName(string filePath)
             {
-                float p1unrotateY = Mathf.Min(chasehqp1centeringControllerVelocityY * Time.deltaTime, chasehqp1currentControllerRotationY);
-                chasehqp1controllerY.Rotate(0, p1unrotateY, 0);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationY -= p1unrotateY;    // Reducing the positive rotation
-            }
-            else if (chasehqp1currentControllerRotationY < 0)
-            {
-                float p1unrotateY = Mathf.Min(chasehqp1centeringControllerVelocityY * Time.deltaTime, -chasehqp1currentControllerRotationY);
-                chasehqp1controllerY.Rotate(0, -p1unrotateY, 0);  // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationY += p1unrotateY;    // Reducing the negative rotation
-            }
-
-
-            // Center Z-axis Controller rotation
-            if (chasehqp1currentControllerRotationZ > 0)
-            {
-                float p1unrotateZ = Mathf.Min(chasehqp1centeringControllerVelocityZ * Time.deltaTime, chasehqp1currentControllerRotationZ);
-                chasehqp1controllerZ.Rotate(0, 0, p1unrotateZ);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationZ -= p1unrotateZ;    // Reducing the positive rotation
-            }
-            else if (chasehqp1currentControllerRotationZ < 0)
-            {
-                float p1unrotateZ = Mathf.Min(chasehqp1centeringControllerVelocityZ * Time.deltaTime, -chasehqp1currentControllerRotationZ);
-                chasehqp1controllerZ.Rotate(0, 0, -p1unrotateZ);   // Rotating to reduce the rotation
-                chasehqp1currentControllerRotationZ += p1unrotateZ;    // Reducing the positive rotation
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string FileName = System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+                return FileName;
             }
         }
+        void ToggleEmissiveRenderer(Renderer renderer, bool isOn)
+        {
+            if (isOn)
+            {
+                renderer.material.EnableKeyword("_EMISSION");
+            }
+            else
+            {
+                renderer.material.DisableKeyword("_EMISSION");
+            }
+        }
+
+        void ToggleEmissive(GameObject targetObject, bool isActive)
+        {
+            if (targetObject != null)
+            {
+                Renderer renderer = targetObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    Material material = renderer.material;
+
+                    if (isActive)
+                    {
+                        material.EnableKeyword("_EMISSION");
+                    }
+                    else
+                    {
+                        material.DisableKeyword("_EMISSION");
+                    }
+
+                    // logger.Debug($"{targetObject.name} emissive state set to {(isActive ? "ON" : "OFF")}.");
+                }
+                else
+                {
+                    logger.Debug($"{gameObject.name} Renderer component not found on {targetObject.name}.");
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} {targetObject.name} emissive object is not assigned.");
+            }
+        }
+
+        void ToggleLight(Light targetLight, bool isActive)
+        {
+            if (targetLight == null) return;
+
+            // Ensure the GameObject itself is active
+            if (targetLight.gameObject.activeSelf != isActive)
+                targetLight.gameObject.SetActive(isActive);
+
+            // Then toggle the component
+            targetLight.enabled = isActive;
+        }
+        void ChangeColorEmissive(GameObject targetObject, Color emissionColor, float intensity, bool isActive)
+        {
+            if (targetObject != null)
+            {
+                Renderer renderer = targetObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    Material material = renderer.material;
+
+                    if (isActive)
+                    {
+                        material.EnableKeyword("_EMISSION");
+                        material.SetColor("_EmissionColor", emissionColor * intensity);
+                    }
+                    else
+                    {
+                        material.DisableKeyword("_EMISSION");
+                    }
+
+                    //    logger.Debug($"{gameObject.name} {targetObject.name} emissive state set to {(isActive ? "ON" : "OFF")} with color {emissionColor} and intensity {intensity}.");
+                }
+                else
+                {
+                    //    logger.Debug($"{gameObject.name} Renderer component not found on {targetObject.name}.");
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Target emissive object is not assigned.");
+            }
+        }
+
+
 
         // Check if object is found and log appropriate message
         void CheckObject(GameObject obj, string name)
         {
             if (obj == null)
             {
-                logger.Error($"{name} not found!");
+                logger.Debug($"{gameObject.name} {name} not found!");
             }
             else
             {
-                logger.Info($"{name} found.");
+                logger.Debug($"{gameObject.name} {name} found.");
             }
         }
-
-        // Method to check if VR input is active
-        bool VRInputActive()
+        void InitializeObjects()
         {
-            // Assuming you have methods to check VR input
-            return GetPrimaryThumbstick() != Vector2.zero || GetSecondaryThumbstick() != Vector2.zero;
-        }
-
-        // Placeholder methods to get VR thumbstick input (to be implemented with actual VR input handling)
-        Vector2 GetPrimaryThumbstick()
-        {
-            // Implement VR primary thumbstick input handling here
-            return Vector2.zero;
-        }
-
-        Vector2 GetSecondaryThumbstick()
-        {
-            // Implement VR secondary thumbstick input handling here
-            return Vector2.zero;
-        }
-
-        // Method to toggle the lights
-        void TogglechasehqLights(bool isActive)
-        {
-            for (int i = 0; i < lights.Length; i++)
+            ShifterObject = transform.Find("Shifter");
+            if (ShifterObject != null)
             {
-                lights[i].enabled = isActive;
+                logger.Debug($"{gameObject.name} Shifter object found.");
+                ShifterStartPosition = ShifterObject.transform.localPosition;
+                ShifterStartRotation = ShifterObject.transform.localRotation;
             }
-
-            logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
-        }
-
-        IEnumerator FlashchasehqLights()
-        {
-            int currentIndex = 0; // Start with the first light in the array
-
-            while (true)
+            else
             {
-                // Select the current light
-                Light light = chasehqLights[currentIndex];
+                logger.Debug($"{gameObject.name} Shifter object not found.");
+            }
+            WheelObject = transform.Find("Wheel");
+            if (WheelObject != null)
+            {
+                logger.Debug($"{gameObject.name} Wheel object found.");
+                WheelStartPosition = WheelObject.transform.localPosition;
+                WheelStartRotation = WheelObject.transform.localRotation;
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Wheel object not found.");
+            }
+            GasObject = transform.Find("Gas");
+            if (GasObject != null)
+            {
+                logger.Debug($"{gameObject.name} Gas object found.");
+                GasStartPosition = GasObject.transform.localPosition;
+                GasStartRotation = GasObject.transform.localRotation;
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Gas object not found.");
+            }
+            BrakeObject = transform.Find("Brake");
+            if (BrakeObject != null)
+            {
+                logger.Debug($"{gameObject.name} Brake object found.");
+                BrakeStartPosition = BrakeObject.transform.localPosition;
+                BrakeStartRotation = BrakeObject.transform.localRotation;
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Brake object not found.");
+            }
+        }
+        void InitializeLights()
+        {
+            // Gets all Light components in the target object and its children
+            Light[] lights = transform.GetComponentsInChildren<Light>();
 
-                // Check if the light is not null
-                if (light != null)
+            // Log the names of the objects containing the Light components and filter out unwanted lights
+            foreach (Light light in lights)
+            {
+                if (light.gameObject.name == "genout5")
                 {
-                    // Log the chosen light
-                    // logger.Debug($"Flashing {light.name}");
-
-                    // Turn on the chosen light
-                    TogglechasehqLight(light, true);
-
-                    // Wait for the flash duration
-                    yield return new WaitForSeconds(flashDuration);
-
-                    // Turn off the chosen light
-                    TogglechasehqLight(light, false);
-
-                    // Wait for the next flash interval
-                    yield return new WaitForSeconds(flashInterval - flashDuration);
+                    genout5_light = light;
+                    logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                }
+                else if (light.gameObject.name == "genout6")
+                {
+                    genout6_light = light;
+                    logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
                 }
                 else
                 {
-                    logger.Debug("Light is null.");
+                    logger.Debug($"{gameObject.name} Excluded Light found in object: " + light.gameObject.name);
                 }
-
-                // Move to the next light in the array
-                currentIndex = (currentIndex + 1) % chasehqLights.Length;
             }
         }
-
-        void TogglechasehqLight(Light light, bool isActive)
-        {
-            if (light != null)
-            {
-                light.enabled = isActive;
-                // logger.Info($"{light.name} light turned {(isActive ? "on" : "off")}.");
-            }
-            else
-            {
-                logger.Debug($"{light?.name} light component is not found.");
-            }
-        }
-
-        void TogglechasehqLight1(bool isActive)
-        {
-            TogglechasehqLight(chasehq1_light, isActive);
-        }
-
-        void TogglechasehqLight2(bool isActive)
-        {
-            TogglechasehqLight(chasehq2_light, isActive);
-        }
-
     }
 }

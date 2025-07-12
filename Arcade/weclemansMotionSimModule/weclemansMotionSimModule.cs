@@ -2,8 +2,11 @@
 using UnityEngine.XR;
 using WIGU;
 using System.Collections.Generic;
-using EmuVR.InputManager;
 using System.Collections;
+using System.IO;
+using System;
+using WIGUx.Modules.MameHookModule;
+using System.Reflection;
 
 namespace WIGUx.Modules.weclemansMotionSim
 {
@@ -11,581 +14,412 @@ namespace WIGUx.Modules.weclemansMotionSim
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        private readonly float keyboardVelocityX = 35.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 35.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 35.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 35.5f;        // Velocity for VR controller input
+        [Header("Object Settings")]
+        private Transform WheelObject; // Reference to the Handlebar mirroring object
+        private Transform ShifterObject; // Reference to the Shifter mirroring object
+        private Transform GasObject; // Reference to the Gas mirroring object
+        private Transform BrakeObject; // Reference to the Throttle mirroring object
+        private Transform StartObject; // Reference to the Start button object
+        private Transform XObject; // Reference to the main X object
+        private Transform YObject; // Reference to the main Y object
+        private Transform ZObject; // Reference to the main Z object
+        private GameObject cockpitCam;    // Reference to the Desktop Camera
+        private GameObject vrCam;    // Reference to the VR Camera  
+        private GameObject playerCamera;   // Reference to the Player Camera
+        private GameObject playerVRSetup;   // Reference to the VR Camera
 
-        private readonly float centeringVelocityX = 60.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityY = 60.5f;  // Velocity for centering rotation
-        private readonly float centeringVelocityZ = 60.5f;  // Velocity for centering rotation
+        [Header("Input Settings")]
+        public string primaryThumbstickHorizontal = "Horizontal"; // Input axis for primary thumbstick horizontal
+        public string primaryThumbstickVertical = "Vertical"; // Input axis for primary thumbstick vertical
+        public string secondaryThumbstickHorizontal = "RightStickHorizontal"; // Input axis for secondary thumbstick horizontal
+        public string secondaryThumbstickVertical = "RightStickVertical"; // Input axis for secondary thumbstick forward/backward
+        public string leftTrigger = "LIndexTrigger";
+        public string rightTrigger = "RIndexTrigger";
 
+        [Header("Velocity Multiplier Settings")]        // Speeds for the animation of the in game flight stick or wheel
+        private float primaryThumbstickRotationMultiplier = 10f; // Multiplier for primary thumbstick rotation intensity
+        private float secondaryThumbstickRotationMultiplier = 25f; // Multiplier for secondary thumbstick rotation intensity
+        private float triggerRotationMultiplier = 20f; // Multiplier for trigger rotation intensity
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
+        private float WheelRotationDegrees = 100f; // Degrees for wheel rotation, adjust as needed
+        private readonly float rotationSmoothness = 5f;  //sets the smoothness of the rotation
+        private readonly float thumbstickVelocity = 200f;  // Velocity for keyboard input
+        private readonly float centeringVelocityX = 50f;  // Velocity for centering rotation
+        private readonly float centeringVelocityY = 150f;  // Velocity for centering rotation
+        private readonly float centeringVelocityZ = 50f;  // Velocity for centering rotation
 
-        private float rotationLimitX = 0f;  // Rotation limit for X-axis
-        private float rotationLimitY = 90f;  // Rotation limit for Y-axis
-        private float rotationLimitZ = 0f;  // Rotation limit for Z-axis
-
+        [Header("Rotation Tracking")]        // Sets up the rotation varibles and sets them to 0 
         private float currentRotationX = 0f;  // Current rotation for X-axis
         private float currentRotationY = 0f;  // Current rotation for Y-axis
         private float currentRotationZ = 0f;  // Current rotation for Z-axis
 
-        // Controller animation 
-        // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 400.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 400.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 400.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 400.5f;        // Velocity for VR controller input
+        [Header("Rotation Limits")]        // Rotation Limits 
+        [SerializeField] float minRotationX = -0f;
+        [SerializeField] float maxRotationX = 0f;
+        [SerializeField] float minRotationY = -90f;
+        [SerializeField] float maxRotationY = 90f;
+        [SerializeField] float minRotationZ = -0f;
+        [SerializeField] float maxRotationZ = 0f;
 
-        private float controllerrotationLimitX = 0f;  // Rotation limit for X-axis (stick or wheel)
-        private float controllerrotationLimitY = 270f;  // Rotation limit for Y-axis (stick or wheel)
-        private float controllerrotationLimitZ = 0f;  // Rotation limit for Z-axis (stick or wheel)
+        [Header("Position Settings")]     // Initial positions setup
+        private Vector3 XStartPosition;  // Initial X position for resetting
+        private Vector3 YStartPosition;  // Initial Y positions for resetting
+        private Vector3 ZStartPosition;  // Initial Z positions for resetting
+        private Vector3 WheelStartPosition; // Initial Wheel positions for resetting
+        private Vector3 ShifterStartPosition; // Initial Shifter positions for resetting
+        private Vector3 GasStartPosition;  // Initial gas positions for resetting
+        private Vector3 BrakeStartPosition;  // Initial brake positions for resettin
+        private Vector3 playerCameraStartPosition;  // Initial Player Camera positions for resetting
+        private Vector3 playerVRSetupStartPosition;  // Initial PlayerVR positions for resetting
+        private Vector3 cockpitCamStartPosition;  // Initial cockpitCam positionsfor resetting
+        private Vector3 vrCamStartPosition;    // Initial vrCam positionsfor resetting
 
-        private float currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
-        private float currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
-        private float currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
+        [Header("Rotation Settings")]     // Initial rotations setup
+        private Quaternion XStartRotation;  // Initial X rotation for resetting
+        private Quaternion YStartRotation;  // Initial Y rotation for resetting
+        private Quaternion ZStartRotation;  // Initial Z rotation for resetting
+        private Quaternion WheelStartRotation;  // Initial Wheel rotation for resetting
+        private Quaternion ShifterStartRotation;  // Initial Shifter rotation for resetting
+        private Quaternion GasStartRotation;  // Initial gas rotation for resetting
+        private Quaternion BrakeStartRotation;  // Initial brake rotation for resetting
+        private Quaternion playerCameraStartRotation;  // Initial Player Camera rotation for resetting
+        private Quaternion playerVRSetupStartRotation;  // Initial PlayerVR rotation for resetting
+        private Quaternion cockpitCamStartRotation;  // Initial cockpitCam rotation for resetting
+        private Quaternion vrCamStartRotation;      // Initial VRCam rotation for resetting
 
-        private readonly float centeringControllerVelocityX = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityY = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityZ = 400.5f;  // Velocity for centering rotation (stick or wheel)
-
-        private Transform weclemansController; // Reference to the main animated controller (wheel)
-        private Vector3 weclemansControllerStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion weclemansControllerStartRotation; // Initial controlller positions and rotations for resetting
-        /*
-        private Transform weclemansControllerX; // Reference to the main animated controller (wheel)
-        private Vector3 weclemansControllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion weclemansControllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform weclemansControllerY; // Reference to the main animated controller (wheel)
-        private Vector3 weclemansControllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion weclemansControllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform weclemansControllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 weclemansControllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion weclemansControllerZStartRotation; // Initial controlller positions and rotations for resetting
-         */
-
-        private Transform weclemansXObject; // Reference to the main X object
-        private Transform weclemansYObject; // Reference to the main Y object
-        private Transform weclemansZObject; // Reference to the main Z object
-
-        private GameObject cockpitCam;    // Reference to the cockpit camera
-
-        // Initial positions and rotations for resetting
-        private Vector3 weclemansXStartPosition;
-        private Quaternion weclemansXStartRotation;
-        private Vector3 weclemansYStartPosition;
-        private Quaternion weclemansYStartRotation;
-        private Vector3 weclemansZStartPosition;
-        private Quaternion weclemansZStartRotation;
-        private Vector3 cockpitCamStartPosition;
-        private Quaternion cockpitCamStartRotation;
-
-        // Initial positions and rotations for VR setup
-        private Vector3 playerCameraStartPosition;
-        private Quaternion playerCameraStartRotation;
-        private Vector3 playerVRSetupStartPosition;
-        private Quaternion playerVRSetupStartRotation;
-        private Vector3 playerCameraStartScale;
-        private Vector3 playerVRSetupStartScale;
-
-        // GameObject references for PlayerCamera and VR setup
-        private GameObject playerCamera;
-        private GameObject playerVRSetup;
+        [Header("Lights and Emissives")]     // Setup Emissive and Lights
+        private Light firelight1;
+        private Light firelight2;
+        private float lightDuration = 0.35f;
+        private float attractFlashDuration = 0.7f;
+        private float attractFlashDelay = 0.7f;
+        private float dangerFlashDuration = 0.3f;
+        private float dangerFlashDelay = 0.3f;
+        private Coroutine dangerCoroutine; // Coroutine variable to control the focused danger mode
+        private Coroutine attractCoroutine; // Coroutine variable to control the attract mode
+        private Light[] lights;        //array of lights
+        Dictionary<string, int> lastLampStates = new Dictionary<string, int>
+             {
+               { "lamp0", 0 }, { "lamp1", 0 }, { "lamp2", 0 }, { "lamp3", 0 }
+             };
+        [Header("Timers and States")]  // Store last states and timers
+        private bool isHigh = false; //set the high gear flag
         private bool inFocusMode = false;  // Flag to track focus mode state
+        private bool isCenteringRotation = false; // Flag to track centering rotation state
+        private bool isRiding = false; // Set riding state to false
+        private GameSystemState systemState; //systemstate
 
-        //lights
-        public string fire1Button = "Fire1"; // Name of the fire button
-        public string fire2Button = "Fire2"; // Name of the fire button 
-        public string fire3Button = "Fire3"; // Name of the fire button 
-        public string JumpButton = "Jump"; // Name of the fire button 
-        // public float lightDuration = 0.35f; // Duration during which the lights will be on
+        [Header("Collider Triggers")]
+        [SerializeField] private Collider cockpitCollider;
 
-        private readonly string[] compatibleGames = { "wecleman.zip", "wecleman.7z" };
-
+        [Header("Rom Check")]
+        private GameSystem gameSystem;  // Cached GameSystem for this cabinet.
+        private string insertedGameName = string.Empty;
+        private string controlledGameName = string.Empty;
+        private string configPath;
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
         void Start()
         {
-            // Find references to PlayerCamera and VR setup objects
-            playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
-            playerVRSetup = PlayerVRSetup.PlayerRig.gameObject;
-
-            // Check if objects are found
-            CheckObject(playerCamera, "PlayerCamera");
-            CheckObject(playerVRSetup, "PlayerVRSetup.PlayerRig");
-
-            GameObject cameraObject = GameObject.Find("OVRCameraRig");
-
-            // Find weclemansX object in hierarchy
-            weclemansXObject = transform.Find("weclemansX");
-            if (weclemansXObject != null)
-            {
-                logger.Info("weclemansX object found.");
-                weclemansXStartPosition = weclemansXObject.position;
-                weclemansXStartRotation = weclemansXObject.rotation;
-
-                // Find weclemansY object under weclemansX
-                weclemansYObject = weclemansXObject.Find("weclemansY");
-                if (weclemansYObject != null)
-                {
-                    logger.Info("weclemansY object found.");
-                    weclemansYStartPosition = weclemansYObject.position;
-                    weclemansYStartRotation = weclemansYObject.rotation;
-
-                    // Find weclemansZ object under weclemansY
-                    weclemansZObject = weclemansYObject.Find("weclemansZ");
-                    if (weclemansZObject != null)
-                    {
-                        logger.Info("weclemansZ object found.");
-                        weclemansZStartPosition = weclemansZObject.position;
-                        weclemansZStartRotation = weclemansZObject.rotation;
-
-                        // Find weclemansController under weclemansZ
-                        weclemansController = weclemansZObject.Find("weclemansController");
-                        if (cockpitCam != null)
-                        {
-                            logger.Info("weclemansController object found.");
-
-                            // Store initial position and rotation of the wheel
-                            weclemansControllerStartPosition = weclemansController.transform.position;
-                            weclemansControllerStartRotation = weclemansController.transform.rotation;
-                        }
-                        else
-                        {
-                         //   logger.Error("weclemansController object not found under weclemansZ!");
-                        }
-
-                        // Find cockpit camera under weclemansZ
-                        cockpitCam = weclemansZObject.Find("eyes/cockpitcam")?.gameObject;
-                        if (cockpitCam != null)
-                        {
-                            logger.Info("Cockpitcam object found.");
-
-                            // Store initial position and rotation of cockpit cam
-                            cockpitCamStartPosition = cockpitCam.transform.position;
-                            cockpitCamStartRotation = cockpitCam.transform.rotation;
-                        }
-                        else
-                        {
-                            logger.Error("Cockpitcam object not found under weclemansZ!");
-                        }
-                    }
-                    else
-                    {
-                        logger.Error("weclemansZ object not found under weclemansY!");
-                    }
-                }
-
-                else
-                {
-                    logger.Error("weclemansY object not found under weclemansX!");
-                }
-            }
-            else
-            {
-                logger.Error("weclemansX object not found!");
-            }
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            configPath = $"./Emulators/MAME/inputs/{insertedGameName}.ini";
+            gameSystem = GetComponent<GameSystem>();
+            InitializeLights();
+            InitializeObjects();
+            if (StartObject) ToggleEmissive(StartObject.gameObject, false);
+          //  StartAttractPattern();
         }
 
         void Update()
         {
-            bool inputDetected = false;  // Initialize at the beginning of the Update method
-
-            if (GameSystem.ControlledSystem != null && !inFocusMode)
+            bool inputDetected = false;  // Initialize for centering
+            bool throttleDetected = false;// Initialize for centering
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            if (WIGUx.Modules.MameHookModule.MameHookController.ActiveRomsList != null)
             {
-                string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-                bool containsString = false;
-
-                foreach (var gameString in compatibleGames)
+                foreach (var rom in WIGUx.Modules.MameHookModule.MameHookController.ActiveRomsList)
                 {
-                    if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
-                    {
-                        containsString = true;
-                        break;
-                    }
+                    if (rom == insertedGameName)
+                        ReadData();
+                }
+            }
+            if (isCenteringRotation && !throttleDetected && !inputDetected)
+            {
+                bool centeredX = false, centeredY = false, centeredZ = false;
+
+                // X axis
+                float angleX = Quaternion.Angle(XObject.localRotation, XStartRotation);
+                if (angleX > 0.01f)
+                {
+                    XObject.localRotation = Quaternion.RotateTowards(
+                        XObject.localRotation,
+                        XStartRotation,
+                        centeringVelocityX * Time.deltaTime);
+                    currentRotationX = Mathf.MoveTowards(
+                        currentRotationX, 0f, centeringVelocityX * Time.deltaTime);
+                }
+                else
+                {
+                    XObject.localRotation = XStartRotation;
+                    currentRotationX = 0f;
+                    centeredX = true;
                 }
 
-                if (containsString)
+                // Y axis
+                float angleY = Quaternion.Angle(YObject.localRotation, YStartRotation);
+                if (angleY > 0.01f)
                 {
-                    StartFocusMode();
-                 }
-            }
+                    YObject.localRotation = Quaternion.RotateTowards(
+                        YObject.localRotation,
+                        YStartRotation,
+                        centeringVelocityY * Time.deltaTime);
+                    currentRotationY = Mathf.MoveTowards(
+                        currentRotationY, 0f, centeringVelocityY * Time.deltaTime);
+                }
+                else
+                {
+                    YObject.localRotation = YStartRotation;
+                    currentRotationY = 0f;
+                    centeredY = true;
+                }
 
+                // Z axis
+                float angleZ = Quaternion.Angle(ZObject.localRotation, ZStartRotation);
+                if (angleZ > 0.01f)
+                {
+                    ZObject.localRotation = Quaternion.RotateTowards(
+                        ZObject.localRotation,
+                        ZStartRotation,
+                        centeringVelocityZ * Time.deltaTime);
+                    currentRotationZ = Mathf.MoveTowards(
+                        currentRotationZ, 0f, centeringVelocityZ * Time.deltaTime);
+                }
+                else
+                {
+                    ZObject.localRotation = ZStartRotation;
+                    currentRotationZ = 0f;
+                    centeredZ = true;
+                }
+
+                if (centeredX && centeredY && centeredZ)
+                {
+                    isCenteringRotation = false;
+                }
+            }
+            // Enter focus when names match
+            if (!string.IsNullOrEmpty(insertedGameName)
+                && !string.IsNullOrEmpty(controlledGameName)
+                && insertedGameName == controlledGameName
+                && !inFocusMode)
+            {
+                StartFocusMode();
+            }
             if (GameSystem.ControlledSystem == null && inFocusMode)
             {
                 EndFocusMode();
             }
-
             if (inFocusMode)
             {
+                MapThumbsticks(ref inputDetected, ref throttleDetected);
+                MapButtons(ref inputDetected, ref throttleDetected);
                 HandleTransformAdjustment();
-                HandleVRInput(ref inputDetected);  // Pass by reference
-                HandleKeyboardInput(ref inputDetected);  // Pass by reference
             }
         }
 
         void StartFocusMode()
         {
-            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Activating Motor...");
-            logger.Info("Konami WEC Lemans Motion Sim starting...");
-            logger.Info("GET DIZZY! Wait Dizzy what do you mean?");
-            cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
-            cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
-            weclemansControllerStartPosition = weclemansController.transform.position;
-            weclemansControllerStartRotation = weclemansController.transform.rotation;
-            // Set objects as children of cockpit cam for focus mode
+            logger.Debug($"{gameObject.name} Starting Focus Mode...");
+            StopCurrentPatterns();
             if (cockpitCam != null)
             {
-                if (playerCamera != null)
+                cockpitCam.transform.localPosition = cockpitCamStartPosition;
+                cockpitCam.transform.localRotation = cockpitCamStartRotation;
+            }
+            if (vrCam != null)
+            {
+                vrCam.transform.localPosition = vrCamStartPosition;
+                vrCam.transform.localRotation = vrCamStartRotation;
+            }
+            if (playerCamera != null)
+            {
+                playerCameraStartPosition = playerCamera.transform.position;
+                playerCameraStartRotation = playerCamera.transform.rotation;
+            }
+
+            if (playerVRSetup != null)
+            {
+                playerVRSetupStartPosition = playerVRSetup.transform.position;
+                playerVRSetupStartRotation = playerVRSetup.transform.rotation;
+            }
+            // Check containment
+            bool inside = false;
+            if (cockpitCollider != null)
+            {
+                Vector3 camPos = playerCamera.transform.position;
+                bool boundsContains = cockpitCollider.bounds.Contains(camPos);
+                Vector3 closest = cockpitCollider.ClosestPoint(camPos);
+                inside = (closest == camPos);
+                //  logger.Debug($"Containment check - bounds.Contains: {boundsContains}, ClosestPoint==pos: {inside}");
+            }
+
+            if (cockpitCollider != null && inside)
+            {
+                if (playerVRSetup == null)
                 {
-                    // Store initial position, rotation, and scale of PlayerCamera
-                    playerCameraStartPosition = playerCamera.transform.position;
-                    playerCameraStartRotation = playerCamera.transform.rotation;
-                    playerCameraStartScale = playerCamera.transform.localScale; // Store initial scale
-                    SaveOriginalParent(playerCamera);  // Save original parent of PlayerCamera
-
-                    // Set PlayerCamera as child of cockpit cam and maintain scale
-                    playerCamera.transform.SetParent(cockpitCam.transform, false);
-                    playerCamera.transform.localScale = playerCameraStartScale;  // Reapply initial scale
-                    playerCamera.transform.localRotation = Quaternion.identity;
-                    logger.Info("PlayerCamera set as child of CockpitCam.");
+                    // Parent and apply offset to PlayerCamera
+                    SaveOriginalParent(playerCamera);
+                    playerCamera.transform.SetParent(cockpitCam.transform, true);
+                    logger.Debug($"{gameObject.name} Player is aboard and strapped in.");
+                    isRiding = true; // Set riding state to true
                 }
-
                 if (playerVRSetup != null)
                 {
-                    // Store initial position, rotation, and scale of PlayerVRSetup
-                    playerVRSetupStartPosition = playerVRSetup.transform.position;
-                    playerVRSetupStartRotation = playerVRSetup.transform.rotation;
-                    playerVRSetupStartScale = playerVRSetup.transform.localScale; // Store initial scale
-                    SaveOriginalParent(playerVRSetup);  // Save original parent of PlayerVRSetup
-
-                    // Set PlayerVRSetup as child of cockpit cam and maintain scale
-                    playerVRSetup.transform.SetParent(cockpitCam.transform, false);
-                    playerVRSetup.transform.localScale = playerVRSetupStartScale;
-                    playerVRSetup.transform.localRotation = Quaternion.identity;
-                    logger.Info("PlayerVRSetup.PlayerRig set as child of CockpitCam.");
+                    // Parent and apply offset to PlayerVRSetup
+                    SaveOriginalParent(playerVRSetup);
+                    playerVRSetup.transform.SetParent(vrCam.transform, true);
+                    logger.Debug($"{gameObject.name} VR Player is aboard and strapped in!");
+                    logger.Debug("Konami WEC Lemans Motion Sim starting...");
+                    logger.Debug("Activating Motor...");
+                    logger.Debug("GET DIZZY! Wait Dizzy what do you mean?");
+                    isRiding = true; // Set riding state to true
                 }
             }
             else
             {
-                logger.Error("CockpitCam object not found under weclemansZ!");
+                logger.Debug($"{gameObject.name} Player is not aboard the ride, Starting Without the Player aboard.");
             }
-
-            // Reset rotation allowances and current rotation values
-            currentRotationX = 0f;
-            currentRotationY = 0f;
-            currentRotationZ = 0f;
-            currentControllerRotationX = 0f;
-            currentControllerRotationY = 0f;
-            currentControllerRotationZ = 0f;
-
             inFocusMode = true;  // Set focus mode flag
         }
 
         void EndFocusMode()
         {
-            logger.Info("Exiting Focus Mode...");
-            // Restore original parents of objects
+            logger.Debug($"{gameObject.name} Exiting Focus Mode...");
             RestoreOriginalParent(playerCamera, "PlayerCamera");
             RestoreOriginalParent(playerVRSetup, "PlayerVRSetup.PlayerRig");
+            //StartAttractPattern();
+            // if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
+            // if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
+            ResetPositions();
+            inFocusMode = false;  // Clear focus mode flag
+        }
 
-            // Reset weclemansX to initial positions and rotations
-            if (weclemansXObject != null)
+        void ResetPositions()      // Reset objects and cockpit cam to initial position and rotation
+        {
+            logger.Debug($"{gameObject.name} Resetting Positions");
+            // Reset X to initial positions and rotations
+            if (XObject != null)
             {
-                weclemansXObject.position = weclemansXStartPosition;
-                weclemansXObject.rotation = weclemansXStartRotation;
+                XObject.localPosition = XStartPosition;
+                XObject.localRotation = XStartRotation;
             }
 
-            // Reset weclemansY object to initial position and rotation
-            if (weclemansYObject != null)
+            // Reset Y object to initial position and rotation
+            if (YObject != null)
             {
-                weclemansYObject.position = weclemansYStartPosition;
-                weclemansYObject.rotation = weclemansYStartRotation;
+                YObject.localPosition = YStartPosition;
+                YObject.localRotation = YStartRotation;
             }
-            // Reset weclemansZ object to initial position and rotation
-            if (weclemansZObject != null)
+            // Reset Z object to initial position and rotation
+            if (ZObject != null)
             {
-                weclemansZObject.position = weclemansZStartPosition;
-                weclemansZObject.rotation = weclemansZStartRotation;
+                ZObject.localPosition = ZStartPosition;
+                ZObject.localRotation = ZStartRotation;
             }
-
-            // Reset weclemanscontroller object to initial position and rotation
-            if (weclemansController != null)
+            if (WheelObject != null)
             {
-                weclemansController.position = weclemansControllerStartPosition; // didnt need this
-                weclemansController.rotation = weclemansControllerStartRotation; 
+                WheelObject.localPosition = WheelStartPosition;
+                WheelObject.localRotation = WheelStartRotation;
             }
-
-            // Reset cockpit cam to initial position and rotation
-            if (cockpitCam != null)
+            if (ShifterObject != null)
             {
-                cockpitCam.transform.position = cockpitCamStartPosition;
-                cockpitCam.transform.rotation = cockpitCamStartRotation;
+                ShifterObject.localPosition = ShifterStartPosition;
+                ShifterObject.localRotation = ShifterStartRotation;
+            }
+            if (GasObject != null)
+            {
+                GasObject.localPosition = GasStartPosition;
+                GasObject.localRotation = GasStartRotation;
+            }
+            if (BrakeObject != null)
+            {
+                BrakeObject.localPosition = BrakeStartPosition;
+                BrakeObject.localRotation = BrakeStartRotation;
+            }
+            if (isRiding == true)
+            {
+                if (cockpitCam != null)
+                {
+                    cockpitCam.transform.localPosition = cockpitCamStartPosition;
+                    cockpitCam.transform.localRotation = cockpitCamStartRotation;
+                }
+                if (vrCam != null)
+                {
+                    vrCam.transform.localPosition = vrCamStartPosition;
+                    vrCam.transform.localRotation = vrCamStartRotation;
+                }
+                if (playerVRSetup != null)
+                {
+                    playerVRSetup.transform.position = playerVRSetupStartPosition;
+                    playerVRSetup.transform.rotation = playerVRSetupStartRotation;
+                }
+                if (playerCamera != null)
+                {
+                    playerCamera.transform.position = playerCameraStartPosition;
+                    playerCamera.transform.rotation = playerCameraStartRotation;
+                }
+                isRiding = false; // Set riding state to false
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Player was not aboard the ride, skipping reset.");
             }
 
             // Reset rotation allowances and current rotation values
             currentRotationX = 0f;
             currentRotationY = 0f;
             currentRotationZ = 0f;
-            currentControllerRotationX = 0f;
-            currentControllerRotationY = 0f;
-            currentControllerRotationZ = 0f;
-
-            logger.Info("Resetting Positions");
-            ResetPositions();
-
-            inFocusMode = false;  // Clear focus mode flag
         }
+        private const float THUMBSTICK_DEADZONE = 0.13f; // Adjust as needed
 
-        void HandleKeyboardInput(ref bool inputDetected)
+        private Vector2 ApplyDeadzone(Vector2 input, float deadzone)
         {
-            if (!inFocusMode) return;
-            /*
-            // Fire1
-            if (Input.GetButtonDown("Fire1"))
-            {
-                inputDetected = true;
-            }
-
-            // Reset position on button release
-            if (Input.GetButtonUp("Fire1"))
-            {
-                inputDetected = true;
-            }
-            */
-            // Fire2
-            if (Input.GetButtonDown("Fire2"))
-            {
-                inputDetected = true;
-            }
-
-            // Reset position on button release
-            if (Input.GetButtonUp("Fire2"))
-            {
-                inputDetected = true;
-            }
-            /*
-            // Fire3
-            if (Input.GetButtonDown("Fire3"))
-            {
-                inputDetected = true;
-            }
-
-            // Reset position on button release
-            if (Input.GetButtonUp("Fire3"))
-            {
-                inputDetected = true;
-            }
-
-            // Jump
-            if (Input.GetButtonDown("Jump"))
-            {
-                inputDetected = true;
-            }
-
-            // Reset position on button release
-            if (Input.GetButtonUp("Jump"))
-            {
-
-                inputDetected = true;
-            }
-            */
-            /*
-            // Handle keyboard input for pitch and roll
-            if (Input.GetKey(KeyCode.UpArrow) && currentRotationX > -rotationLimitX)
-            {
-                float rotateX = keyboardVelocityX * Time.deltaTime;
-                weclemansYObject.Rotate(rotateX, 0, 0);
-                currentRotationX -= rotateX;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.DownArrow) && currentRotationX < rotationLimitX)
-            {
-                float rotateX = keyboardVelocityX * Time.deltaTime;
-                weclemansYObject.Rotate(-rotateX, 0, 0);
-                currentRotationX += rotateX;
-                inputDetected = true;
-            }
-            */
- 
-            if (Input.GetKey(KeyCode.RightArrow) && currentRotationZ > -rotationLimitZ)
-            {
-                float rotateZ = keyboardVelocityZ * Time.deltaTime;
-                weclemansXObject.Rotate(0, 0, rotateZ);
-                currentRotationZ -= rotateZ;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.LeftArrow) && currentRotationZ < rotationLimitZ)
-            {
-                float rotateZ = keyboardVelocityZ * Time.deltaTime;
-                weclemansXObject.Rotate(0, 0, -rotateZ);
-                currentRotationZ += rotateZ;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.LeftArrow) && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = keyboardVelocityY * Time.deltaTime;
-                weclemansZObject.Rotate(0, rotateY, 0);
-                currentRotationY -= rotateY;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.RightArrow) && currentRotationY < rotationLimitY)
-            {
-                float rotateY = keyboardVelocityY * Time.deltaTime;
-                weclemansZObject.Rotate(0, -rotateY, 0);
-                currentRotationY += rotateY;
-                inputDetected = true;
-            }
-            
-            // Stick Rotations 
-
-            // Stick Y Rotation
-            if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationY > -controllerrotationLimitY)
-            {
-                float rotateY = keyboardControllerVelocityY * Time.deltaTime;
-                weclemansController.Rotate(0, rotateY, 0);
-                currentControllerRotationY -= rotateY;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationY < controllerrotationLimitY)
-            {
-                float rotateY = keyboardControllerVelocityY * Time.deltaTime;
-                weclemansController.Rotate(0, -rotateY, 0);
-                currentControllerRotationY += rotateY;
-                inputDetected = true;
-            }
-       
-
-            /*
-            // Stick X Rotation
-            if (Input.GetKey(KeyCode.UpArrow) && currentControllerRotationX > -controllerrotationLimitX)
-            {
-                float rotateX = keyboardControllerVelocityX * Time.deltaTime;
-                weclemansController.Rotate(rotateX, 0, 0);
-                currentControllerRotationX -= rotateX;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.DownArrow) && currentControllerRotationX < controllerrotationLimitX)
-            {
-                float rotateX = keyboardControllerVelocityX * Time.deltaTime;
-                weclemansController.Rotate(-rotateX, 0, 0);
-                currentControllerRotationX += rotateX;
-                inputDetected = true;
-            }
-
-            // Stick Z Rotation
-            if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationZ > -controllerrotationLimitZ)
-            {
-                float rotateZ = keyboardControllerVelocityZ * Time.deltaTime;
-                weclemansController.Rotate(0, 0, rotateZ);
-                currentControllerRotationZ -= rotateZ;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationZ < controllerrotationLimitZ)
-            {
-                float rotateZ = keyboardControllerVelocityZ * Time.deltaTime;
-                weclemansController.Rotate(0, 0, -rotateZ);
-                currentControllerRotationZ += rotateZ;
-                inputDetected = true;
-            }
-            */
-
-            // Center the rotation if no input is detected
-            if (!inputDetected)
-            {
-               CenterRotation();
-            }
+            input.x = Mathf.Abs(input.x) < deadzone ? 0f : input.x;
+            input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
+            return input;
         }
 
-        void HandleVRInput(ref bool inputDetected)
+        private void MapThumbsticks(ref bool inputDetected, ref bool throttleDetected)
         {
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
 
-            // VR controller input
+            // Declare variables for triggers or extra inputs
+            float primaryIndexTrigger = 0f, secondaryIndexTrigger = 0f;
+            float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
+            float xboxLIndexTrigger = 0f, xboxRIndexTrigger = 0f;
+
+            // === INPUT SELECTION WITH DEADZONE ===
+            // VR CONTROLLERS
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
                 primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
                 secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
-                Vector2 ovrPrimaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
-                Vector2 ovrSecondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
-                float ovrPrimaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-                float ovrSecondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
-                float ovrPrimaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
-                float ovrSecondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
-                /*
-                // Check if the A button on the right controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.One))
-                {
-                    logger.Info("OVR A button pressed");
-                }
+                // Oculus-specific inputs
+                primaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                secondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
+                secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
-                // Check if the B button on the right controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Two))
-                {
-                    logger.Info("OVR B button pressed");
-                }
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
 
-                // Check if the X button on the left controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Three))
-                {
-                    logger.Info("OVR X button pressed");
-                }
-
-                // Check if the Y button on the left controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Four))
-                {
-                    logger.Info("OVR Y button pressed");
-                }
-
-                // Check if the primary index trigger on the right controller is pressed
-                if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger))
-                {
-                    logger.Info("OVR Primary index trigger pressed");
-                }
-
-                // Check if the secondary index trigger on the left controller is pressed
-                if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger))
-                {
-                    logger.Info("OVR Secondary index trigger pressed");
-                }
-
-                // Check if the primary hand trigger on the right controller is pressed
-                if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger))
-                {
-                    logger.Info("OVR Primary hand trigger pressed");
-                }
-
-                // Check if the secondary hand trigger on the left controller is pressed
-                if (OVRInput.Get(OVRInput.Button.SecondaryHandTrigger))
-                {
-                    logger.Info("OVR Secondary hand trigger pressed");
-                }
-
-                // Check if the primary thumbstick is pressed
-                if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstick))
-                {
-                    logger.Info("OVR Primary thumbstick pressed");
-                }
-
-                // Check if the secondary thumbstick is pressed
-                if (OVRInput.GetDown(OVRInput.Button.SecondaryThumbstick))
-                {
-                    logger.Info("OVR Secondary thumbstick pressed");
-                }
-                */
+                // --- Your oculus-specific mapping logic goes here, using the above values ---
             }
             else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
@@ -593,409 +427,777 @@ namespace WIGUx.Modules.weclemansMotionSim
                 var rightController = SteamVRInput.GetController(HandType.Right);
                 primaryThumbstick = leftController.GetAxis();
                 secondaryThumbstick = rightController.GetAxis();
+
+                // If you need extra OpenVR/SteamVR inputs, grab them here.
+
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+
+                // --- Your OpenVR-specific mapping logic goes here ---
             }
-            // Ximput controller input
-            if (XInput.IsConnected)
+            // XBOX CONTROLLER (only if NOT in VR)
+            else if (XInput.IsConnected)
             {
                 primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
-                // Combine VR and Xbox inputs
-                primaryThumbstick += xboxPrimaryThumbstick;
-                secondaryThumbstick += xboxSecondaryThumbstick;
-                // Get the trigger axis values
-                // Detect input from Xbox triggers
+                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
+                xboxLIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
+                xboxRIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
 
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
+                // Optionally use Unity Input axes as backup:
+                // primaryThumbstick   = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                // secondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+
+                // --- Your Xbox-specific mapping logic goes here, using xboxLIndexTrigger etc. ---
+            }
+            // Map primary thumbstick to wheel
+            if (WheelObject)
+            {
+                Quaternion primaryRotation = Quaternion.Euler(
+                    0f,
+                    0f,
+                   -primaryThumbstick.x * WheelRotationDegrees
+                );
+                WheelObject.localRotation = WheelStartRotation * primaryRotation;
+                if (Mathf.Abs(primaryThumbstick.x) > 0.01f) // Only set if wheel is being turned
+                    inputDetected = true; 
+ isCenteringRotation = false;
+            }
+
+            // Map triggers for gas and brake rotation on X-axis
+            if (GasObject)
+            {
+                float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+                Quaternion gasRotation = Quaternion.Euler(
+                    RIndexTrigger * triggerRotationMultiplier,
+                    0f,
+                    0f
+                );
+                GasObject.localRotation = GasStartRotation * gasRotation;
+                if (Mathf.Abs(RIndexTrigger) > 0.01f) // Only set if trigger is being pressed
+                    throttleDetected = true; 
+ isCenteringRotation = false;
+            }
+            if (BrakeObject)
+            {
+                float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
+                Quaternion brakeRotation = Quaternion.Euler(
+                    LIndexTrigger * triggerRotationMultiplier,
+                    0f,
+                    0f
+                );
+                BrakeObject.localRotation = BrakeStartRotation * brakeRotation;
+                if (Mathf.Abs(LIndexTrigger) > 0.01f) // Only set if trigger is being pressed
+                    throttleDetected = true; 
+ isCenteringRotation = false;
+            }
+
+            // X ROTATION (Pitch, up/down on stick, XObject)
+            if (primaryThumbstick.y != 0f)
+            {
+                float inputValue = primaryThumbstick.y * thumbstickVelocity * Time.deltaTime;
+                float targetX = Mathf.Clamp(currentRotationX + inputValue, minRotationX, maxRotationX);
+                float rotateX = targetX - currentRotationX;
+                if (Mathf.Abs(rotateX) > 0.0001f)
                 {
-                    inputDetected = true;
+                    XObject.Rotate(rotateX, 0f, 0f);
+                    currentRotationX = targetX;
+                    inputDetected = true; 
+ isCenteringRotation = false;
                 }
+            }
 
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
+            // Y ROTATION (Yaw, left/right on stick, YObject)
+            if (primaryThumbstick.x != 0f)
+            {
+                float inputValue = primaryThumbstick.x * thumbstickVelocity * Time.deltaTime;
+                float targetY = Mathf.Clamp(currentRotationY + inputValue, minRotationY, maxRotationY);
+                float rotateY = targetY - currentRotationY;
+                if (Mathf.Abs(rotateY) > 0.0001f)
                 {
-                    inputDetected = true;
+                    YObject.Rotate(0f, rotateY, 0f);
+                    currentRotationY = targetY;
+                    inputDetected = true; 
+ isCenteringRotation = false;
                 }
+            }
 
-                // LeftTrigger
-                if (XInput.GetDown(XInput.Button.LIndexTrigger))
+            // Z ROTATION (Roll, e.g., left/right on primary stick, ZObject)
+            if (primaryThumbstick.x != 0f)
+            {
+                float inputValue = primaryThumbstick.x * thumbstickVelocity * Time.deltaTime;
+                float targetZ = Mathf.Clamp(currentRotationZ + inputValue, minRotationZ, maxRotationZ);
+                float rotateZ = targetZ - currentRotationZ;
+                if (Mathf.Abs(rotateZ) > 0.0001f)
                 {
-                    inputDetected = true;
-                }
-
-                // Reset position on button release
-                if (XInput.GetUp(XInput.Button.LIndexTrigger))
-                {
-                    inputDetected = true;
-                }
-
-                // Handle RB button press for plunger position
-                if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
-                {
-
-                    inputDetected = true;
-                }
-
-                // Reset position on RB button release
-                if (XInput.GetUp(XInput.Button.RShoulder) || Input.GetKeyUp(KeyCode.JoystickButton5))
-                {
-                    inputDetected = true;
-                }
-
-                // Handle LB button press for plunger position
-                if (XInput.GetDown(XInput.Button.LShoulder) || Input.GetKeyDown(KeyCode.JoystickButton4))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on LB button release
-                if (XInput.GetUp(XInput.Button.LShoulder) || Input.GetKeyUp(KeyCode.JoystickButton4))
-                {
-                    inputDetected = true;
+                    ZObject.Rotate(0f, 0f, rotateZ);
+                    currentRotationZ = targetZ;
+                    inputDetected = true; 
+ isCenteringRotation = false;
                 }
             }
-
-            /*
-            // Handle X rotation (Thumbstick up)
-            if (primaryThumbstick.y > 0 && currentRotationX > -rotationLimitX)
+            if (!inputDetected)
             {
-                float rotateX = primaryThumbstick.y * vrVelocity * Time.deltaTime;
-                weclemansYObject.Rotate(rotateX, 0, 0);  // Rotate up
-                currentRotationX -= rotateX;  // Update current rotation (more negative)
-                inputDetected = true;
+                CenterRotation();    // Center the rotation if no input is detected
             }
-
-            // Handle X rotation (Thumbstick down)
-            if (primaryThumbstick.y < 0 && currentRotationX < rotationLimitX)
+            if (!throttleDetected)
             {
-                float rotateX = primaryThumbstick.y * vrVelocity * Time.deltaTime;
-                weclemansYObject.Rotate(rotateX, 0, 0);  // Rotate backward (nose up)
-                currentRotationX -= rotateX;
-                inputDetected = true;
+                CenterThrottle();    // Center the rotation if no throttle input is detected
             }
-            */
-
-            // Handle Y rotation (Thumbstick left)
-            if (primaryThumbstick.x > 0 && currentRotationY < rotationLimitY)
-            {
-                float rotateY = -primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                weclemansYObject.Rotate(0, rotateY, 0);  // Rotate Y to the left
-                currentRotationY -= rotateY;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-            // Handle Y rotation (Thumbstick right)
-            if (primaryThumbstick.x < 0 && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                weclemansYObject.Rotate(0, -rotateY, 0);  // Rotate Y to the right
-                currentRotationY += rotateY;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-
-            // Handle Z rotation (Thumbstick left)
-            if (primaryThumbstick.x > 0 && currentRotationZ > -rotationLimitZ)
-            {
-                float rotateZ = -primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                weclemansXObject.Rotate(0, 0, -rotateZ);  // Rotate forward
-                currentRotationZ += rotateZ;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-            // Handle Z rotation (Thumbstick right)
-            if (primaryThumbstick.x < 0 && currentRotationZ < rotationLimitZ)
-            {
-                float rotateZ = -primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                weclemansXObject.Rotate(0, 0, -rotateZ);  // Rotate backward
-                currentRotationZ += rotateZ;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-
-            /*
-            // Handle rotation (secondary Thumbstick left)
-            if (secondaryThumbstick.x < 0 && currentRotationY < rotationLimitY)
-            {
-                float rotateY = -secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                weclemansYObject.Rotate(0, -rotateY, 0);  // Rotate Y to the left
-                currentRotationY += rotateY;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-            // Handle rotation (secondary Thumbstick right)
-            if (secondaryThumbstick.x > 0 && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                weclemansYObject.Rotate(0, rotateY, 0);  // Rotate Y to the right
-                currentRotationY -= rotateY;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-            */
-            //END OF CONTROLLER MAP
-
-            //HANDLE INGAME CONTROLLER ANIMATION
-
-            // Handle controller rotation (Thumbstick right)
-
-            // Handle Y rotation (Thumbstick left)
-            if (primaryThumbstick.x < 0 && currentControllerRotationY < controllerrotationLimitY)
-            {
-                float rotateY = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                weclemansController.Rotate(0, -rotateY, 0);  // Rotate Y to the left
-                currentControllerRotationY += rotateY;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-            // Handle Y rotation (Thumbstick right)
-            if (primaryThumbstick.x > 0 && currentControllerRotationY > -controllerrotationLimitY)
-            {
-                float rotateY = primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                weclemansController.Rotate(0, rotateY, 0);  // Rotate Y to the right
-                currentControllerRotationY -= rotateY;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-
-            /*
-             // Handle controller rotation  (Thumbstick up)
-            if (primaryThumbstick.y < 0 && currentControllerRotationX < controllerrotationLimitX)
-            {
-                float rotateX = primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
-                weclemansController.Rotate(rotateX, 0, 0);  // Rotate left (negative direction)
-                currentControllerRotationX -= rotateX;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-            // Handle controller rotation  (Thumbstick down)
-            if (primaryThumbstick.y > 0 && currentControllerRotationX > -controllerrotationLimitX)
-            {
-                float rotateX = primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
-                weclemansController.Rotate(rotateX, 0, 0);  // Rotate right (positive direction)
-                currentControllerRotationX -= rotateX;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-
-            // Handle controller rotation (Thumbstick left)
-            if (primaryThumbstick.x < 0 && currentControllerRotationZ > -controllerrotationLimitZ)
-            {
-                float rotateZ = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                weclemansController.Rotate(0, 0, rotateZ);  // Rotate forward
-                currentControllerRotationZ -= rotateZ;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-            // Handle controller rotation (Thumbstick right)
-            if (primaryThumbstick.x > 0 && currentControllerRotationZ < controllerrotationLimitZ)
-            {
-                float rotateZ = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                weclemansController.Rotate(0, 0, rotateZ);  // Rotate backward
-                currentControllerRotationZ -= rotateZ;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-            */
         }
 
-        void ResetPositions()
+        private void MapButtons(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
         {
-            cockpitCam.transform.position = cockpitCamStartPosition;
-            cockpitCam.transform.rotation = cockpitCamStartRotation;
-            playerVRSetup.transform.position = playerVRSetupStartPosition;
-            playerVRSetup.transform.rotation = playerVRSetupStartRotation;
-            playerVRSetup.transform.localScale = playerVRSetupStartScale;
-            //playerVRSetup.transform.localScale = new Vector3(1f, 1f, 1f);
-            playerCamera.transform.position = playerCameraStartPosition;
-            playerCamera.transform.rotation = playerCameraStartRotation;
-            //playerCamera.transform.localScale = new Vector3(1f, 1f, 1f);
-            playerCamera.transform.localScale = playerCameraStartScale;
+            if (!inFocusMode) return;
+
+            // LeftTrigger           
+            if (XInput.GetDown(XInput.Button.LIndexTrigger))
+            {
+                throttleDetected = true; 
+ isCenteringRotation = false;
+            }
+            // Reset position on button release
+            if (XInput.GetUp(XInput.Button.LIndexTrigger))
+            {
+                throttleDetected = true; 
+ isCenteringRotation = false;
+            }
+            if (XInput.GetDown(XInput.Button.Y))
+            {
+                if (!isHigh)
+                {
+                    // Shift if not in high
+                    ShifterObject.Rotate(0, 0, 45f);
+                    isHigh = true;
+                }
+                else
+                {
+                    ShifterObject.Rotate(0, 0, -45f);
+                    isHigh = false;
+                }
+            }
         }
 
         void CenterRotation()
         {
-            // Center X-axis (forward/backward rotation)
-
-            // Center X-Axis rotation
-            if (currentRotationX > 0)
-            {
-                float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, currentRotationX);
-                weclemansYObject.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
-                currentRotationX -= unrotateX;    // Reducing the positive rotation
-            }
-            else if (currentRotationX < 0)
-            {
-                float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, -currentRotationX);
-                weclemansYObject.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
-                currentRotationX += unrotateX;    // Reducing the positive rotation
-            }
-
-            // Center Y-axis (left/right rotation with secondary thumbstick)
-            if (currentRotationY > 0)
-            {
-                float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, currentRotationY);
-                weclemansZObject.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
-                currentRotationY -= unrotateY;    // Reducing the positive rotation
-            }
-            else if (currentRotationY < 0)
-            {
-                float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, -currentRotationY);
-                weclemansZObject.Rotate(0, -unrotateY, 0);   // Rotating to reduce the rotation
-                currentRotationY += unrotateY;    // Reducing the positive rotation
-            }
-
-            // Center Z-axis (left/right rotation)
-            if (currentRotationZ > 0)
-            {
-                float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, currentRotationZ);
-                weclemansXObject.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
-                currentRotationZ -= unrotateZ;    // Reducing the positive rotation
-            }
-            else if (currentRotationZ < 0)
-            {
-                float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, -currentRotationZ);
-                weclemansXObject.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
-                currentRotationZ += unrotateZ;    // Reducing the positive rotation
-            }
-
-            //Centering for contoller
-            // Center Y-axis Controller rotation
-            if (currentControllerRotationY > 0)
-            {
-                float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, currentControllerRotationY);
-                weclemansController.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
-                currentControllerRotationY -= unrotateY;    // Reducing the positive rotation
-            }
-            else if (currentControllerRotationY < 0)
-            {
-                float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, -currentControllerRotationY);
-                weclemansController.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
-                currentControllerRotationY += unrotateY;    // Reducing the negative rotation
-            }
-
-            // Center X-Axis Controller rotation
-            if (currentControllerRotationX > 0)
-            {
-                float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, currentControllerRotationX);
-                weclemansController.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
-                currentControllerRotationX -= unrotateX;    // Reducing the positive rotation
-            }
-            else if (currentControllerRotationX < 0)
-            {
-                float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, -currentControllerRotationX);
-                weclemansController.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
-                currentControllerRotationX += unrotateX;    // Reducing the positive rotation
-            }
-
-            // Center Z-axis Controller rotation
-            if (currentControllerRotationZ > 0)
-            {
-                float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, currentControllerRotationZ);
-                weclemansController.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
-                currentControllerRotationZ -= unrotateZ;    // Reducing the positive rotation
-            }
-            else if (currentControllerRotationZ < 0)
-            {
-                float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, -currentControllerRotationZ);
-                weclemansController.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
-                currentControllerRotationZ += unrotateZ;    // Reducing the positive rotation
-            }
+            isCenteringRotation = true;
         }
+        void CenterThrottle()
+        {
+            isCenteringRotation = true;
+        }
+
         void HandleTransformAdjustment()
         {
-            // Handle position adjustments
-            if (Input.GetKey(KeyCode.Home))
-            {
-                // Move forward
-                cockpitCam.transform.position += cockpitCam.transform.forward * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.End))
-            {
-                // Move backward
-                cockpitCam.transform.position -= cockpitCam.transform.forward * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.PageUp))
-            {
-                // Move up
-                cockpitCam.transform.position += cockpitCam.transform.up * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.Insert))
-            {
-                // Move down
-                cockpitCam.transform.position -= cockpitCam.transform.up * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.Delete))
-            {
-                // Move left
-                cockpitCam.transform.position -= cockpitCam.transform.right * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.PageDown))
-            {
-                // Move right
-                cockpitCam.transform.position += cockpitCam.transform.right * adjustSpeed * Time.deltaTime;
-            }
+            if (!inFocusMode) return;
+            // Choose target camera: use vrCam if available, otherwise fallback to cockpitCam
+            var cam = vrCam != null ? vrCam : cockpitCam;
 
-            // Handle rotation with Backspace key
-            if (Input.GetKeyDown(KeyCode.Backspace))
+            if (cam != null && isRiding)
             {
-                cockpitCam.transform.Rotate(0, 90, 0);
+                // Handle position adjustments
+                if (Input.GetKey(KeyCode.Home))
+                {
+                    // Move forward
+                    cam.transform.localPosition += cam.transform.forward * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.End))
+                {
+                    // Move backward
+                    cam.transform.localPosition -= cam.transform.forward * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.UpArrow))
+                {
+                    // Move up
+                    cam.transform.localPosition += cam.transform.up * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.DownArrow))
+                {
+                    // Move down
+                    cam.transform.localPosition -= cam.transform.up * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.LeftArrow))
+                {
+                    // Move left
+                    cam.transform.localPosition -= cam.transform.right * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.RightArrow))
+                {
+                    // Move right
+                    cam.transform.localPosition += cam.transform.right * adjustSpeed * Time.deltaTime;
+                }
+
+                // Handle rotation with Backspace key
+                if (Input.GetKeyDown(KeyCode.Backspace))
+                {
+                    cam.transform.Rotate(0, 90, 0);
+                }
             }
 
             // Save the new position and rotation
-            cockpitCamStartPosition = cockpitCam.transform.position;
-            cockpitCamStartRotation = cockpitCam.transform.rotation;
+            if (vrCam != null)
+            {
+                vrCamStartPosition = vrCam.transform.localPosition;
+                vrCamStartRotation = vrCam.transform.localRotation;
+            }
+            else if (cockpitCam != null)
+            {
+                cockpitCamStartPosition = cockpitCam.transform.localPosition;
+                cockpitCamStartRotation = cockpitCam.transform.localRotation;
+            }
         }
 
-        // Check if object is found and log appropriate message
-        void CheckObject(GameObject obj, string name)
+        private void CheckInsertedGameName()
         {
-            if (obj == null)
+            if (gameSystem != null && gameSystem.Game != null && !string.IsNullOrEmpty(gameSystem.Game.path))
+                insertedGameName = FileNameHelper.GetFileName(gameSystem.Game.path);
+            else
+                insertedGameName = string.Empty;
+        }
+
+        private void CheckControlledGameName()
+        {
+            if (GameSystem.ControlledSystem != null && GameSystem.ControlledSystem.Game != null
+                && !string.IsNullOrEmpty(GameSystem.ControlledSystem.Game.path))
+                controlledGameName = FileNameHelper.GetFileName(GameSystem.ControlledSystem.Game.path);
+            else
+                controlledGameName = string.Empty;
+        }
+
+        // Helper class to extract and sanitize file names.
+        public static class FileNameHelper
+        {
+            // Extracts the file name without the extension and replaces invalid file characters with underscores.
+            public static string GetFileName(string filePath)
             {
-                logger.Error($"{name} not found!");
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string FileName = System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+                return FileName;
+            }
+        }
+        void ToggleEmissiveRenderer(Renderer renderer, bool isOn)
+        {
+            if (isOn)
+            {
+                renderer.material.EnableKeyword("_EMISSION");
             }
             else
             {
-                logger.Info($"{name} found.");
+                renderer.material.DisableKeyword("_EMISSION");
             }
         }
 
-        // Save original parent of object in dictionary
+        void ToggleEmissive(GameObject targetObject, bool isActive)
+        {
+            if (targetObject != null)
+            {
+                Renderer renderer = targetObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    Material material = renderer.material;
+
+                    if (isActive)
+                    {
+                        material.EnableKeyword("_EMISSION");
+                    }
+                    else
+                    {
+                        material.DisableKeyword("_EMISSION");
+                    }
+
+                    // logger.Debug($"{targetObject.name} emissive state set to {(isActive ? "ON" : "OFF")}.");
+                }
+                else
+                {
+                    logger.Debug($"{gameObject.name} Renderer component not found on {targetObject.name}.");
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} {targetObject.name} emissive object is not assigned.");
+            }
+        }
+
+        void ToggleLight(Light targetLight, bool isActive)
+        {
+            if (targetLight == null) return;
+
+            // Ensure the GameObject itself is active
+            if (targetLight.gameObject.activeSelf != isActive)
+                targetLight.gameObject.SetActive(isActive);
+
+            // Then toggle the component
+            targetLight.enabled = isActive;
+        }
+
+        void ReadData()
+        {
+            // 1) Your original “zeroed” lamp list:
+            var currentLampStates = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "lamp0", 0 }, { "lamp1", 0 }, { "lamp2", 0 }, { "lamp3", 0 }
+    };
+
+            // 2) Reflectively fetch the lamp list (falling back if needed)
+            IEnumerable<string> lampList = null;
+            var hookType = Type.GetType(
+                "WIGUx.Modules.MameHookModule.MameHookController, WIGUx.Modules.MameHookModule"
+            );
+            if (hookType != null)
+            {
+                var lampProp = hookType.GetProperty(
+                    "currentLampState",
+                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                );
+                lampList = lampProp?.GetValue(null) as IEnumerable<string>;
+            }
+            if (lampList == null)
+                lampList = MameHookController.currentLampState;
+
+            // 3) Parse into your state dictionary
+            if (lampList != null)
+            {
+                foreach (var entry in lampList)
+                {
+                    var parts = entry.Split('|');
+                    if (parts.Length != 2) continue;
+
+                    string lamp = parts[0].Trim();
+                    if (currentLampStates.ContainsKey(lamp)
+                        && int.TryParse(parts[1].Trim(), out int value))
+                    {
+                        currentLampStates[lamp] = value;
+                    }
+                }
+            }
+
+            // 4) Dispatch only those lamps to your existing logic
+            foreach (var kv in currentLampStates)
+            {
+                // matches: void ProcessLampState(string lampKey, Dictionary<string,int> currentStates)
+                ProcessLampState(kv.Key, currentLampStates);
+            }
+        }
+        // 🔹 Helper function for safe lamp processing
+        void ProcessLampState(string lampKey, Dictionary<string, int> currentStates)
+        {
+            if (!lastLampStates.ContainsKey(lampKey))
+            {
+                lastLampStates[lampKey] = 0;
+                logger.Error($"{gameObject.name} Added missing key '{lampKey}' to lastLampStates.");
+            }
+
+            if (currentStates.TryGetValue(lampKey, out int newValue))
+            {
+                if (lastLampStates[lampKey] != newValue)
+                {
+                    lastLampStates[lampKey] = newValue;
+
+                    // Call the corresponding function dynamically
+                    switch (lampKey)
+                    {
+                        case "lamp0":
+                            ProcessLamp0(newValue);
+                            break;
+                        case "lamp1":
+                            ProcessLamp1(newValue);
+                            break;
+                        case "lamp2":
+                            ProcessLamp2(newValue);
+                            break;
+                        case "lamp3":
+                            ProcessLamp3(newValue);
+                            break;
+                        default:
+                            logger.Debug($"No processing function for '{lampKey}'");
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                logger.Error($"{gameObject.name} Lamp key '{lampKey}' not found in current states.");
+            }
+        }
+
+        // Individual function for lamp0
+        void ProcessLamp0(int state)
+        {
+            logger.Debug($"Lamp 0 updated: {state}");
+
+            // Update lights
+           
+            // Update emissive material
+      
+        }
+        // Individual function for lamp1
+        void ProcessLamp1(int state)
+        {
+            logger.Debug($"Lamp 1 updated: {state}");
+
+            // Update lights
+
+            // Update emissive material
+
+        }
+        // Individual function for lamp2
+        void ProcessLamp2(int state)
+        {
+            logger.Debug($"Lamp 2 updated: {state}");
+
+            // Update lights
+
+            // Update emissive material
+
+        }
+
+        // Individual function for lamp3
+        void ProcessLamp3(int state)
+        {
+            logger.Debug($"Lamp 3 updated: {state}");
+
+            // Update lights
+
+            // Update emissive material
+
+        }
+
+        void CheckObject(GameObject obj, string name)     // Check if object is found and log appropriate message
+        {
+            if (obj == null)
+            {
+                logger.Error($"{gameObject.name} {name} not found!");
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} {name} found.");
+            }
+        }
+
         void SaveOriginalParent(GameObject obj)
         {
             if (obj != null && !originalParents.ContainsKey(obj))
             {
-                originalParents[obj] = obj.transform.parent;
+                if (obj.transform.parent != null)
+                {
+                    originalParents[obj] = obj.transform.parent;
+                }
+                else
+                {
+                    originalParents[obj] = null; // Explicitly store that this was in the root
+                    logger.Debug($"{gameObject.name} Object {obj.name} was in the root and has no parent.");
+                }
             }
         }
 
-        // Restore original parent of object and log appropriate message
         void RestoreOriginalParent(GameObject obj, string name)
         {
-            if (obj != null && originalParents.ContainsKey(obj))
+            if (obj == null)
             {
-                obj.transform.SetParent(originalParents[obj]);
-                logger.Info($"{name} restored to original parent.");
+                logger.Error($"{gameObject.name} RestoreOriginalParent: {name} is NULL!");
+                return;
+            }
+
+            if (!originalParents.ContainsKey(obj))
+            {
+                logger.Error($"{gameObject.name} RestoreOriginalParent: No original parent found for {name}");
+                return;
+            }
+
+            Transform originalParent = originalParents[obj];
+
+            // If the original parent was NULL, place the object back in the root
+            if (originalParent == null)
+            {
+                obj.transform.SetParent(null, true);  // Moves it back to the root
+                logger.Debug($"{gameObject.name} {name} restored to root.");
+            }
+            else
+            {
+                obj.transform.SetParent(originalParent, false);
+                logger.Debug($"{gameObject.name} {name} restored to original parent: {originalParent.name}");
             }
         }
 
-        // Unset parent of object and log appropriate message
-        void UnsetParentObject(GameObject obj, string name)
+        void ChangeColorEmissive(GameObject targetObject, Color emissionColor, float intensity, bool isActive)
         {
-            if (obj != null)
+            if (targetObject != null)
             {
-                obj.transform.SetParent(null);
-                logger.Info($"{name} unset from parent.");
+                Renderer renderer = targetObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    Material material = renderer.material;
+
+                    if (isActive)
+                    {
+                        material.EnableKeyword("_EMISSION");
+                        material.SetColor("_EmissionColor", emissionColor * intensity);
+                    }
+                    else
+                    {
+                        material.DisableKeyword("_EMISSION");
+                    }
+
+                    //    logger.Debug($"{gameObject.name} {targetObject.name} emissive state set to {(isActive ? "ON" : "OFF")} with color {emissionColor} and intensity {intensity}.");
+                }
+                else
+                {
+                    //    logger.Debug($"{gameObject.name} Renderer component not found on {targetObject.name}.");
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Target emissive object is not assigned.");
             }
         }
 
-        // Method to check if VR input is active
-        bool VRInputActive()
+        IEnumerator attractPattern()  //Pattern For Attract Mode
         {
-            // Assuming you have methods to check VR input
-            return GetPrimaryThumbstick() != Vector2.zero || GetSecondaryThumbstick() != Vector2.zero;
+			yield return new WaitForSeconds(UnityEngine.Random.Range(0f, 1f));
+			while (true)
+            {
+                //  if (StartObject) ToggleEmissive(StartObject.gameObject, false);
+                yield return new WaitForSeconds(attractFlashDuration);
+                //   if (startObject) ToggleEmissive(startObject.gameObject, true);
+                yield return new WaitForSeconds(attractFlashDelay);
+            }
+        }
+        IEnumerator dangerPattern() //Pattern For Focused Danger Mode
+        {
+            while (true)
+            {
+                //   if (StartObject) ToggleEmissive(StartObject.gameObject, true);
+                yield return new WaitForSeconds(dangerFlashDuration);
+				//  if (StartObject) ToggleEmissive(StartObject.gameObject, false);
+				yield return new WaitForSeconds(dangerFlashDelay);
+            }
+        }
+        public void StartAttractPattern()
+        {
+            // Stop any currently running coroutines
+            StopCurrentPatterns();
+            attractCoroutine = StartCoroutine(attractPattern());
+        }
+        public void StartDangerPattern()
+        {
+            // Stop any currently running coroutines
+            StopCurrentPatterns();
+            dangerCoroutine = StartCoroutine(dangerPattern());
         }
 
-        // Placeholder methods to get VR thumbstick input (to be implemented with actual VR input handling)
-        Vector2 GetPrimaryThumbstick()
+        private void StopCurrentPatterns()
         {
-            // Implement VR primary thumbstick input handling here
-            return Vector2.zero;
+            if (attractCoroutine != null)
+            {
+                StopCoroutine(attractCoroutine);
+                attractCoroutine = null;
+            }
+            if (dangerCoroutine != null)
+            {
+                StopCoroutine(dangerCoroutine);
+                dangerCoroutine = null;
+            }
         }
-
-        Vector2 GetSecondaryThumbstick()
+        void InitializeLights()
         {
-            // Implement VR secondary thumbstick input handling here
-            return Vector2.zero;
+            // Gets all Light components in the target object and its children
+            Light[] lights = transform.GetComponentsInChildren<Light>(true);
+
+            foreach (Light light in lights)
+            {
+                switch (light.gameObject.name)
+                {
+                    case "fire1light":
+                        firelight1 = light;
+                        logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                        break;
+                    case "fire2light":
+                        firelight2 = light;
+                        logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                        break;
+                    default:
+                        logger.Debug($"{gameObject.name} Excluded Light found in object: " + light.gameObject.name);
+                        break;
+                }
+            }
+        }
+        void InitializeObjects()
+        {
+            // Find references to PlayerCamera and VR setup objects
+            playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
+
+            // Find and assign the whole VR rig try SteamVR first, then Oculus
+            playerVRSetup = GameObject.Find("Player/[SteamVRCameraRig]");
+            // If not found, try to find the Oculus VR rig
+            if (playerVRSetup == null)
+            {
+                playerVRSetup = GameObject.Find("OVRCameraRig");
+            }
+
+            // Check if objects are found
+            CheckObject(playerCamera, "PlayerCamera");
+            if (playerVRSetup != null)
+            {
+                CheckObject(playerVRSetup, playerVRSetup.name); // will print either [SteamVRCameraRig] or OVRCameraRig
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} No VR Devices found. No SteamVR or OVR present)");
+            }
+
+            // Find X object in hierarchy
+            XObject = transform.Find("X");
+            if (XObject != null)
+            {
+                logger.Debug($"{gameObject.name} X object found.");
+                XStartPosition = XObject.localPosition;
+                XStartRotation = XObject.localRotation;
+
+                // Find Y object under X
+                YObject = XObject.Find("Y");
+                if (YObject != null)
+                {
+                    logger.Debug($"{gameObject.name} Y object found.");
+                    YStartPosition = YObject.localPosition;
+                    YStartRotation = YObject.localRotation;
+
+                    // Find Z object under Y
+                    ZObject = YObject.Find("Z");
+                    if (ZObject != null)
+                    {
+                        logger.Debug($"{gameObject.name} Z object found.");
+                        ZStartPosition = ZObject.localPosition;
+                        ZStartRotation = ZObject.localRotation;
+
+                        // Find cockpit camera
+                        cockpitCam = ZObject.Find("eyes/cockpitcam")?.gameObject;
+                        if (cockpitCam != null)
+                        {
+                            logger.Debug($"{gameObject.name} Cockpitcam object found.");
+                            cockpitCamStartPosition = cockpitCam.transform.localPosition;
+                            cockpitCamStartRotation = cockpitCam.transform.localRotation;
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} cockpitCam object not found.");
+                        }
+
+                        // Find vr camera
+                        vrCam = ZObject.Find("eyes/vrcam")?.gameObject;
+                        if (vrCam != null)
+                        {
+                            logger.Debug($"{gameObject.name} vrCam object found.");
+                            vrCamStartPosition = vrCam.transform.localPosition;
+                            vrCamStartRotation = vrCam.transform.localRotation;
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} vrCam object not found.");
+                        }
+                        // Find StartObject object under Z
+                        StartObject = ZObject.Find("Start");
+                        if (StartObject != null)
+                        {
+                            logger.Debug($"{gameObject.name} Start object found.");
+                            // Ensure the Start object is initially off
+                            Renderer renderer = StartObject.GetComponent<Renderer>();
+                            if (renderer != null)
+                            {
+                                renderer.material.DisableKeyword("_EMISSION");
+                            }
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} Start object not found.");
+                        }
+              
+                        // Find Wheel under Z
+                        WheelObject = ZObject.Find("Wheel");
+                        if (WheelObject != null)
+                        {
+                            logger.Debug($"{gameObject.name} Wheel object found.");
+                            WheelStartPosition = WheelObject.localPosition;
+                            WheelStartRotation = WheelObject.localRotation;
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} Wheel object not found.");
+                        }
+
+                        // Find Shifter
+                        ShifterObject = ZObject.Find("Shifter");
+                        if (ShifterObject != null)
+                        {
+                            logger.Debug($"{gameObject.name} Shifter object found.");
+                            // Store initial position and rotation of the Shifter
+                            ShifterStartPosition = ShifterObject.localPosition;
+                            ShifterStartRotation = ShifterObject.localRotation;
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} Shifter object not found.");
+                        }
+
+                        // Find Gas
+                        GasObject = ZObject.Find("Gas");
+                        if (GasObject != null)
+                        {
+                            logger.Debug($"{gameObject.name} Gas object found.");
+                            GasStartPosition = GasObject.localPosition;
+                            GasStartRotation = GasObject.localRotation;
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} Gas object not found.");
+                        }
+
+
+                        // Find Brake under Z
+                        BrakeObject = ZObject.Find("Brake");
+                        if (BrakeObject != null)
+                        {
+                            logger.Debug($"{gameObject.name} Brake object found.");
+                            BrakeStartPosition = BrakeObject.localPosition;
+                            BrakeStartRotation = BrakeObject.localRotation;
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} Brake object not found.");
+                        }
+                    }
+                    else
+                    {
+                        logger.Debug($"{gameObject.name} Z object not found.");
+                    }
+                }
+                else
+                {
+                    logger.Debug($"{gameObject.name} Y object not found.");
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} X object not found.");
+            }
+
+            // Attempt to find cockpitCollider by name
+            if (cockpitCollider == null)
+            {
+                Collider[] colliders = GetComponentsInChildren<Collider>(true); // true = include inactive
+                foreach (var col in colliders)
+                {
+                    if (col.gameObject.name == "Cockpit")
+                    {
+                        cockpitCollider = col;
+                        logger.Debug($"{gameObject.name} cockpitCollider found in children: {cockpitCollider.name}");
+                        break;
+                    }
+                }
+            }
         }
     }
 }

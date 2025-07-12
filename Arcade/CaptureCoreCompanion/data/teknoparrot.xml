@@ -1,0 +1,1938 @@
+<?xml version="1.0" standalone="yes"?>
+<LaunchBox>
+  <Game>
+    <Title>3D Cosplay Mahjong</Title>
+    <ApplicationPath>3DCosplayMahjong.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Action Deka</Title>
+    <ApplicationPath>ActionDeka.xml</ApplicationPath>  
+    <Emulator>deka.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>After Burner Climax</Title>
+    <ApplicationPath>abc.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>After Burner Climax (ELF2)</Title>
+    <ApplicationPath>abcELF2.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>After Dark</Title>
+    <ApplicationPath>AfterDark.xml</ApplicationPath>  
+    <Emulator>GamePlayer.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Akai Katana Shin (NESICAxLive)</Title>
+    <ApplicationPath>AkaiKatanaShinNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Akuma</Title>
+    <ApplicationPath>Akuma.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>ALESTE</Title>
+    <ApplicationPath>Aleste.xml</ApplicationPath>  
+    <Emulator>senxin_aleste_apm3.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Aliens - Armageddon</Title>
+    <ApplicationPath>AliensArmageddon.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Aliens - Extermination</Title>
+    <ApplicationPath>AliensExtermination.xml</ApplicationPath>  
+    <Emulator>aliens dehasped.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>America's Army Arcade</Title>
+    <ApplicationPath>AAA.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Aquapazza - Aquaplus Dream Match</Title>
+    <ApplicationPath>AquapazzaAquaplusDreamMatch.xml</ApplicationPath>
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Arcana Heart 2 (NESICAxLive)</Title>
+    <ApplicationPath>ArcanaHeart2Nesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Arcana Heart 3 (eX-Board)</Title>
+    <ApplicationPath>ArcanaHeart3Exboard.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Arcana Heart 3 LOVEMAX SIXSTARS!!!!!! (NESICAxLive)</Title>
+    <ApplicationPath>ArcanaHeart3Nesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Arctic Thunder</Title>
+    <ApplicationPath>ArcticThunder.xml</ApplicationPath>  
+    <Emulator>snow.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Ballistics</Title>
+    <ApplicationPath>Ballistics.xml</ApplicationPath>  
+    <Emulator>Ballistics.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Baseball Heroes</Title>
+    <ApplicationPath>BaseballHeroes.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Batman</Title>
+    <ApplicationPath>Batman.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Battle Fantasia</Title>
+    <ApplicationPath>BattleFantasia.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Battle Fantasia (NESICAxLive)</Title>
+    <ApplicationPath>BattleFantasiaNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Battle Gear 4</Title>
+    <ApplicationPath>BattleGear4.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Battle Gear 4 Tuned</Title>
+    <ApplicationPath>BattleGear4Tuned.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Big Buck Hunter Pro</Title>
+    <ApplicationPath>BBHPro.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Big Buck Hunter Pro Home</Title>
+    <ApplicationPath>BBHHome.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Big Buck Hunter Pro World</Title>
+    <ApplicationPath>BBHWorld.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Blade Arcus</Title>
+    <ApplicationPath>BladeArcus.xml</ApplicationPath>  
+    <Emulator>crus.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Blade Strangers</Title>
+    <ApplicationPath>BladeStrangers.xml</ApplicationPath>  
+    <Emulator>himekaku.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Blade Strangers (APM3)</Title>
+    <ApplicationPath>BladeStrangersAPM3.xml</ApplicationPath>  
+    <Emulator>himekaku.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>BlazBlue - Calamity Trigger</Title>
+    <ApplicationPath>BlazBlueCalaminityTrigger.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>BlazBlue - Central Fiction</Title>
+    <ApplicationPath>BBCF.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>BlazBlue - Chronophantasma</Title>
+    <ApplicationPath>BBCP.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>BlazBlue - Continuum Shift</Title>
+    <ApplicationPath>BlazBlueContinuumShift.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>BlazBlue - Continuum Shift II</Title>
+    <ApplicationPath>BlazBlueContinuumShift2.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>BlazBlue - Cross Tag Battle</Title>
+    <ApplicationPath>BlazBlueCrossTagBattle.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Blazing Angels</Title>
+    <ApplicationPath>BlazingAngels.xml</ApplicationPath>  
+    <Emulator>MainR.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Block King Ball Shooter</Title>
+    <ApplicationPath>BlockKing.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Bloody Roar 3</Title>
+    <ApplicationPath>bldyr3b.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Border Break Scramble</Title>
+    <ApplicationPath>BorderBreakScramble.xml</ApplicationPath>  
+    <Emulator>nrs.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Bug Busters</Title>
+    <ApplicationPath>BugBusters.xml</ApplicationPath>  
+    <Emulator>BBPC.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>ByonByon (Nobiteke! Byon Byon Daisakusen)</Title>
+    <ApplicationPath>ByonByon.xml</ApplicationPath>  
+    <Emulator>byy.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Caladrius AC</Title>
+    <ApplicationPath>CaladriusAC.xml</ApplicationPath>  
+    <Emulator>SILVER_AMP_R_ROM.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Capcom Fighting Jam</Title>
+    <ApplicationPath>fghtjam.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Cars</Title>
+    <ApplicationPath>Cars.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Castlevania - The Arcade</Title>
+    <ApplicationPath>Castlevania.xml</ApplicationPath>  
+    <Emulator>HCV.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Chaos Breaker</Title>
+    <ApplicationPath>ChaosBreaker.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Chaos Breaker (NESICAxLive)</Title>
+    <ApplicationPath>ChaosBreakerNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Chaos Code</Title>
+    <ApplicationPath>CC.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Chaos Code - New Sign of Catastrophe (v1.03.00)</Title>
+    <ApplicationPath>ChaosCodeNSOC103.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Chaos Code - New Sign of Catastrophe (v2.11)</Title>
+    <ApplicationPath>ChaosCodeNSOC211.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Chase H.Q. 2</Title>
+    <ApplicationPath>ChaseHQ2.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Chrono Regalia</Title>
+    <ApplicationPath>ChronoRegalia.xml</ApplicationPath>  
+    <Emulator>hkb.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Come On Baby! 2 Winter Championship</Title>
+    <ApplicationPath>ComeOnBaby2.xml</ApplicationPath>  
+    <Emulator>Cob2.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Contra - Evolution</Title>
+    <ApplicationPath>Contra.xml</ApplicationPath>  
+    <Emulator>AMContra.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Cotton Rock'n'Roll</Title>
+    <ApplicationPath>CottonRnR.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Counter-Strike Neo</Title>
+    <ApplicationPath>CSNEO.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Crazy Ride</Title>
+    <ApplicationPath>CrazyRide.xml</ApplicationPath>  
+    <Emulator>CrazyTaxiGame-Win64-Shipping.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Crazy Speed</Title>
+    <ApplicationPath>CrazySpeed.xml</ApplicationPath>  
+    <Emulator>Client_r.exe</Emulator>
+  </Game>
+
+  <Game>
+    <Title>Crimzon Clover (NESICAxLive)</Title>
+    <ApplicationPath>CrimzonClover.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Crossfire - Maximum Paintball</Title>
+    <ApplicationPath>CrossfirePaintball.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Cruis'n Blast</Title>
+    <ApplicationPath>CruisnBlast.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Cyber Diver</Title>
+    <ApplicationPath>CyberDiver.xml</ApplicationPath>  
+    <Emulator>hl2.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>D1GP Arcade</Title>
+    <ApplicationPath>D1GP.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Daemon Bride (eX-Board)</Title>
+    <ApplicationPath>DaemonBrideExboard.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Daemon Bride AG</Title>
+    <ApplicationPath>DaemonBrideAG.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dariusburst - Another Chronicle</Title>
+    <ApplicationPath>DariusBurst.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dariusburst(eX-Board)</Title>
+    <ApplicationPath>DariusBurstEX.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dark Awake - The King Has No Name (NESICAxLive)</Title>
+    <ApplicationPath>DarkAwakeNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  
+  <Game>
+    <Title>Daytona Championship USA</Title>
+    <ApplicationPath>Daytona3.xml</ApplicationPath>  
+    <Emulator>Daytona.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Daytona Championship USA NSE</Title>
+    <ApplicationPath>Daytona3NSE.xml</ApplicationPath>  
+    <Emulator>Daytona.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dead Heat</Title>
+    <ApplicationPath>DeadHeat.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dead Heat Riders</Title>
+    <ApplicationPath>DeadHeatRiders.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dead or Alive 5 Ultimate Arcade</Title>
+    <ApplicationPath>DOA5.xml</ApplicationPath>  
+    <Emulator>DOA5A.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dead or Alive 6</Title>
+    <ApplicationPath>DOA6.xml</ApplicationPath>  
+    <Emulator>muscle_apm3.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Deal or No Deal</Title>
+    <ApplicationPath>DealOrNoDeal.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Deal or No Deal UK</Title>
+    <ApplicationPath>DealOrNoDealUK.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Deal or No Deal Deluxe</Title>
+    <ApplicationPath>DealOrNoDealDeluxe.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Deathsmiles 2</Title>
+    <ApplicationPath>Deathsmiles2.xml</ApplicationPath>  
+    <Emulator>cvgame.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dengeki Bunko - Fighting Climax</Title>
+    <ApplicationPath>DengekiBunkoFightingClimax.xml</ApplicationPath> <Emulator>RingGame.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dengeki Bunko - Fighting Climax APM3 Edition</Title>
+    <ApplicationPath>BattleClimax.xml</ApplicationPath>  
+    <Emulator>DengekiFCI_APM3.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Densha de Go!!</Title>
+    <ApplicationPath>DenshaDeGo.xml</ApplicationPath>  
+    <Emulator>TG4AC-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Densha de Go!! (DDG 1 - DDG 2 Retro)</Title>
+    <ApplicationPath>DenshaDeGoRetro.xml</ApplicationPath>  
+    <Emulator>TG4AC-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dino King Battle - King of Jurassic</Title>
+    <ApplicationPath>DinoKing.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dirty Drivin'</Title>
+    <ApplicationPath>DirtyDrivin.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Do Not Fall - Run For Your Drink</Title>
+    <ApplicationPath>DoNotFallRunforYourDrink.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dragon Dance (NESICAxLive)</Title>
+    <ApplicationPath>DragonDanceNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Drakons Realm Keepers</Title>
+    <ApplicationPath>Drakons.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Dream Raiders</Title>
+    <ApplicationPath>SDR.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Elevator Action Death Parade</Title>
+    <ApplicationPath>EADP.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Elevator Action (NESICAxLive)</Title>
+    <ApplicationPath>ElevatorAction.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Elevator Action Invasion</Title>
+    <ApplicationPath>ElevatorActionInvasion.xml</ApplicationPath>  
+    <Emulator>ESGame-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>En-Eins Perfektewelt (NESiCAxLive)</Title>
+    <ApplicationPath>EnEinsPerfektewelt.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Exception (NESiCAxLive)</Title>
+    <ApplicationPath>ExceptionNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Far Cry Paradise Lost</Title>
+    <ApplicationPath>FarCryParadiseLost.xml</ApplicationPath>  
+    <Emulator>FarCry_r.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Fate - Unlimited Codes</Title>
+    <ApplicationPath>fateulc.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Fighting Climax</Title>
+    <ApplicationPath>FightingClimax.xml</ApplicationPath>  
+    <Emulator>RingGame.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Fighting Climax Ignition</Title>
+    <ApplicationPath>FightingClimaxIgnition.xml</ApplicationPath>  
+    <Emulator>RingGame.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Fighting Ex Layer</Title>
+    <ApplicationPath>FightingExLayer.xml</ApplicationPath>  
+    <Emulator>EXF-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Ford Racing - Full Blown</Title>
+    <ApplicationPath>FR.xml</ApplicationPath>  
+    <Emulator>fordracing.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Frenzy Express</Title>
+    <ApplicationPath>FrenzyExpress.xml</ApplicationPath>  
+    <Emulator>xwin.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Friction</Title>
+    <ApplicationPath>Friction.xml</ApplicationPath>  
+    <Emulator>Friction.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Frogger</Title>
+    <ApplicationPath>Frogger.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>F-Zero AX</Title>
+    <ApplicationPath>FZeroAX.xml</ApplicationPath>  
+    <Emulator>Dolphin.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>F-Zero AX Monster Ride</Title>
+    <ApplicationPath>FZeroAXMonster.xml</ApplicationPath>  
+    <Emulator>Dolphin.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Gaelco Championship Tuning Race</Title>
+    <ApplicationPath>GaelcoChampionshipTuningRace.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Gaia Attack 4</Title>
+    <ApplicationPath>GaiaAttack4.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Galaga Assault</Title>
+    <ApplicationPath>GalagaAssault.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Gashaaaan!!!!</Title>
+    <ApplicationPath>Gashaaaan.xml</ApplicationPath>  
+    <Emulator>ballshooting.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Gashaaaan 2</Title>
+    <ApplicationPath>Gashaaaan2.xml</ApplicationPath>  
+    <Emulator>gasya.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Ge-Sen Love - Plus Pengo!</Title>
+    <ApplicationPath>ArcadeLove.xml</ApplicationPath>  
+    <Emulator>glpp.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Ghost Squad Evolution</Title>
+    <ApplicationPath>GSEVO.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Ghost Squad Evolution (ELF2)</Title>
+    <ApplicationPath>GSEVOELF2.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>GhostBusters</Title>
+    <ApplicationPath>Ghostbusters.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>GigaWing Generations</Title>
+    <ApplicationPath>GigaWingGenerations.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Go Go Drummer Babe</Title>
+    <ApplicationPath>GoGoDrummer.xml</ApplicationPath>  
+    <Emulator>mygame.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Go Go Strike</Title>
+    <ApplicationPath>GoGoStrike.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Golden Tee Live 2006</Title>
+    <ApplicationPath>GoldenTeeLive2006.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Golden Tee Live 2007</Title>
+    <ApplicationPath>GoldenTeeLive2007.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Golden Tee Live 2008</Title>
+    <ApplicationPath>GoldenTeeLive2008.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Golden Tee Live 2009</Title>
+    <ApplicationPath>GoldenTeeLive2009.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Goonya Fighter</Title>
+    <ApplicationPath>GoonyaFighter.xml</ApplicationPath>  
+    <Emulator>Goonya Fighter.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Gouketsuji Ichizoku - Senzo Kuyou (Taito Type X2)</Title>
+    <ApplicationPath>PowerInstinctV.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Gouketsuji Ichizoku - Senzo Kuyou (NESiCAxLive)</Title>
+    <ApplicationPath>Goketsuji.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>GRID</Title>
+    <ApplicationPath>GRID.xml</ApplicationPath>  
+    <Emulator>GRID.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Groove Coaster 2 - Heavenly Festival</Title>
+    <ApplicationPath>GrooveCoaster2.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>GTI Club - Supermini Festa!</Title>
+    <ApplicationPath>GtiClub3.xml</ApplicationPath>  
+    <Emulator>gti3japkey.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Guilty Gear Xrd REV2 (APM3)</Title>
+    <ApplicationPath>GGXrdAPM3.xml</ApplicationPath>  
+    <Emulator>GuiltyGearXrd.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Guilty Gear Xrd REV2</Title>
+    <ApplicationPath>GGXrd.xml</ApplicationPath>  
+    <Emulator>GuiltyGearXrd.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Guilty Gear Xrd -SIGN-</Title>
+    <ApplicationPath>GGXrdSIGN.xml</ApplicationPath>  
+    <Emulator>GuiltyGearXrd.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Guilty Gear XX Accent Core Plus R</Title>
+    <ApplicationPath>GGXX.xml</ApplicationPath>  
+    <Emulator>GGXXACP_RE2.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Guilty Gear - Strive</Title>
+    <ApplicationPath>GGS.xml</ApplicationPath>  
+    <Emulator>GGST-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Guitar Hero Arcade</Title>
+    <ApplicationPath>GHA.xml</ApplicationPath>  
+    <Emulator>GHA.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Gundam Spirits Of Zeon</Title>
+    <ApplicationPath>GundamSpiritsOfZeon.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Gunslinger Stratos 3</Title>
+    <ApplicationPath>Gunslinger.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>H2Overdrive</Title>
+    <ApplicationPath>H2Overdrive.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Harley Davidson - King of the Road</Title>
+    <ApplicationPath>Harley.xml</ApplicationPath>  
+    <Emulator>budgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Haunted Museum</Title>
+    <ApplicationPath>HauntedMuseum.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Haunted Museum II</Title>
+    <ApplicationPath>HauntedMuseumII.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Homura (NESiCAxLive)</Title>
+    <ApplicationPath>Homura.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Hot Wheels</Title>
+    <ApplicationPath>HotWheels.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>House of the Dead Scarlet Dawn</Title>
+    <ApplicationPath>HOTDSD.xml</ApplicationPath>  
+    <Emulator>Hodzero-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Hummer</Title>
+    <ApplicationPath>Hummer.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Hummer Extreme Edition</Title>
+    <ApplicationPath>hummerextreme.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Hyper Sports (Remake)</Title>
+    <ApplicationPath>HyperSportsChina.xml</ApplicationPath>  
+    <Emulator>AMSports.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Hyper Street Fighter II - The Anniversary Edition (NESiCAxLive)</Title>
+    <ApplicationPath>HyperStreetFighterII.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Ikaruga (NESiCAxLive)</Title>
+    <ApplicationPath>Ikaruga.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Infinity Blade FX</Title>
+    <ApplicationPath>InfinityBladeFX.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Injustice</Title>
+    <ApplicationPath>Injustice.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage 4 (Export)</Title>
+    <ApplicationPath>ID4Exp.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage 4 (Japanese)</Title>
+    <ApplicationPath>ID4Jap.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage 5 (Export)</Title>
+    <ApplicationPath>ID5.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage 6 Double Ace</Title>
+    <ApplicationPath>ID6.xml</ApplicationPath>  
+    <Emulator>InitialD6_GLW_RE_SBUU.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage 7 Double Ace Cross</Title>
+    <ApplicationPath>ID7.xml</ApplicationPath>  
+    <Emulator>InitialD7_GLW_RE_SBYD.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage 8 Infinity</Title>
+    <ApplicationPath>ID8.xml</ApplicationPath>  
+    <Emulator>InitialD8_GLW_RE_SBZZ.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage Zero (Third-Party - SegaTools)</Title>
+    <ApplicationPath>IDZTP.xml</ApplicationPath>  
+    <Emulator>InitialD0_DX11_Nu.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage Zero</Title>
+    <ApplicationPath>IDZ.xml</ApplicationPath>  
+    <Emulator>InitialD0_DX11_Nu.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage Zero ver.2 (Third-Party - SegaTools)</Title>
+    <ApplicationPath>IDZv2TP.xml</ApplicationPath>  
+    <Emulator>InitialD0_DX11_Nu.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Initial D - Arcade Stage Zero Ver.2</Title>
+    <ApplicationPath>IDZv2.xml</ApplicationPath>  
+    <Emulator>InitialD0_DX11_Nu.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Initial D - The Arcade</Title>
+    <ApplicationPath>IDTA.xml</ApplicationPath>  
+    <Emulator>GameProject-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>JoJo's Bizarre Adventure - Last Survivor</Title>
+    <ApplicationPath>JojoLastSurvivor.xml</ApplicationPath>  
+    <Emulator>AJB-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Jurassic Park</Title>
+    <ApplicationPath>JurassicPark.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Justice League - Heroes United</Title>
+    <ApplicationPath>JusticeLeague.xml</ApplicationPath>  
+    <Emulator>JLA.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>K.O. Drive (Prototype)</Title>
+    <ApplicationPath>KODrive.xml</ApplicationPath>  
+    <Emulator>M-DriveR_RingWide.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Kasiori</Title>
+    <ApplicationPath>Kasiori.xml</ApplicationPath>  
+    <Emulator>kasiori.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Key Of Avalon</Title>
+    <ApplicationPath>KeyOfAvalon.xml</ApplicationPath>  
+    <Emulator>Dolphin.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>King of Fighters XIII Climax</Title>
+    <ApplicationPath>KingofFightersXIIIClimax.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>King of Fighters XIII Climax (NESiCAxLive)</Title>
+    <ApplicationPath>KingofFightersXIIIClimaxNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>KOF Maximum Impact Regulation A</Title>
+    <ApplicationPath>KingofFightersMaximumImpactRegulationA.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>KOF Sky Stage</Title>
+    <ApplicationPath>KingofFightersSkyStage.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Koihime † Performance Ryorai Ryorai Version 3 (APM3)</Title>
+    <ApplicationPath>KoihimeEnbuAPM3.xml</ApplicationPath>  
+    <Emulator>KoihimeEnbu_apm3.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Koihime Enbu</Title>
+    <ApplicationPath>Koihime.xml</ApplicationPath>  
+    <Emulator>koi_systemAPM.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Lethal Enforcers 3</Title>
+    <ApplicationPath>LethalEnforcers3.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Let's Go Island 3D - Lost on the Island of Tropics</Title>
+    <ApplicationPath>LGI3D.xml</ApplicationPath>  
+    <Emulator>LGI.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Let's Go Island - Lost on the Island of Tropics</Title>
+    <ApplicationPath>LGI.xml</ApplicationPath>  
+    <Emulator>LGI_RingW_F_safe.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Let's Go Jungle Special</Title>
+    <ApplicationPath>LGJS.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Let's Go Jungle - Lost on the Island of Spice</Title>
+    <ApplicationPath>LGJ.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Let's Go Safari</Title>
+    <ApplicationPath>LGS.xml</ApplicationPath>  
+    <Emulator>GameSampR_RingWide.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Lost Land Adventure</Title>
+    <ApplicationPath>LostLand.xml</ApplicationPath>  
+    <Emulator>DomeShooterGame-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Luigi's Mansion Arcade</Title>
+    <ApplicationPath>LuigisMansion.xml</ApplicationPath>  
+    <Emulator>VACUUM.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Lupin the Third - Lupin III</Title>
+    <ApplicationPath>Lupin3.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>MachStorm</Title>
+    <ApplicationPath>MS.xml</ApplicationPath>  
+    <Emulator>ACE7_WIN_10.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Magical Beat</Title>
+    <ApplicationPath>MagicalBeat.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>maimai GreeN</Title>
+    <ApplicationPath>MaiMaiGreen.xml</ApplicationPath>  
+    <Emulator>maimai.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Mario and Sonic at the Rio 2016 Olympic Games</Title>
+    <ApplicationPath>SegaOlympic2016.xml</ApplicationPath>  
+    <Emulator>app.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Mario and Sonic at the Tokyo 2020 Olympic Games</Title>
+    <ApplicationPath>SegaOlympic2020.xml</ApplicationPath>  
+    <Emulator>app.exe</Emulator>
+  </Game>
+   <Game>
+    <Title>Mario Kart Arcade GP</Title>
+    <ApplicationPath>MarioKartGP.xml</ApplicationPath>  
+    <Emulator>Dolphin.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Mario Kart Arcade GP 2</Title>
+    <ApplicationPath>MarioKartGP2.xml</ApplicationPath>  
+    <Emulator>Dolphin.exe</Emulator>
+  </Game>  
+  <Game>
+    <Title>Mario Kart Arcade GP DX (USA)</Title>
+    <ApplicationPath>MKDXUSA.xml</ApplicationPath>  
+    <Emulator>MK_AGP3_FINAL.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Mario Kart Arcade GP DX</Title>
+    <ApplicationPath>MKDX.xml</ApplicationPath>  
+    <Emulator>MK_AGP3_FINAL.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Mario Kart Arcade GP DX 1.18</Title>
+    <ApplicationPath>MKDX118.xml</ApplicationPath>  
+    <Emulator>MK_AGP3_FINAL.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Maximum Heat 3D</Title>
+    <ApplicationPath>MaximumHeat.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Medaru No Gunman</Title>
+    <ApplicationPath>MedaruNoGunman.xml</ApplicationPath>  
+    <Emulator>gunman_dxF.exe.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Melty Blood (RE2)</Title>
+    <ApplicationPath>MeltyBloodRE2.xml</ApplicationPath>  
+    <Emulator>MBAA_RWMasterBuild.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Melty Blood (RE2)</Title>
+    <ApplicationPath>MeltyBloodRE2.xml</ApplicationPath>  
+    <Emulator>MBAA_RWMasterBuild.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Melty Blood - Actress Again - Current Code</Title>
+    <ApplicationPath>MB.xml</ApplicationPath>  
+    <Emulator>MBAA.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>MilkChan</Title>
+    <ApplicationPath>MilkChan.xml</ApplicationPath>  
+    <Emulator>milki.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Million Arthur - Arcana Blood</Title>
+    <ApplicationPath>MillionArthurArcanaBlood.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Mission Impossible Arcade</Title>
+    <ApplicationPath>MissionImpossible.xml</ApplicationPath>  
+    <Emulator>MissionImpossible.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Mobile Suit Gundam - Bonds of the Battlefield</Title>
+    <ApplicationPath>GundamPod.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Mobile Suit Gundam - Extreme Versus 2</Title>
+    <ApplicationPath>EXVS2.xml</ApplicationPath>  
+    <Emulator>exvs2_exe_Release.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Mobile Suit Gundam - Extreme Versus 2 XBoost</Title>
+    <ApplicationPath>EXVS2XB.xml</ApplicationPath>  
+    <Emulator>vsac25_Release.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Moto GP</Title>
+    <ApplicationPath>MotoGP.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Music GunGun 2</Title>
+    <ApplicationPath>MusicGunGun2.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>New Super Mario Bros Wii Coin World</Title>
+    <ApplicationPath>MarioBros.xml</ApplicationPath>  
+    <Emulator>mb4.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Nicktoons Nitro Racing</Title>
+    <ApplicationPath>NicktoonsNitro.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Night Hunter After Dark Chapter II</Title>
+    <ApplicationPath>AfterDark2.xml</ApplicationPath>  
+    <Emulator>qumo2_en.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Nirin</Title>
+    <ApplicationPath>Nirin.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Need For Speed HEAT Takedown</Title>
+    <ApplicationPath>NFSHeatTakedown.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Nitro+ Blasterz - Heroines Infinite Duel</Title>
+    <ApplicationPath>NitroplusBlasterz.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Nosferatu Lilinor</Title>
+    <ApplicationPath>Nosferatu.xml</ApplicationPath>  
+    <Emulator>NLAM.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Operation G.H.O.S.T.</Title>
+    <ApplicationPath>OG.xml</ApplicationPath>  
+    <Emulator>gs2.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Orange County Choppers Pinball</Title>
+    <ApplicationPath>OCCPinball.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Otoshu DX</Title>
+    <ApplicationPath>OtoshuDX.xml</ApplicationPath>  
+    <Emulator>otsdx.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>OutRun 2 SP SDX</Title>
+    <ApplicationPath>or2spdlx.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>P4U - Persona 4 The Ultimate in Mayonaka Arena</Title>
+    <ApplicationPath>Persona4A.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>P4UU - Persona 4 The Ultimate Ultra Suplex Hold</Title>
+    <ApplicationPath>Persona4U.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Pac-Man Chomp-Mania</Title>
+    <ApplicationPath>PacmanChomp.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Pac-Man Battle Royale</Title>
+    <ApplicationPath>pacmanbr.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Pengo Online</Title>
+    <ApplicationPath>Pengo5.xml</ApplicationPath>  
+    <Emulator>pen5.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Phantom Breaker - Another Code</Title>
+    <ApplicationPath>PhantomBreaker.xml</ApplicationPath>  
+    <Emulator>pbac_ringedge2.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Point Blank X</Title>
+    <ApplicationPath>PointBlankX.xml</ApplicationPath>  
+    <Emulator>PBX100-2-NA-MPR0-A63.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Pokkén Tournament</Title>
+    <ApplicationPath>PokkenTournament.xml</ApplicationPath>  
+    <Emulator>ferrum_app.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Police Trainer 2</Title>
+    <ApplicationPath>PoliceTrainer2.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Power Putt Live 2012</Title>
+    <ApplicationPath>PowerPuttLive2012.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Power Putt Live 2013</Title>
+    <ApplicationPath>PowerPuttLive2013.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Pride GP 2003</Title>
+    <ApplicationPath>prdgp03.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Primeval Hunt</Title>
+    <ApplicationPath>Primevil.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Project Diva Arcade</Title>
+    <ApplicationPath>ProjectDiva.xml</ApplicationPath>  
+    <Emulator>diva.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Psychic Force 2012 (NESICAxLive)</Title>
+    <ApplicationPath>PsychicForce2012.xml</ApplicationPath>  
+    <Emulator>game2.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>PuckOff</Title>
+    <ApplicationPath>PuckOff.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>Pull the Trigger 
+  <Game>
+    <Title>Pull the Trigger</Title>
+    <ApplicationPath>PullTheTrigger.xml</ApplicationPath>  
+    <Emulator>PTW.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Puyo Puyo eSports</Title>
+    <ApplicationPath>PuyoPuyoEsports.xml</ApplicationPath>  
+    <Emulator>puyoe.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Puyo Puyo!! Quest Arcade</Title>
+    <ApplicationPath>PPQ.xml</ApplicationPath>  
+    <Emulator>Pj24App.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Puzzle Bobble (NESiCAxLive)</Title>
+    <ApplicationPath>PuzzleBobble.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Rabbids Hollywood</Title>
+    <ApplicationPath>RabbidsHollywood.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Raccoon Rampage</Title>
+    <ApplicationPath>RaccoonRampage.xml</ApplicationPath>  
+    <Emulator>RSGame-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Radikal Bikers (Third-Party Emulator)</Title>
+    <ApplicationPath>RadikalBikers.xml</ApplicationPath>  
+    <Emulator>radikalb.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Raiden III</Title>
+    <ApplicationPath>RaidenIII.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Raiden III (NESiCAxLive)</Title>
+    <ApplicationPath>RaidenIIINesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Raiden IV</Title>
+    <ApplicationPath>RaidenIV.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Raiden IV (NESiCAxLive)</Title>
+    <ApplicationPath>RaidenIVNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Rambo</Title>
+    <ApplicationPath>Rambo.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Rampage</Title>
+    <ApplicationPath>Rampage.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Rastan Saga (NESiCAxLive)</Title>
+    <ApplicationPath>RastanSaga.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>ReVolt</Title>
+    <ApplicationPath>Revolt.xml</ApplicationPath>  
+    <Emulator>ReVolt.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Ring Riders</Title>
+    <ApplicationPath>RingRiders.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Robin Hood</Title>
+    <ApplicationPath>RobinHood.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>RollingGunner.xml</Title>
+    <ApplicationPath>Rolling Gunner</ApplicationPath>  
+    <Emulator>game01.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>R-Tuned - Ultimate Street Racing</Title>
+    <ApplicationPath>R-Tuned.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Samurai Shodown</Title>
+    <ApplicationPath>SamuraiShodown.xml</ApplicationPath>  
+    <Emulator>Onion-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Samurai Spirits Sen</Title>
+    <ApplicationPath>SamuraiSpiritsSen.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Savage Quest</Title>
+    <ApplicationPath>SavageQuest.xml</ApplicationPath>  
+    <Emulator>winsavage.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>School of Ragnarok</Title>
+    <ApplicationPath>SchoolOfRagnarok.xml</ApplicationPath>  
+    <Emulator>TieProduction.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>SEGA Golden Gun</Title>
+    <ApplicationPath>GG.xml</ApplicationPath>  
+    <Emulator>RingGunR_RingWide.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>SEGA Race TV</Title>
+    <ApplicationPath>segartv.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>SEGA Race TV (ELF2)</Title>
+    <ApplicationPath>segartvelf2.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>SEGA Racing Classic</Title>
+    <ApplicationPath>SRC.xml</ApplicationPath>  
+    <Emulator>d1a.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>SEGA Rally 3</Title>
+    <ApplicationPath>SR3.xml</ApplicationPath>  
+    <Emulator>Rally.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Sega World Drivers Championship</Title>
+    <ApplicationPath>SWDC.xml</ApplicationPath>  
+    <Emulator>Todoroki-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Senko no Ronde - DUO - Dis-United Order</Title>
+    <ApplicationPath>SenkoNoRondeDuo.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Senko no Ronde - DUO - Dis-United Order (NESiCAxLive)</Title>
+    <ApplicationPath>SenkoNoRondeDuoNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Sengoku Basara X</Title>
+    <ApplicationPath>sbxc.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Shikigami no Shiro III</Title>
+    <ApplicationPath>Shigami3.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Shining Force - Cross Elysion</Title>
+    <ApplicationPath>ShiningForceCrossElysion.xml</ApplicationPath>  
+    <Emulator>project_f-ringedge-release.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Shining Force - Cross Exlesia</Title>
+    <ApplicationPath>ShiningForceCrossExlesia.xml</ApplicationPath>  
+    <Emulator>project_f-ringedge-release.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Shining Force - Cross Raid</Title>
+    <ApplicationPath>ShiningForceCrossRaid.xml</ApplicationPath>  
+    <Emulator>project_f-ringedge-release.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Sega Showdown</Title>
+    <ApplicationPath>Showdown.xml</ApplicationPath>  
+    <Emulator>Showdown.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Silent Hill - The Arcade</Title>
+    <ApplicationPath>SilentHill.xml</ApplicationPath>  
+    <Emulator>bms_GHL.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Silver Strike Bowling Live</Title>
+    <ApplicationPath>SilverStrikeBowlingLive.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>SiN</Title>
+    <ApplicationPath>SiN.xml</ApplicationPath>  
+    <Emulator>GVR_GUI.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Skullgirls 2nd Encore</Title>
+    <ApplicationPath>Skullgirls2E.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Skylanders Cloud Patrol</Title>
+    <ApplicationPath>Skylanders.xml</ApplicationPath>  
+    <Emulator>Skylanders.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>SNK Heroines - Tag Team Frenzy</Title>
+    <ApplicationPath>SNKHeroines.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Sonic and SEGA All-Stars Racing</Title>
+    <ApplicationPath>SSASR.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Sonic Blast Heroes</Title>
+    <ApplicationPath>SonicBlastHeroes.xml</ApplicationPath>  
+    <Emulator>game_debug.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Sonic Dash Extreme</Title>
+    <ApplicationPath>SonicDashExtreme.xml</ApplicationPath>  
+    <Emulator>SonicDash_R_Ring.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Soul Calibur 3</Title>
+    <ApplicationPath>soulclb3.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Space Invaders (NESiCAxLive)</Title>
+    <ApplicationPath>SpaceInvaders.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Spica Adventure</Title>
+    <ApplicationPath>SpicaAdventure.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Spiderman</Title>
+    <ApplicationPath>Spiderman.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>SpongeBob SquarePants Bikini Bottom Bowling</Title>
+    <ApplicationPath>SpongeBob.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Star Trek Voyager</Title>
+    <ApplicationPath>StarTrekVoyager.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>STAR WARS - Battle Pod</Title>
+    <ApplicationPath>StarWars.xml</ApplicationPath>  
+    <Emulator>SWArcGame-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Storm Racer G</Title>
+    <ApplicationPath>SRG.xml</ApplicationPath>  
+    <Emulator>racing.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Storm Rider</Title>
+    <ApplicationPath>StormRider.xml</ApplicationPath>  
+    <Emulator>motobike.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Strania -The Stella Machine-</Title>
+    <ApplicationPath>StraniaTheStellaMachina.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Street Fighter III - 3rd Strike - Fight for the Future (NESiCAxLive)</Title>
+    <ApplicationPath>StreetFighterIII3rdStrike.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Street Fighter IV</Title>
+    <ApplicationPath>StreetFighterIV.xml</ApplicationPath>  
+    <Emulator>launcher.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Street Fighter V - Type Arcade</Title>
+    <ApplicationPath>StreetFighterVTypeArcade.xml</ApplicationPath>  
+    <Emulator>StreetFighterV.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Street Fighter V - Type Arcade Version 3.53</Title>
+    <ApplicationPath>StreetFighterVTypeArcade353.xml</ApplicationPath>  
+    <Emulator>StreetFighterV.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Street Fighter Zero 3 (NESiCAxLive)</Title>
+    <ApplicationPath>StreetFighterZero3.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Suggoi! Arcana Heart 2 (NESiCAxLive)</Title>
+    <ApplicationPath>SuggoiArcanaHeart2Nesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Super Alpine Racer</Title>
+    <ApplicationPath>AlpineRacer.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Super Monkey Ball - Ticket Blitz</Title>
+    <ApplicationPath>Mballblitz.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Super Street Fighter IV - Arcade Edition</Title>
+    <ApplicationPath>SuperStreetFighterIVArcadeEdition.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Super Street Fighter IV - Arcade Edition (Export)</Title>
+    <ApplicationPath>SuperStreetFighterIVArcadeEditionEXP.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Super Street Fighter IV - Arcade Edition Ver. 2012</Title>
+    <ApplicationPath>SuperStreetFighterIVArcadeEditionVer2012.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Sword Art Online Deep Explorer</Title>
+    <ApplicationPath>SAO.xml</ApplicationPath>  
+    <Emulator>link.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Taiko no Tatsujin Nijiiro Ver</Title>
+    <ApplicationPath>Taiko.xml</ApplicationPath>  
+    <Emulator>Taiko.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Taisen Hot Gimmick 5 - Mirai Eigou</Title>
+    <ApplicationPath>TaisenHotGimmick5.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tank! Tank! Tank!</Title>
+    <ApplicationPath>TankTankTank.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Target - Terror Gold</Title>
+    <ApplicationPath>TargetTerrorGold.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Target Toss Pro Bags</Title>
+    <ApplicationPath>TargetTossProBags.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tekken 4</Title>
+    <ApplicationPath>tekken4.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Tekken 5.1</Title>
+    <ApplicationPath>tekken51.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Tekken 5 - Dark Resurrection</Title>
+    <ApplicationPath>tekken5d.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tekken 7</Title>
+    <ApplicationPath>Tekken7.xml</ApplicationPath>  
+    <Emulator>TekkenGame-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tekken 7 - Fated Retribution</Title>
+    <ApplicationPath>Tekken7FR.xml</ApplicationPath>  
+    <Emulator>TekkenGame-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tekken 7 - Fated Retribution Round 2</Title>
+    <ApplicationPath>Tekken7R2.xml</ApplicationPath>  
+    <Emulator>TekkenGame-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Terminator Salvation</Title>
+    <ApplicationPath>Terminator.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tetris - The Grand Masters 3 - Terror-Instinct</Title>
+    <ApplicationPath>TetrisTheGrandMaster3TerrorInstinct.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The Act</Title>
+    <ApplicationPath>TheAct.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The Fast and the Furious</Title>
+    <ApplicationPath>FNF.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The Fast and the Furious - Drift</Title>
+    <ApplicationPath>FNFDrift.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The Fast and the Furious - Super Bikes</Title>
+    <ApplicationPath>FNFSB.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Super Bikes 2</Title>
+    <ApplicationPath>FNFSB2.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The Fast and the Furious - SuperCars</Title>
+    <ApplicationPath>FNFSC.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The House of the Dead 4</Title>
+    <ApplicationPath>HOTD4.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The House of the Dead 4 (ELF2)</Title>
+    <ApplicationPath>HOTD4SPELF2.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The House of the Dead 4 Special</Title>
+    <ApplicationPath>HOTD4SP.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>The House of the Dead 4 Special (ELF2)</Title>
+    <ApplicationPath>HOTD4SPELF2.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The House of the Dead EX</Title>
+    <ApplicationPath>HOTDEX.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The King of Fighters '98 - Ultimate Match</Title>
+    <ApplicationPath>KingofFighters98UnlimitedMatch.xml</ApplicationPath>  
+    <Emulator>launcher.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The King of Fighters '98 - Ultimate Match Final Edition (NESiCAxLive)</Title>
+    <ApplicationPath>KingofFighters98UltimateMatchFinalEditionNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Title>The King of Fighters 2002 - Unlimited Match (NESiCAxLive)</Title>
+    <ApplicationPath>KingofFighters2002.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The King of Fighters XII</Title>
+    <ApplicationPath>KingofFightersXII.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The King of Fighters XIII</Title>
+    <ApplicationPath>KingofFightersXIII.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The King of Fighters XIII Climax (NESiCAxLive)</Title>
+    <ApplicationPath>KingofFightersXIIIClimaxNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The King of Fighters XIV</Title>
+    <ApplicationPath>KingOfFightersXIV.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>The Rumble Fish 2 (NESiCAxLive)</Title>
+    <ApplicationPath>RumbleFish2Nesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Theatrhythm Final Fantasy - All-Star Carnival</Title>
+    <ApplicationPath>Theatrhythm.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Time Crisis 3</Title>
+    <ApplicationPath>timecrs3.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Time Crisis 4</Title>
+    <ApplicationPath>timecrs4.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Time Crisis 5</Title>
+    <ApplicationPath>TC5.xml</ApplicationPath>  
+    <Emulator>TimeCrisisGame-Win64-Shipping.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tokyo Cop</Title>
+    <ApplicationPath>TokyoCop.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tomb Raider</Title>
+    <ApplicationPath>TombRaider.xml</ApplicationPath>  
+    <Emulator>Game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Too Spicy</Title>
+    <ApplicationPath>2Spicy.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Tottemo E Mahjong</Title>
+    <ApplicationPath>TottemoEMahjong.xml</ApplicationPath>  
+    <Emulator>game2.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Transformers - Human Alliance</Title>
+    <ApplicationPath>Transformers.xml</ApplicationPath>  
+    <Emulator>TF_Gun_R_Ring_dumped.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Transformers Shadows Rising</Title>
+    <ApplicationPath>TransformersShadowsRising.xml</ApplicationPath>  
+    <Emulator>Shell.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Trouble Witches AC</Title>
+    <ApplicationPath>TroubleWitches.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Trouble Witches AC (NESiCAxLive)</Title>
+    <ApplicationPath>TroubleWitchesNesica.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Ultimate Artic Thunder</Title>
+    <ApplicationPath>UltimateArcticThunder.xml</ApplicationPath>  
+    <Emulator>snow.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Ultra Street Fighter IV</Title>
+    <ApplicationPath>UltraStreetFighterIV.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Umihara Kawase Fresh! For AC</Title>
+    <ApplicationPath>Umifresh.xml</ApplicationPath>  
+    <Emulator>umifresh.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Under Defeat HD+</Title>
+    <ApplicationPath>UDX.xml</ApplicationPath>  
+    <Emulator>UDX_RINGEDGE.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Under Night In-Birth</Title>
+    <ApplicationPath>UnderNightInBirth.xml</ApplicationPath>  
+    <Emulator>RingGame.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>UNDER NIGHT IN-BIRTH Exe -Late[cl-r] (APM3)</Title>
+    <ApplicationPath>UnderNightAPM3.xml</ApplicationPath>  
+    <Emulator>RingGame.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Under Night In-Birth Exe -Late[st]</Title>
+    <ApplicationPath>UnderNightInBirthExeLatest.xml</ApplicationPath>  
+    <Emulator>RingGame.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Valve Limit R</Title>
+    <ApplicationPath>VirtuaRLimit.xml</ApplicationPath>  
+    <Emulator>launcher.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Vampire Night</Title>
+    <ApplicationPath>vnight.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Vampire Savior - The Lord of Vampire (NESiCAxLive)</Title>
+    <ApplicationPath>VampireSavior.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Fighter 5 (Version B)</Title>
+    <ApplicationPath>VF5B.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Fighter 5 (Version C)</Title>
+    <ApplicationPath>VF5C.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Fighter 5 Final Showdown</Title>
+    <ApplicationPath>VF5FS.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Fighter 5 Final Showdown (APM3)</Title>
+    <ApplicationPath>VF5FSapm3.xml</ApplicationPath>  
+    <Emulator>vfes.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Fighter 5 R</Title>
+    <ApplicationPath>VF5R.xml</ApplicationPath>  
+    <Emulator>vfes.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Fighter esports</Title>
+    <ApplicationPath>VF5Esports.xml</ApplicationPath>  
+    <Emulator>vfes.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Virtua Striker 3 Ver 2002</Title>
+    <ApplicationPath>VirtuaStriker3.xml</ApplicationPath>  
+    <Emulator>Dolphin.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Virtua Striker 4</Title>
+    <ApplicationPath>VirtuaStriker4.xml</ApplicationPath>  
+    <Emulator>Dolphin.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Tennis 3</Title>
+    <ApplicationPath>VT3.xml</ApplicationPath>  
+    <Emulator>BudgieLoader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Tennis 3 (ELF2)</Title>
+    <ApplicationPath>VT3ELF2.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Virtua Tennis 4</Title>
+    <ApplicationPath>VT4.xml</ApplicationPath>  
+    <Emulator>VT4_RING_r.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wacky Races</Title>
+    <ApplicationPath>WackyRaces.xml</ApplicationPath>  
+    <Emulator>Launcher.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Walking Dead</Title>
+    <ApplicationPath>WalkingDead.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Wangan Midnight</Title>
+    <ApplicationPath>wanganmd.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Wangan Midnight R</Title>
+    <ApplicationPath>wanganmr.xml</ApplicationPath>  
+    <Emulator>Play.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wangan Midnight Maximum Tune 3</Title>
+    <ApplicationPath>WMMT3.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Wangan Midnight Maximum Tune 3DX</Title>
+    <ApplicationPath>WMMT3DX.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wangan Midnight Maximum Tune 3DX PLUS</Title>
+    <ApplicationPath>WMMT3DXP.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wangan Midnight Maximum Tune 5</Title>
+    <ApplicationPath>WMMT5.xml</ApplicationPath>  
+    <Emulator>wmn5r.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wangan Midnight Maximum Tune 5DX</Title>
+    <ApplicationPath>WMMT5DX.xml</ApplicationPath>  
+    <Emulator>wmn5r.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wangan Midnight Maximum Tune 5DX+</Title>
+    <ApplicationPath>WMMT5DXPlus.xml</ApplicationPath>  
+    <Emulator>wmn5r.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wangan Midnight Maximum Tune 6</Title>
+    <ApplicationPath>WMMT6.xml</ApplicationPath>  
+    <Emulator>wmn6r.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wangan Midnight Maximum Tune 6R</Title>
+    <ApplicationPath>WMMT6R.xml</ApplicationPath>  
+    <Emulator>wmn6r.exe</Emulator>
+  </Game>
+    <Game>
+    <Title>Wangan Midnight Maximum Tune 6RR</Title>
+    <ApplicationPath>WMMT6RR.xml</ApplicationPath>  
+    <Emulator>wmn6r.exe</Emulator>
+  </Game>
+      <Game>
+    <Title>Wangan Midnight Maximum Tune 6RR+</Title>
+    <ApplicationPath>WMMT6RRP.xml</ApplicationPath>  
+    <Emulator>wmn6r.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wartran Troopers</Title>
+    <ApplicationPath>WartranTroopers.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wasteland Races 2071</Title>
+    <ApplicationPath>WastelandRacers.xml</ApplicationPath>  
+    <Emulator>Arcade.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wheel Of Fortune</Title>
+    <ApplicationPath>WheelOfFortune.xml</ApplicationPath>  
+    <Emulator>budgieloader.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wild West Shootout</Title>
+    <ApplicationPath>WildWestShootout.xml</ApplicationPath>  
+    <Emulator>CowBoy.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Winning Eleven 08</Title>
+    <ApplicationPath>WinningEleven08.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Winter X Games SnoCross</Title>
+    <ApplicationPath>SnoCross.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Wonderland Wars</Title>
+    <ApplicationPath>WonderlandWars.xml</ApplicationPath>  
+    <Emulator>carol_nu.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>X-Games Snowboarder</Title>
+    <ApplicationPath>Snowboarder.xml</ApplicationPath>  
+    <Emulator>sdaemon.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Xiyangyang</Title>
+    <ApplicationPath>Xiyangyang.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+  <Game>
+    <Title>Yugioh 5DS Duel Terminal 6 (USA)</Title>
+    <ApplicationPath>YugiohDT6U.xml</ApplicationPath>  
+    <Emulator>game.exe</Emulator>
+  </Game>
+</LaunchBox>

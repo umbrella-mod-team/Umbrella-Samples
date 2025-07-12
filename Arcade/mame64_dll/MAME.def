@@ -1,0 +1,4 @@
+EXPORTS
+	init_mame					@1
+	close_mame					@2
+	message_mame				@3

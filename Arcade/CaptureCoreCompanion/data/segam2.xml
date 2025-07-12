@@ -1,0 +1,131 @@
+<?xml version="1.0" standalone="yes"?>
+<LaunchBox>
+  <Game>
+    <Title>Behind Enemy Lines</Title>
+    <ApplicationPath>bel.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Daytona USA</Title>
+    <ApplicationPath>daytona.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Desert Tank</Title>
+    <ApplicationPath>desert.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Dead Or Alive (Model 2B)</Title>
+    <ApplicationPath>doa.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Dynamite Baseball 97 (Rev A)</Title>
+    <ApplicationPath>dynabb97.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Dynamite Cop</Title>
+    <ApplicationPath>dynamcop.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Fighting Vipers</Title>
+    <ApplicationPath>fvipers.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Gunblade NY</Title>
+    <ApplicationPath>gunblade.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>House of the Dead</Title>
+    <ApplicationPath>hotd.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Indianapolis 500 (Rev A, Twin, Newer rev)</Title>
+    <ApplicationPath>indy500.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Last Bronx (Export, Rev A)</Title>
+    <ApplicationPath>lastbrnx.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>ManxTT Superbike (Rev D, Deluxe)</Title>
+    <ApplicationPath>manxtt.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>ManxTT Superbike (Rev C, Twin)</Title>
+    <ApplicationPath>manxttc.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Motor Raid</Title>
+    <ApplicationPath>motoraid.zip</ApplicationPath>
+  </Game>
+    <Game>
+    <Title>Over Rev</Title>
+    <ApplicationPath>overrev.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Pilot Kids (Model 2B)</Title>
+    <ApplicationPath>pltkids.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Rail Chase 2</Title>
+    <ApplicationPath>rchase2.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Sonic Championship</Title>
+    <ApplicationPath>schamp.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Sega Water Ski</Title>
+    <ApplicationPath>segawski.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Super GT 24h</Title>
+    <ApplicationPath>sgt24h.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Sega Ski Super G</Title>
+    <ApplicationPath>skisuprg.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Sky Target</Title>
+    <ApplicationPath>skytargt.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Sega Rally Championship</Title>
+    <ApplicationPath>srallyc.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Sega Touring Car Championship</Title>
+    <ApplicationPath>stcc.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Top Skater</Title>
+    <ApplicationPath>topskatr.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Virtua Cop</Title>
+    <ApplicationPath>vcop.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Virtua Cop 2</Title>
+    <ApplicationPath>vcop2.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Virtua Fighter 2.1</Title>
+    <ApplicationPath>vf2.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Virtual On Cybertroopers (US)</Title>
+    <ApplicationPath>von.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Virtua Striker (Rev A)</Title>
+    <ApplicationPath>vstriker.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Wave Runner</Title>
+    <ApplicationPath>waverunr.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Zero Giunner (Model 2B)</Title>
+    <ApplicationPath>zerogun.zip</ApplicationPath>
+  </Game>
+</LaunchBox>

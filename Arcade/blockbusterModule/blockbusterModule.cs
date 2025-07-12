@@ -1,14 +1,11 @@
 ﻿using UnityEngine;
-using UnityEngine.XR;
 using WIGU;
-using System.Collections.Generic;
-using EmuVR.InputManager;
-using System.Collections;
 
 namespace WIGUx.Modules.blockbusterModule
 {
     public class blockbusterModule : MonoBehaviour
     {
+        static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
         // Fog settings
         public bool enableFog = true; // Default fog state
         public Color fogColor = Color.gray; // Fog color

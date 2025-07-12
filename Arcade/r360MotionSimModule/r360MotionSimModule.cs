@@ -2,8 +2,11 @@
 using UnityEngine.XR;
 using WIGU;
 using System.Collections.Generic;
-using EmuVR.InputManager;
 using System.Collections;
+using System.IO;
+using System;
+using WIGUx.Modules.MameHookModule;
+using System.Reflection;
 
 namespace WIGUx.Modules.r360MotionSim
 {
@@ -11,82 +14,77 @@ namespace WIGUx.Modules.r360MotionSim
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        private readonly float keyboardVelocityX = 100.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 100.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 100.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 75.5f;        // Velocity for VR controller input
+        [Header("Object Settings")]
+        private Transform StartObject; // Reference to the start button object
+        private Transform StickObject; // Reference to the stick mirroring object
+        private Transform ThrottleObject; // Reference to the left stick mirroring object
+        private Transform XObject; // Reference to the main X object
+        private Transform YObject; // Reference to the main Y object
+        private Transform ZObject; // Reference to the main Z object
+        private Transform Fire1Object; // Reference to the Fire left light emissive
+        private Transform DangerObject; // Reference to the Fire left light emissive
+        private GameObject cockpitCam;    // Reference to the Desktop Camera
+        private GameObject vrCam;    // Reference to the VR Camera  
+        private GameObject playerCamera;   // Reference to the Player Camera
+        private GameObject playerVRSetup;   // Reference to the VR Camera
 
+        [Header("Input Settings")]
+        public string primaryThumbstickHorizontal = "Horizontal"; // Input axis for primary thumbstick horizontal
+        public string primaryThumbstickVertical = "Vertical"; // Input axis for primary thumbstick vertical
+        public string secondaryThumbstickHorizontal = "RightStickHorizontal"; // Input axis for secondary thumbstick horizontal
+        public string secondaryThumbstickVertical = "RightStickVertical"; // Input axis for secondary thumbstick forward/backward
+        public string leftTrigger = "LIndexTrigger";
+        public string rightTrigger = "RIndexTrigger";
+
+        [Header("Velocity Multiplier Settings")]        // Speeds for the animation of the in game flight stick or wheel
+        private float primaryThumbstickRotationMultiplier = 10f; // Multiplier for primary thumbstick rotation intensity
+        private float secondaryThumbstickRotationMultiplier = 25f; // Multiplier for secondary thumbstick rotation intensity
+        private float triggerRotationMultiplier = 20f; // Multiplier for trigger rotation intensity
+        private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
+        private float StickXRotationDegrees = 10f; // Degrees for Stick rotation, adjust as needed
+        private float StickYRotationDegrees = 10f; // Degrees for Stick rotation, adjust as needed
+        private readonly float rotationSmoothness = 5f;  //sets the smoothness of the rotation
+        private readonly float thumbstickVelocity = 100.5f;  // Velocity for keyboard input
         private readonly float centeringVelocityX = 75.5f;  // Velocity for centering rotation
         private readonly float centeringVelocityY = 75.5f;  // Velocity for centering rotation
         private readonly float centeringVelocityZ = 75.5f;  // Velocity for centering rotation
 
-        // Controller animation 
-        // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 300.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 300.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 300.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 250.5f;        // Velocity for VR controller input
-
-        private float controllerrotationLimitX = 20f;  // Rotation limit for X-axis (stick or wheel)
-        private float controllerrotationLimitY = 20f;  // Rotation limit for Y-axis (stick or wheel)
-        private float controllerrotationLimitZ = 20f;  // Rotation limit for Z-axis (stick or wheel)
-
-        private float currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
-        private float currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
-        private float currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
-
-        private readonly float centeringControllerVelocityX = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityY = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float centeringControllerVelocityZ = 400.5f;  // Velocity for centering rotation (stick or wheel)
-
-        private Transform r360ControllerX; // Reference to the main animated controller (wheel)
-        private Vector3 r360ControllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion r360ControllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform r360ControllerY; // Reference to the main animated controller (wheel)
-        private Vector3 r360ControllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion r360ControllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform r360ControllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 r360ControllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion r360ControllerZStartRotation; // Initial controlller positions and rotations for resetting
-
-        private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
-
-        private float rotationLimitX = 1080f;  // Rotation limit for X-axis
-        private float rotationLimitY = 1080f;  // Rotation limit for Y-axis
-        private float rotationLimitZ = 1080f;  // Rotation limit for Z-axis
-
+        [Header("Rotation Tracking")]        // Sets up the rotation varibles and sets them to 0 
         private float currentRotationX = 0f;  // Current rotation for X-axis
         private float currentRotationY = 0f;  // Current rotation for Y-axis
         private float currentRotationZ = 0f;  // Current rotation for Z-axis
 
-        private Transform r360XObject; // Reference to the main X object
-        private Transform r360YObject; // Reference to the main Y object
-        private Transform r360ZObject; // Reference to the main Z object
-        private GameObject cockpitCam;    // Reference to the cockpit camera
+        [Header("Rotation Limits")]        // Rotation Limits 
+        [SerializeField] float minRotationX = -1080f;
+        [SerializeField] float maxRotationX = 1080f;
+        [SerializeField] float minRotationY = -1080f;
+        [SerializeField] float maxRotationY = 1080f;
+        [SerializeField] float minRotationZ = -1080f;
+        [SerializeField] float maxRotationZ = 1080f;
 
-        // Initial positions and rotations for resetting
-        private Vector3 r360XStartPosition;
-        private Quaternion r360XStartRotation;
-        private Vector3 r360YStartPosition;
-        private Quaternion r360YStartRotation;
-        private Vector3 r360ZStartPosition;
-        private Quaternion r360ZStartRotation;
-        private Vector3 cockpitCamStartPosition;
-        private Quaternion cockpitCamStartRotation;
+        [Header("Position Settings")]     // Initial positions setup
+        private Vector3 XStartPosition;  // Initial X position for resetting
+        private Vector3 YStartPosition;  // Initial Y positions for resetting
+        private Vector3 ZStartPosition;  // Initial Z positions for resetting
+        private Vector3 StickStartPosition; // Initial Throttle positions for resetting
+        private Vector3 ThrottleStartPosition; // Initial Throttle positions for resetting
+        private Vector3 playerCameraStartPosition;  // Initial Player Camera positions for resetting
+        private Vector3 playerVRSetupStartPosition;  // Initial PlayerVR positions for resetting
+        private Vector3 cockpitCamStartPosition;  // Initial cockpitCam positionsfor resetting
+        private Vector3 vrCamStartPosition;    // Initial vrCam positionsfor resetting
 
-        // Initial positions and rotations for VR setup
-        private Vector3 playerCameraStartPosition;
-        private Quaternion playerCameraStartRotation;
-        private Vector3 playerVRSetupStartPosition;
-        private Quaternion playerVRSetupStartRotation;
-        private Vector3 playerCameraStartScale;
-        private Vector3 playerVRSetupStartScale;
+        [Header("Rotation Settings")]     // Initial rotations setup
+        private Quaternion XStartRotation;  // Initial X rotation for resetting
+        private Quaternion YStartRotation;  // Initial Y rotation for resetting
+        private Quaternion ZStartRotation;  // Initial Z rotation for resetting
+        private Quaternion StickStartRotation;  // Initial Stick rotation for resetting
+        private Quaternion ThrottleStartRotation;  // Initial Throttle rotation for resetting
+        private Quaternion playerCameraStartRotation;  // Initial Player Camera rotation for resetting
+        private Quaternion playerVRSetupStartRotation;  // Initial PlayerVR rotation for resetting
+        private Quaternion cockpitCamStartRotation;  // Initial cockpitCam rotation for resetting
+        private Quaternion vrCamStartRotation;      // Initial VRCam rotation for resetting
 
-        // GameObject references for PlayerCamera and VR setup
-        private GameObject playerCamera;
-        private GameObject playerVRSetup;
-
-        //lights
+        [Header("Lights and Emissives")]     // Setup Emissive and Lights
         private Transform thrustObject;
         public Renderer[] frontEmissiveObjects;
         public Renderer[] leftEmissiveObjects;
@@ -102,485 +100,308 @@ namespace WIGUx.Modules.r360MotionSim
         private float frontDangerDelay = 0.2f;
         private float sideDangerDuration = 0.1f;
         private float sideDangerDelay = 0.2f;
-        private Transform fireemissiveObject;
+        public Light start_light;
         public Light fire1_light;
-        public Light fire2_light;
-        public float lightDuration = 0.35f; // Duration during which the lights will be on
+        public Light danger_light;
+        private Light[] lights;        //array of lights
+        public float lightDuration = 0.35f; // Duration during which the lights will be on        
+        Dictionary<string, int> lastLampStates = new Dictionary<string, int>
+             {
+               { "lamp0", 0 }, { "lamp1", 0 }, { "lamp2", 0 }
+             };
 
-        private Light[] lights;
-        private readonly string[] compatibleGames = { "glocr360", "wingwar360" };
+        [Header("Timers and States")]  // Store last states and timers
         private bool inFocusMode = false;  // Flag to track focus mode state
+        private bool isCenteringRotation = false; // Flag to track centering rotation state
+        private bool isRiding = false; // Set riding state to false
+        private GameSystemState systemState; //systemstate
 
+        [Header("Collider Triggers")]
+        [SerializeField] private Collider cockpitCollider;
+
+        [Header("Rom Check")]
+        private GameSystem gameSystem;  // Cached GameSystem for this cabinet.
+        private string insertedGameName = string.Empty;
+        private string controlledGameName = string.Empty;
+        private string configPath;
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
 
         void Start()
         {
-            // Find references to PlayerCamera and VR setup objects
-            playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
-            playerVRSetup = PlayerVRSetup.PlayerRig.gameObject;
-
-            // Check if objects are found
-            CheckObject(playerCamera, "PlayerCamera");
-            CheckObject(playerVRSetup, "PlayerVRSetup.PlayerRig");
-
-            GameObject cameraObject = GameObject.Find("OVRCameraRig");
-
-            // Find r3602X object in hierarchy
-            r360XObject = transform.Find("r360X");
-            if (r360XObject != null)
-            {
-                logger.Info("r360X object found.");
-                r360XStartPosition = r360XObject.position;
-                r360XStartRotation = r360XObject.rotation;
-
-                // Find r360Y object under r360X
-                r360YObject = r360XObject.Find("r360Y");
-                if (r360YObject != null)
-                {
-                    logger.Info("r360Y object found.");
-                    r360YStartPosition = r360YObject.position;
-                    r360YStartRotation = r360YObject.rotation;
-
-                    // Find r360Z object under r360X
-                    r360ZObject = r360YObject.Find("r360Z");
-                    if (r360ZObject != null)
-                    {
-                        logger.Info("r360Z object found.");
-                        r360ZStartPosition = r360ZObject.position;
-                        r360ZStartRotation = r360ZObject.rotation;
-
-                        // Find fireemissive object under sharrierX
-                        fireemissiveObject = r360ZObject.Find("fireemissive");
-                        if (fireemissiveObject != null)
-                        {
-                            logger.Info("fireemissive object found.");
-                            // Ensure the fireemissive object is initially off
-                            Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
-                            if (renderer != null)
-                            {
-                                renderer.material.DisableKeyword("_EMISSION");
-                            }
-                            else
-                            {
-                                logger.Debug("Renderer component is not found on fireemissive object.");
-                            }
-                        }
-                        else
-                        {
-                            logger.Debug("fireemissive object not found under r360Z.");
-                        }
-
-                        // Find r360ControllerX under r360Z
-                        r360ControllerX = r360ZObject.Find("r360ControllerX");
-                        if (r360ControllerX != null)
-                        {
-                             // Store initial position and rotation of the stick
-                            r360ControllerXStartPosition = r360ControllerX.transform.position; // these could cause the controller to mess up
-                            r360ControllerXStartRotation = r360ControllerX.transform.rotation;
-
-                            // Find r360ControllerY under r360ControllerX
-                            r360ControllerY = r360ControllerX.Find("r360ControllerY");
-                        if (r360ControllerY != null)
-                        {
-                            logger.Info("r360ControllerY object found.");
-                            // Store initial position and rotation of the stick
-                            r360ControllerYStartPosition = r360ControllerY.transform.position;// these could cause the controller to mess up
-                            r360ControllerYStartRotation = r360ControllerY.transform.rotation;
-
-                                // Find r360ControllerZ under r360ControllerY
-                                r360ControllerZ = r360ControllerY.Find("r360ControllerZ");
-                            if (r360ControllerZ != null)
-                            {
-                                logger.Info("r360ControllerZ object found.");
-                                    // Store initial position and rotation of the stick
-                                    r360ControllerZStartPosition = r360ControllerZ.transform.position;// these could cause the controller to mess up
-                                    r360ControllerZStartRotation = r360ControllerZ.transform.rotation;
-                            }
-                            else
-                            {
-                                logger.Error("r360ControllerZ object not found under r360ControllerY!");
-                            }
-                        }
-                        else
-                        {
-                            logger.Error("r360ControllerY object not found under aburnerControllerX!");
-                        }
-                    }
-                    else
-                    {
-                        logger.Error("r360ControllerX object not found under r360Z!");
-                    }
-
-
-                    // Find cockpit camera under cockpit
-                    cockpitCam = r360ZObject.Find("eyes/cockpitcam")?.gameObject;
-                        if (cockpitCam != null)
-                        {
-                            logger.Info("Cockpitcam object found.");
-
-                            // Store initial position and rotation of cockpit cam
-                            cockpitCamStartPosition = cockpitCam.transform.position;
-                            cockpitCamStartRotation = cockpitCam.transform.rotation;
-                        }
-                        else
-                        {
-                            logger.Error("Cockpitcam object not found under r360Z!");
-                        }
-                    }
-                    else
-                    {
-                        logger.Error("r360Z object not found under r360Y!");
-                    }
-                }
-
-                else
-                {
-                    logger.Error("r360Y object not found under r360X!");
-                }
-            }
-            else
-            {
-                logger.Error("r360X object not found!");
-            }
-
-
-            // Gets all Light components in the target object and its children
-            Light[] allLights = r360ZObject.GetComponentsInChildren<Light>();
-            // Initialize a new list to store filtered lights
-            List<Light> filteredLights = new List<Light>();
-            // Initialize left and right arrays from r360ZObject
-            // Log the names of the objects containing the Light components and filter out unwanted lights
-            foreach (Light light in allLights)
-            {
-                if (light.gameObject.name != "screen_light(Clone)" && light.gameObject.name != "ambient_light")
-                {
-                    filteredLights.Add(light);
-                    logger.Info("Included Light found in object: " + light.gameObject.name);
-                }
-                else
-                {
-                    logger.Info("Excluded Light found in object: " + light.gameObject.name);
-                }
-            }
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            configPath = $"./Emulators/MAME/inputs/{insertedGameName}.ini";
+            gameSystem = GetComponent<GameSystem>();
+            InitializeLights();
+            InitializeObjects();
             InitializeEmissiveArrays();
-            // Store the filtered lights
-            lights = filteredLights.ToArray();
             StartAttractPattern();
+
         }
 
         void Update()
         {
-            bool inputDetected = false; // Initialize at the beginning of the Update method
-            if (Input.GetKey(KeyCode.O))
+			bool inputDetected = false;  // Initialize for centering
+			bool throttleDetected = false;// Initialize for centering
+			CheckInsertedGameName();
+            CheckControlledGameName();
+            if (WIGUx.Modules.MameHookModule.MameHookController.ActiveRomsList != null)
             {
-                logger.Info("Resetting Positions");
-                ResetPositions();
-            }
-            if (GameSystem.ControlledSystem != null && !inFocusMode)
-            {
-                string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-                bool containsString = false;
-
-                foreach (var gameString in compatibleGames)
+                foreach (var rom in WIGUx.Modules.MameHookModule.MameHookController.ActiveRomsList)
                 {
-                    if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
-                    {
-                        containsString = true;
-                        break;
-                    }
-                }
-
-                if (containsString)
-                {
-                    StartFocusMode();
+                    if (rom == insertedGameName)
+                        ReadData();
                 }
             }
+            if (isCenteringRotation && !throttleDetected && !inputDetected)
+            {
+                bool centeredX = false, centeredY = false, centeredZ = false;
 
+                // X axis
+                float angleX = Quaternion.Angle(XObject.localRotation, XStartRotation);
+                if (angleX > 0.01f)
+                {
+                    XObject.localRotation = Quaternion.RotateTowards(
+                        XObject.localRotation,
+                        XStartRotation,
+                        centeringVelocityX * Time.deltaTime);
+                    currentRotationX = Mathf.MoveTowards(
+                        currentRotationX, 0f, centeringVelocityX * Time.deltaTime);
+                }
+                else
+                {
+                    XObject.localRotation = XStartRotation;
+                    currentRotationX = 0f;
+                    centeredX = true;
+                }
+
+                // Y axis
+                float angleY = Quaternion.Angle(YObject.localRotation, YStartRotation);
+                if (angleY > 0.01f)
+                {
+                    YObject.localRotation = Quaternion.RotateTowards(
+                        YObject.localRotation,
+                        YStartRotation,
+                        centeringVelocityY * Time.deltaTime);
+                    currentRotationY = Mathf.MoveTowards(
+                        currentRotationY, 0f, centeringVelocityY * Time.deltaTime);
+                }
+                else
+                {
+                    YObject.localRotation = YStartRotation;
+                    currentRotationY = 0f;
+                    centeredY = true;
+                }
+
+                // Z axis
+                float angleZ = Quaternion.Angle(ZObject.localRotation, ZStartRotation);
+                if (angleZ > 0.01f)
+                {
+                    ZObject.localRotation = Quaternion.RotateTowards(
+                        ZObject.localRotation,
+                        ZStartRotation,
+                        centeringVelocityZ * Time.deltaTime);
+                    currentRotationZ = Mathf.MoveTowards(
+                        currentRotationZ, 0f, centeringVelocityZ * Time.deltaTime);
+                }
+                else
+                {
+                    ZObject.localRotation = ZStartRotation;
+                    currentRotationZ = 0f;
+                    centeredZ = true;
+                }
+
+                if (centeredX && centeredY && centeredZ)
+                {
+                    isCenteringRotation = false;
+                }
+            }
+            // Enter focus when names match
+            if (!string.IsNullOrEmpty(insertedGameName)
+                && !string.IsNullOrEmpty(controlledGameName)
+                && insertedGameName == controlledGameName
+                && !inFocusMode)
+            {
+                StartFocusMode();
+            }
             if (GameSystem.ControlledSystem == null && inFocusMode)
             {
                 EndFocusMode();
             }
-
             if (inFocusMode)
             {
+                MapThumbsticks(ref inputDetected, ref throttleDetected);
+                MapButtons(ref inputDetected, ref throttleDetected);
                 HandleTransformAdjustment();
-                HandleVRInput(ref inputDetected);  // Pass by reference
-                HandleKeyboardInput(ref inputDetected);  // Pass by reference
-                                                         // Reset position on button release
-                if (Input.GetButtonUp("Fire1"))
-                {
-                    inputDetected = true;
-                }
+            }
+        }
+        void ReadData()
+        {
+            // 1) Your original “zeroed” lamp list:
+            var currentLampStates = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "start_light", 0 }, { "fire1_light", 0 }, { "danger_light", 0 }
+    };
 
-                // Fire2
-                if (Input.GetButtonDown("Fire2"))
-                {
-                    ToggleFireEmissive(true);
-                    ToggleLights(true);
-                    inputDetected = true;
-                }
+            // 2) Reflectively fetch the lamp list (falling back if needed)
+            IEnumerable<string> lampList = null;
+            var hookType = Type.GetType(
+                "WIGUx.Modules.MameHookModule.MameHookController, WIGUx.Modules.MameHookModule"
+            );
+            if (hookType != null)
+            {
+                var lampProp = hookType.GetProperty(
+                    "currentLampState",
+                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                );
+                lampList = lampProp?.GetValue(null) as IEnumerable<string>;
+            }
+            if (lampList == null)
+                lampList = MameHookController.currentLampState;
 
-                // Reset position on button release
-                if (Input.GetButtonUp("Fire2"))
+            // 3) Parse into your state dictionary
+            if (lampList != null)
+            {
+                foreach (var entry in lampList)
                 {
-                    ToggleFireEmissive(false);
-                    ToggleLights(false);
-                    inputDetected = true;
-                }
+                    var parts = entry.Split('|');
+                    if (parts.Length != 2) continue;
 
-                // Fire3
-                if (Input.GetButtonDown("Fire3"))
-                {
-                    inputDetected = true;
+                    string lamp = parts[0].Trim();
+                    if (currentLampStates.ContainsKey(lamp)
+                        && int.TryParse(parts[1].Trim(), out int value))
+                    {
+                        currentLampStates[lamp] = value;
+                    }
                 }
+            }
 
-                // Reset position on button release
-                if (Input.GetButtonUp("Fire3"))
-                {
-                    inputDetected = true;
-                }
-
-                // Jump
-                if (Input.GetButtonDown("Jump"))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on button release
-                if (Input.GetButtonUp("Jump"))
-                {
-
-                    inputDetected = true;
-                }
+            // 4) Dispatch only those lamps to your existing logic
+            foreach (var kv in currentLampStates)
+            {
+                // matches: void ProcessLampState(string lampKey, Dictionary<string,int> currentStates)
+                ProcessLampState(kv.Key, currentLampStates);
             }
         }
         void StartFocusMode()
         {
-            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, Lower Safty Bar...");
-            logger.Info("Sega R360 Motion Sim starting...");
-            logger.Info("Vomit bags are below the seat...");
+            logger.Debug("Compatible Rom Detected, Unlocking Cabinet...");
+            logger.Debug($"{gameObject.name} Starting Focus Mode...");
+            StopCurrentPatterns();
             StartDangerPattern();
-            // Set objects as children of cockpit cam for focus mode
             if (cockpitCam != null)
             {
-                if (playerCamera != null)
+                cockpitCam.transform.localPosition = cockpitCamStartPosition;
+                cockpitCam.transform.localRotation = cockpitCamStartRotation;
+            }
+            if (vrCam != null)
+            {
+                vrCam.transform.localPosition = vrCamStartPosition;
+                vrCam.transform.localRotation = vrCamStartRotation;
+            }
+            if (playerCamera != null)
+            {
+                playerCameraStartPosition = playerCamera.transform.position;
+                playerCameraStartRotation = playerCamera.transform.rotation;
+            }
+
+            if (playerVRSetup != null)
+            {
+                playerVRSetupStartPosition = playerVRSetup.transform.position;
+                playerVRSetupStartRotation = playerVRSetup.transform.rotation;
+            }
+
+            // Check containment
+            bool inside = false;
+            if (cockpitCollider != null)
+            {
+                Vector3 camPos = playerCamera.transform.position;
+                bool boundsContains = cockpitCollider.bounds.Contains(camPos);
+                Vector3 closest = cockpitCollider.ClosestPoint(camPos);
+                inside = (closest == camPos);
+                //    logger.Debug($"Containment check - bounds.Contains: {boundsContains}, ClosestPoint==pos: {inside}");
+            }
+
+            if (cockpitCollider != null && inside)
+            {
+                if (playerVRSetup == null)
                 {
-                    // Store initial position, rotation, and scale of PlayerCamera
-                    playerCameraStartPosition = playerCamera.transform.position;
-                    playerCameraStartRotation = playerCamera.transform.rotation;
-                    playerCameraStartScale = playerCamera.transform.localScale; // Store initial scale
-                    SaveOriginalParent(playerCamera);  // Save original parent of PlayerCamera
-
-                    // Set PlayerCamera as child of cockpit cam and maintain scale
-                    playerCamera.transform.SetParent(cockpitCam.transform, false);
-                    playerCamera.transform.localScale = playerCameraStartScale;  // Reapply initial scale
-                    playerCamera.transform.localRotation = Quaternion.identity;
-                    logger.Info("PlayerCamera set as child of CockpitCam.");
+                    // Parent and apply offset to PlayerCamera
+                    SaveOriginalParent(playerCamera);
+                    playerCamera.transform.SetParent(cockpitCam.transform, true);
+                    logger.Debug("PlayerCamera set as child of CockpitCam.");
+                    isRiding = true; // Set riding state to true
                 }
-
+                // Check if objects are found
+                CheckObject(playerCamera, "PlayerCamera");
                 if (playerVRSetup != null)
                 {
-                    // Store initial position, rotation, and scale of PlayerVRSetup
-                    playerVRSetupStartPosition = playerVRSetup.transform.position;
-                    playerVRSetupStartRotation = playerVRSetup.transform.rotation;
-                    playerVRSetupStartScale = playerVRSetup.transform.localScale; // Store initial scale
-                    SaveOriginalParent(playerVRSetup);  // Save original parent of PlayerVRSetup
-
-                    // Set PlayerVRSetup as child of cockpit cam and maintain scale
-                    playerVRSetup.transform.SetParent(cockpitCam.transform, false);
-                    playerVRSetup.transform.localScale = playerVRSetupStartScale;
-                    playerVRSetup.transform.localRotation = Quaternion.identity;
-                    logger.Info("PlayerVRSetup.PlayerRig set as child of CockpitCam.");
+                    // Parent and apply offset to PlayerVRSetup
+                    SaveOriginalParent(playerVRSetup);
+                    playerVRSetup.transform.SetParent(vrCam.transform, true);
+                    logger.Debug("PlayerVRSetup.PlayerRig set as child of VR Camera.");
+                    logger.Debug("Dont Get Dizzy!");
+                    isRiding = true; // Set riding state to true
                 }
             }
             else
             {
-                logger.Error("CockpitCam object not found under r360Z!");
+                logger.Debug("Player is not aboard the ride, Starting Without the player aboard.");
+                isRiding = false; // Set riding state to false
             }
-            playerCamera.transform.localScale = playerCameraStartScale;
-    //        cockpitCam.transform.position = cockpitCamStartPosition; // new hotness
-    //        cockpitCam.transform.rotation = cockpitCamStartRotation; // new hotness
-            inFocusMode = true;  // Set focus mode flag
+
+            inFocusMode = true;
         }
 
         void EndFocusMode()
         {
-            logger.Info("Exiting Focus Mode...");
-            // Restore original parents of objects
+            logger.Debug("Exiting Focus Mode...");
             RestoreOriginalParent(playerCamera, "PlayerCamera");
             RestoreOriginalParent(playerVRSetup, "PlayerVRSetup.PlayerRig");
 
-            // Reset r360X to initial positions and rotations
-            if (r360XObject != null)
-            {
-                r360XObject.position = r360XStartPosition;
-                r360XObject.rotation = r360XStartRotation;
-            }
-
-            // Reset r360Y object to initial position and rotation
-            if (r360YObject != null)
-            {
-                r360YObject.position = r360YStartPosition;
-                r360YObject.rotation = r360YStartRotation;
-            }
-            // Reset r360Z object to initial position and rotation
-            if (r360ZObject != null)
-            {
-                r360ZObject.position = r360ZStartPosition;
-                r360ZObject.rotation = r360ZStartRotation;
-            }
-            if (r360ControllerX != null)
-            {
-                r360ControllerX.position = r360ControllerXStartPosition;
-                r360ControllerX.rotation = r360ControllerXStartRotation;
-            }
-            // Reset r360Y to initial positions and rotations
-            if (r360ControllerY != null)
-            {
-                r360ControllerY.position = r360ControllerYStartPosition;
-                r360ControllerY.rotation = r360ControllerYStartRotation;
-            }
-            if (r360ControllerZ != null)
-            {
-                r360ControllerZ.position = r360ControllerZStartPosition;
-                r360ControllerZ.rotation = r360ControllerZStartRotation;
-            }
-
-            // Reset rotation allowances and current rotation values
-            logger.Info("Resetting Positions");
-            ResetPositions();
+            // Restore original parents of objects
             StartAttractPattern();
+            ResetPositions();
             inFocusMode = false;  // Clear focus mode flag
         }
+        private const float THUMBSTICK_DEADZONE = 0.13f; // Adjust as needed
 
-        void HandleKeyboardInput(ref bool inputDetected)
+        private Vector2 ApplyDeadzone(Vector2 input, float deadzone)
         {
-            if (!inFocusMode) return;
-
-            // Handle keyboard input for pitch and roll
-            if (Input.GetKey(KeyCode.DownArrow) && currentRotationX > -rotationLimitX)
-            {
-                float rotateX = keyboardVelocityX * Time.deltaTime;
-                r360XObject.Rotate(rotateX, 0, 0);
-                currentRotationX -= rotateX;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.UpArrow) && currentRotationX < rotationLimitX)
-            {
-                float rotateX = keyboardVelocityX * Time.deltaTime;
-                r360XObject.Rotate(-rotateX, 0, 0);
-                currentRotationX += rotateX;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.LeftArrow) && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = keyboardVelocityY * Time.deltaTime;
-                r360YObject.Rotate(0, rotateY, 0);
-                currentRotationY -= rotateY;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.RightArrow) && currentRotationY < rotationLimitY)
-            {
-                float rotateY = keyboardVelocityY * Time.deltaTime;
-                r360YObject.Rotate(0, -rotateY, 0);
-                currentRotationY += rotateY;
-                inputDetected = true;
-            }
-            /*
-            if (Input.GetKey(KeyCode.DownArrow) && currentRotationZ > -rotationLimitZ)
-            {
-                float rotateZ = keyboardVelocityZ * Time.deltaTime;
-                r360ZObject.Rotate(0, 0, rotateZ);
-                currentRotationZ -= rotateZ;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.UpArrow) && currentRotationZ < rotationLimitZ)
-            {
-                float rotateZ = keyboardVelocityZ * Time.deltaTime;
-                r360ZObject.Rotate(0, 0, -rotateZ);
-                currentRotationZ += rotateZ;
-                inputDetected = true;
-            }
-            */
-            // Stick Rotations 
-            // Stick Y Rotation
-            if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationY > -controllerrotationLimitY)
-            {
-                float rotateY = keyboardControllerVelocityY * Time.deltaTime;
-                r360ControllerY.Rotate(0, rotateY, 0);
-                currentControllerRotationY -= rotateY;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationY < controllerrotationLimitY)
-            {
-                float rotateY = keyboardControllerVelocityY * Time.deltaTime;
-                r360ControllerY.Rotate(0, -rotateY, 0);
-                currentControllerRotationY += rotateY;
-                inputDetected = true;
-            }
-
-
-            // Stick X Rotation
-            if (Input.GetKey(KeyCode.DownArrow) && currentControllerRotationX > -controllerrotationLimitX)
-            {
-                float rotateX = keyboardControllerVelocityX * Time.deltaTime;
-                r360ControllerZ.Rotate(rotateX, 0, 0);
-                currentControllerRotationX -= rotateX;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.UpArrow) && currentControllerRotationX < controllerrotationLimitX)
-            {
-                float rotateX = keyboardControllerVelocityX * Time.deltaTime;
-                r360ControllerZ.Rotate(-rotateX, 0, 0);
-                currentControllerRotationX += rotateX;
-                inputDetected = true;
-            }
-            /*
-            // Stick Z Rotation
-            if (Input.GetKey(KeyCode.LeftArrow) && currentControllerRotationZ > -controllerrotationLimitZ)
-            {
-                float rotateZ = keyboardControllerVelocityZ * Time.deltaTime;
-                r360ControllerZ.Rotate(0, 0, rotateZ);
-                currentControllerRotationZ -= rotateZ;
-                inputDetected = true;
-            }
-
-            if (Input.GetKey(KeyCode.RightArrow) && currentControllerRotationZ < controllerrotationLimitZ)
-            {
-                float rotateZ = keyboardControllerVelocityZ * Time.deltaTime;
-                r360ControllerZ.Rotate(0, 0, -rotateZ);
-                currentControllerRotationZ += rotateZ;
-                inputDetected = true;
-            }
-            */
-
-            // Center the rotation if no input is detected
-            if (!inputDetected)
-            {
-                CenterRotation();
-            }
+            input.x = Mathf.Abs(input.x) < deadzone ? 0f : input.x;
+            input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
+            return input;
         }
-
-        void HandleVRInput(ref bool inputDetected)
+        void MapThumbsticks(ref bool inputDetected, ref bool throttleDetected)
         {
             if (!inFocusMode) return;
 
-            // Capture analog stick inputs
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
 
+            // Declare variables for triggers or extra inputs
+            float primaryIndexTrigger = 0f, secondaryIndexTrigger = 0f;
+            float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
+            float xboxLIndexTrigger = 0f, xboxRIndexTrigger = 0f;
+
+            // === INPUT SELECTION WITH DEADZONE ===
+            // VR CONTROLLERS
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
                 primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
                 secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
+
+                // Oculus-specific inputs
+                primaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                secondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
+                secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
+
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+
+                // --- Your oculus-specific mapping logic goes here, using the above values ---
             }
             else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
@@ -588,438 +409,329 @@ namespace WIGUx.Modules.r360MotionSim
                 var rightController = SteamVRInput.GetController(HandType.Right);
                 primaryThumbstick = leftController.GetAxis();
                 secondaryThumbstick = rightController.GetAxis();
-            }
 
-            if (XInput.IsConnected)
+                // If you need extra OpenVR/SteamVR inputs, grab them here.
+
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+
+                // --- Your OpenVR-specific mapping logic goes here ---
+            }
+            // XBOX CONTROLLER (only if NOT in VR)
+            else if (XInput.IsConnected)
             {
                 primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
-                // Ximput controller input
-                // Combine VR and Xbox inputs
-                primaryThumbstick += xboxPrimaryThumbstick;
-                secondaryThumbstick += xboxSecondaryThumbstick;
-                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
+                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
+                xboxLIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
+                xboxRIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
 
-                // Combine VR and Xbox inputs
-                primaryThumbstick += xboxPrimaryThumbstick;
-                secondaryThumbstick += xboxSecondaryThumbstick;
+                // Optionally use Unity Input axes as backup:
+                // primaryThumbstick   = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                // secondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
 
-                // Get the trigger axis values
-                // Detect input from Xbox triggers
+                // Apply deadzone
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+            }
 
-                // Handle RT press (assuming RT is mapped to a button in your XInput class)
-                if (XInput.GetDown(XInput.Button.RIndexTrigger))
+			// Map thumbstick for Stick 
+			if (StickObject)
+			{
+				// Rotation applied on top of starting rotation
+				Quaternion primaryRotation = Quaternion.Euler(
+					primaryThumbstick.y * StickYRotationDegrees,
+					0f,
+					-primaryThumbstick.x * StickXRotationDegrees
+				);
+				StickObject.localRotation = StickStartRotation * primaryRotation;
+				if (Mathf.Abs(primaryThumbstick.x) > 0.01f || Mathf.Abs(primaryThumbstick.y) > 0.01f)
+					inputDetected = true; 
+ isCenteringRotation = false; // Set if thumbstick moved
+			}
+
+			// Map secondary thumbstick to right stick rotation on X-axis
+			if (ThrottleObject)
+			{
+				// Triggers for throttle rotation on X-axis (not Z unless your axis is set up that way)
+				float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
+				float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+
+				// This is the rotation you want to "add" to the starting rotation
+				Quaternion triggerRotation = Quaternion.Euler(
+					(LIndexTrigger - RIndexTrigger) * triggerRotationMultiplier, // X-axis
+					0f,
+					0f
+				);
+				// Apply it relative to the starting rotation
+				ThrottleObject.localRotation = ThrottleStartRotation * triggerRotation;
+				if (Mathf.Abs(LIndexTrigger) > 0.01f || Mathf.Abs(RIndexTrigger) > 0.01f)
+					inputDetected = true; 
+ isCenteringRotation = false; // Set if either trigger is pressed
+			}
+
+			// X ROTATION (Pitch, up/down on stick, XObject)
+			if (primaryThumbstick.y != 0f)
+            {
+                float inputValue = -primaryThumbstick.y * thumbstickVelocity * Time.deltaTime;
+                float targetX = Mathf.Clamp(currentRotationX + inputValue, minRotationX, maxRotationX);
+                float rotateX = targetX - currentRotationX;
+                if (Mathf.Abs(rotateX) > 0.0001f)
                 {
-                    inputDetected = true;
+                    XObject.Rotate(rotateX, 0f, 0f);
+                    currentRotationX = targetX;
+                    inputDetected = true; 
+ isCenteringRotation = false;
                 }
+            }
 
-                // Reset position on RT release
-                if (XInput.GetUp(XInput.Button.RIndexTrigger))
+            // Y ROTATION (Yaw, left/right on stick, YObject)
+            if (primaryThumbstick.x != 0f)
+            {
+                float inputValue = primaryThumbstick.x * thumbstickVelocity * Time.deltaTime;
+                float targetY = Mathf.Clamp(currentRotationY + inputValue, minRotationY, maxRotationY);
+                float rotateY = targetY - currentRotationY;
+                if (Mathf.Abs(rotateY) > 0.0001f)
                 {
-                    inputDetected = true;
+                    YObject.Rotate(0f, rotateY, 0f);
+                    currentRotationY = targetY;
+                    inputDetected = true; 
+ isCenteringRotation = false;
                 }
+            }
 
-                // LeftTrigger
-                if (XInput.GetDown(XInput.Button.LIndexTrigger))
+            // Z ROTATION (Roll, e.g., left/right on primary stick, ZObject)
+            if (primaryThumbstick.x != 0f)
+            {
+                float inputValue = -primaryThumbstick.x * thumbstickVelocity * Time.deltaTime;
+                float targetZ = Mathf.Clamp(currentRotationZ + inputValue, minRotationZ, maxRotationZ);
+                float rotateZ = targetZ - currentRotationZ;
+                if (Mathf.Abs(rotateZ) > 0.0001f)
                 {
-                    inputDetected = true;
-                }
-
-                // Reset position on button release
-                if (XInput.GetUp(XInput.Button.LIndexTrigger))
-                {
-                    inputDetected = true;
-                }
-
-                // Handle RB button press for plunger position
-                if (XInput.GetDown(XInput.Button.RShoulder) || Input.GetKeyDown(KeyCode.JoystickButton5))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on RB button release
-                if (XInput.GetUp(XInput.Button.RShoulder) || Input.GetKeyUp(KeyCode.JoystickButton5))
-                {
-                    inputDetected = true;
-                }
-
-                // Handle LB button press for plunger position
-                if (XInput.GetDown(XInput.Button.LShoulder) || Input.GetKeyDown(KeyCode.JoystickButton4))
-                {
-                    inputDetected = true;
-                }
-
-                // Reset position on LB button release
-                if (XInput.GetUp(XInput.Button.LShoulder) || Input.GetKeyUp(KeyCode.JoystickButton4))
-                {
-                    inputDetected = true;
+                    ZObject.Rotate(0f, 0f, rotateZ);
+                    currentRotationZ = targetZ;
+                    inputDetected = true; 
+ isCenteringRotation = false;
                 }
             }
+            if (!inputDetected)
+            {
+                CenterRotation();    // Center the rotation if no input is detected
+            }
+            if (!throttleDetected)
+            {
+                CenterThrottle();    // Center the rotation if no throttle input is detected
+            }
+        }
 
-            // Handle forward rotation (Thumbstick right)
-            if (primaryThumbstick.x > 0 && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                r360YObject.Rotate(0, -rotateY, 0);  // Rotate forward
-                currentRotationY += rotateY;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-
-            // Handle backward rotation (Thumbstick left)
-            if (primaryThumbstick.x < 0 && currentRotationY < rotationLimitY)
-            {
-                float rotateY = primaryThumbstick.x * vrVelocity * Time.deltaTime;
-                r360YObject.Rotate(0, -rotateY, 0);  // Rotate backward
-                currentRotationY += rotateY;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-
-            // Handle left rotation (Thumbstick down)
-            if (primaryThumbstick.y < 0 && currentRotationX > -rotationLimitX)
-            {
-                float rotateX = primaryThumbstick.y * vrVelocity * Time.deltaTime;
-                r360XObject.Rotate(-rotateX, 0, 0);  // Rotate left
-                currentRotationX += rotateX;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-
-            // Handle right rotation (Thumbstick up)
-            if (primaryThumbstick.y > 0 && currentRotationX < rotationLimitX)
-            {
-                float rotateX = primaryThumbstick.y * vrVelocity * Time.deltaTime;
-                r360XObject.Rotate(-rotateX, 0, 0);  // Rotate right
-                currentRotationX += rotateX;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-
-            /*
-            // Handle forward rotation (Thumbstick up)
-            if (secondaryThumbstick.y > 0 && currentRotationY < rotationLimitY)
-            {
-                float rotateY = secondaryThumbstick.y * vrVelocity * Time.deltaTime;
-                r360YObject.Rotate(0, -rotateY, 0);  // Rotate Y
-                currentRotationY += rotateY;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-
-            // Handle backward rotation (Thumbstick down)
-            if (secondaryThumbstick.y < 0 && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = secondaryThumbstick.y * vrVelocity * Time.deltaTime;
-                r360YObject.Rotate(0, -rotateY, 0);  // Rotate Y
-                currentRotationY += rotateY;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-            // Handle left rotation (Thumbstick left)
-            if (secondaryThumbstick.x < 0 && currentRotationY > -rotationLimitY)
-            {
-                float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                r360YObject.Rotate(0, rotateY, 0);  // Rotate Y
-                currentRotationY += rotateY;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-
-            // Handle right rotation (Thumbstick right)
-            if (secondaryThumbstick.x > 0 && currentRotationY < rotationLimitY)
-            {
-                float rotateY = secondaryThumbstick.x * vrVelocity * Time.deltaTime;
-                r360YObject.Rotate(0, rotateY, 0);  // Rotate Y
-                currentRotationY += rotateY;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-            */
-
-            //HANDLE INGAME CONTROLLER ANIMATION
-
-            // Handle Y rotation (Thumbstick right)
-            if (primaryThumbstick.x > 0 && currentControllerRotationY < controllerrotationLimitY)
-            {
-                float rotateY = primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                r360ControllerY.Rotate(0, -rotateY, 0);  // Rotate Y to the left
-                currentControllerRotationY += rotateY;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-            // Handle Y rotation (Thumbstick left)
-            if (primaryThumbstick.x < 0 && currentControllerRotationY > -controllerrotationLimitY)
-            {
-                float rotateY = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                r360ControllerY.Rotate(0, rotateY, 0);  // Rotate Y to the right
-                currentControllerRotationY -= rotateY;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-
-            // Handle controller rotation (Thumbstick down)
-
-            if (primaryThumbstick.y > 0 && currentControllerRotationX < controllerrotationLimitX)
-            {
-                float rotateX = primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
-                r360ControllerZ.Rotate(-rotateX, 0, 0);  // Rotate left (negative direction)
-                currentControllerRotationX += rotateX;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-            // Handle controller rotation (Thumbstick up)
-            if (primaryThumbstick.y < 0 && currentControllerRotationX > -controllerrotationLimitX)
-            {
-                float rotateX = -primaryThumbstick.y * vrControllerVelocity * Time.deltaTime;
-                r360ControllerZ.Rotate(rotateX, 0, 0);  // Rotate right (positive direction)
-                currentControllerRotationX -= rotateX;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-
-            /*
-            // Handle controller rotation (Thumbstick up)
-            if (primaryThumbstick.y < 0 && currentControllerRotationZ > -controllerrotationLimitZ)
-            {
-                float rotateZ = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                r360ControllerZ.Rotate(0, 0, rotateZ);  // Rotate forward
-                currentControllerRotationZ -= rotateZ;  // Update current rotation (more negative)
-                inputDetected = true;
-            }
-            // Handle controller rotation (Thumbstick down)
-            if (primaryThumbstick.y > 0 && currentControllerRotationZ < controllerrotationLimitZ)
-            {
-                float rotateZ = -primaryThumbstick.x * vrControllerVelocity * Time.deltaTime;
-                r360ControllerZ.Rotate(0, 0, rotateZ);  // Rotate backward
-                currentControllerRotationZ -= rotateZ;  // Update current rotation (more positive)
-                inputDetected = true;
-            }
-
-            // Check if secondary thumbstick input is needed for additional controls
-            if (secondaryThumbstick.x != 0f || secondaryThumbstick.y != 0f)
-            {
-                // Implement additional logic here if needed
-
-                // Print additional control values for debugging
-                //    Debug.Log($"Secondary Thumbstick input detected - X: {secondaryThumbstick.x}, Y: {secondaryThumbstick.y}");
-            }
-            */
+        private void MapButtons(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
+        {
+            if (!inFocusMode) return;
         }
 
         void ResetPositions()
         {
-            playerVRSetup.transform.position = playerVRSetupStartPosition;
-            playerVRSetup.transform.rotation = playerVRSetupStartRotation;
-            playerVRSetup.transform.localScale = playerVRSetupStartScale;
-            //playerVRSetup.transform.localScale = new Vector3(1f, 1f, 1f);
-            playerCamera.transform.position = playerCameraStartPosition;
-            playerCamera.transform.rotation = playerCameraStartRotation;
-            playerCamera.transform.localScale = playerCameraStartScale;
-            //playerCamera.transform.localScale = new Vector3(1f, 1f, 1f);
-            // cockpitCam.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+            logger.Debug("Resetting Positions");
+            // Reset X to initial positions and rotations
+            if (XObject != null)
+            {
+                XObject.localPosition = XStartPosition;
+                XObject.localRotation = XStartRotation;
+            }
+
+            // Reset Y object to initial position and rotation
+            if (YObject != null)
+            {
+                YObject.localPosition = YStartPosition;
+                YObject.localRotation = YStartRotation;
+            }
+            // Reset Z object to initial position and rotation
+            if (ZObject != null)
+            {
+                ZObject.localPosition = ZStartPosition;
+                ZObject.localRotation = ZStartRotation;
+            }
+            if (StickObject != null)
+            {
+                StickObject.localPosition = StickStartPosition;
+                StickObject.localRotation = StickStartRotation;
+            }
+            if (ThrottleObject != null)
+            {
+                ThrottleObject.localPosition = ThrottleStartPosition;
+                ThrottleObject.localRotation = ThrottleStartRotation;
+            }
+            if (isRiding == true)
+            {
+                if (cockpitCam != null)
+                {
+                    cockpitCam.transform.localPosition = cockpitCamStartPosition;
+                    cockpitCam.transform.localRotation = cockpitCamStartRotation;
+                }
+                if (vrCam != null)
+                {
+                    vrCam.transform.localPosition = vrCamStartPosition;
+                    vrCam.transform.localRotation = vrCamStartRotation;
+                }
+                if (playerVRSetup != null)
+                {
+                    playerVRSetup.transform.position = playerVRSetupStartPosition;
+                    playerVRSetup.transform.rotation = playerVRSetupStartRotation;
+                }
+                if (playerCamera != null)
+                {
+                    playerCamera.transform.position = playerCameraStartPosition;
+                    playerCamera.transform.rotation = playerCameraStartRotation;
+                }
+                isRiding = false; // Set riding state to false
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Player was not aboard the ride, skipping reset.");
+            }
+
             currentRotationX = 0f;
             currentRotationY = 0f;
             currentRotationZ = 0f;
-            currentControllerRotationX = 0f;
-            currentControllerRotationY = 0f;
-            currentControllerRotationZ = 0f;
         }
 
         void CenterRotation()
         {
-            // Center X-axis
-            if (currentRotationX > 0)
-            {
-                float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, currentRotationX);
-                r360XObject.Rotate(unrotateX, 0, 0);
-                currentRotationX -= unrotateX;
-            }
-            else if (currentRotationX < 0)
-            {
-                float unrotateX = Mathf.Min(centeringVelocityX * Time.deltaTime, -currentRotationX);
-                r360XObject.Rotate(-unrotateX, 0, 0);
-                currentRotationX += unrotateX;
-            }
-
-            // Center Y-axis
-            if (currentRotationY > 0)
-            {
-                float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, currentRotationY);
-                r360YObject.Rotate(0, unrotateY, 0);
-                currentRotationY -= unrotateY;
-            }
-            else if (currentRotationY < 0)
-            {
-                float unrotateY = Mathf.Min(centeringVelocityY * Time.deltaTime, -currentRotationY);
-                r360YObject.Rotate(0, -unrotateY, 0);
-                currentRotationY += unrotateY;
-            }
-
-            // Center Z-axis
-            if (currentRotationZ > 0)
-            {
-                float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, currentRotationZ);
-                r360ZObject.Rotate(0, 0, unrotateZ);
-                currentRotationZ -= unrotateZ;
-            }
-            else if (currentRotationZ < 0)
-            {
-                float unrotateZ = Mathf.Min(centeringVelocityZ * Time.deltaTime, -currentRotationZ);
-                r360ZObject.Rotate(0, 0, -unrotateZ);
-                currentRotationZ += unrotateZ;
-            }
-            //Centering for contoller
-            // Center Y-axis Controller rotation
-            if (currentControllerRotationY > 0)
-            {
-                float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, currentControllerRotationY);
-                r360ControllerY.Rotate(0, unrotateY, 0);   // Rotating to reduce the rotation
-                currentControllerRotationY -= unrotateY;    // Reducing the positive rotation
-            }
-            else if (currentControllerRotationY < 0)
-            {
-                float unrotateY = Mathf.Min(centeringControllerVelocityY * Time.deltaTime, -currentControllerRotationY);
-                r360ControllerY.Rotate(0, -unrotateY, 0);  // Rotating to reduce the rotation
-                currentControllerRotationY += unrotateY;    // Reducing the negative rotation
-            }
-
-            // Center X-Axis Controller rotation //swapped to Z
-            if (currentControllerRotationX > 0)
-            {
-                float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, currentControllerRotationX);
-                r360ControllerZ.Rotate(unrotateX, 0, 0);   // Rotating to reduce the rotation
-                currentControllerRotationX -= unrotateX;    // Reducing the positive rotation
-            }
-            else if (currentControllerRotationX < 0)
-            {
-                float unrotateX = Mathf.Min(centeringControllerVelocityX * Time.deltaTime, -currentControllerRotationX);
-                r360ControllerZ.Rotate(-unrotateX, 0, 0);   // Rotating to reduce the rotation
-                currentControllerRotationX += unrotateX;    // Reducing the positive rotation
-            }
-
-            // Center Z-axis Controller rotation // Swapped to X
-            if (currentControllerRotationZ > 0)
-            {
-                float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, currentControllerRotationZ);
-                r360ControllerX.Rotate(0, 0, unrotateZ);   // Rotating to reduce the rotation
-                currentControllerRotationZ -= unrotateZ;    // Reducing the positive rotation
-            }
-            else if (currentControllerRotationZ < 0)
-            {
-                float unrotateZ = Mathf.Min(centeringControllerVelocityZ * Time.deltaTime, -currentControllerRotationZ);
-                r360ControllerX.Rotate(0, 0, -unrotateZ);   // Rotating to reduce the rotation
-                currentControllerRotationZ += unrotateZ;    // Reducing the positive rotation
-            }
+            isCenteringRotation = true;
+        }
+        void CenterThrottle()
+        {
+            isCenteringRotation = true;
         }
 
-        void HandleTransformAdjustment()
+        // 🔹 Helper function for safe lamp processing
+        void ProcessLampState(string lampKey, Dictionary<string, int> currentStates)
         {
-            // Handle position adjustments
-            if (Input.GetKey(KeyCode.Home))
+            if (!lastLampStates.ContainsKey(lampKey))
             {
-                // Move forward
-                cockpitCam.transform.position += cockpitCam.transform.forward * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.End))
-            {
-                // Move backward
-                cockpitCam.transform.position -= cockpitCam.transform.forward * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.PageUp))
-            {
-                // Move up
-                cockpitCam.transform.position += cockpitCam.transform.up * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.Insert))
-            {
-                // Move down
-                cockpitCam.transform.position -= cockpitCam.transform.up * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.Delete))
-            {
-                // Move left
-                cockpitCam.transform.position -= cockpitCam.transform.right * adjustSpeed * Time.deltaTime;
-            }
-            if (Input.GetKey(KeyCode.PageDown))
-            {
-                // Move right
-                cockpitCam.transform.position += cockpitCam.transform.right * adjustSpeed * Time.deltaTime;
+                lastLampStates[lampKey] = 0;
+                logger.Error($"{gameObject.name} Added missing key '{lampKey}' to lastLampStates.");
             }
 
-            // Handle rotation with Backspace key
-            if (Input.GetKeyDown(KeyCode.Backspace))
+            if (currentStates.TryGetValue(lampKey, out int newValue))
             {
-                cockpitCam.transform.Rotate(0, 90, 0);
+                if (lastLampStates[lampKey] != newValue)
+                {
+                    lastLampStates[lampKey] = newValue;
+
+                    // Call the corresponding function dynamically
+                    switch (lampKey)
+                    {
+                        case "start_light":
+                            ProcessLamp0(newValue);
+                            break;
+                        case "fire1_light":
+                            ProcessLamp1(newValue);
+                            break;
+                        case "danger_light":
+                            ProcessLamp2(newValue);
+                            break;
+                        default:
+                            logger.Warning($"No processing function for '{lampKey}'");
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                logger.Error($"{gameObject.name} Lamp key '{lampKey}' not found in current states.");
+            }
+        }
+        // Individual function for lamp0
+        void ProcessLamp0(int state)
+        {
+            logger.Debug($"start_light updated: {state}");
+
+            // Update lights
+            if (start_light) ToggleLight(start_light, state == 1);
+            // Update emissive material
+            if (StartObject) ToggleEmissive(StartObject.gameObject, state == 1);
+        }
+        // Individual function for lamp1
+        void ProcessLamp1(int state)
+        {
+            logger.Debug($"fire1_light updated: {state}");
+
+            // Update lights
+            if (fire1_light) ToggleLight(fire1_light, state == 1);
+            // Update emissive material
+            if (Fire1Object) ToggleEmissive(Fire1Object.gameObject.gameObject, state == 1);
+        }
+        // Individual function for lamp2
+        void ProcessLamp2(int state)
+        {
+            logger.Debug($"danger_light updated: {state}");
+
+            // Update lights
+            if (danger_light) ToggleLight(danger_light, state == 1);
+            // Update emissive material
+            if (DangerObject) ToggleEmissive(DangerObject.gameObject, state == 1);
+        }
+
+		void HandleTransformAdjustment()
+		{
+			if (!inFocusMode) return;
+			// Choose target camera: use vrCam if available, otherwise fallback to cockpitCam
+			var cam = vrCam != null ? vrCam : cockpitCam;
+
+			if (cam != null && isRiding)
+			{
+                // Handle position adjustments
+                if (Input.GetKey(KeyCode.Home))
+                {
+                    // Move forward
+                    cam.transform.localPosition += cam.transform.forward * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.End))
+                {
+                    // Move backward
+                    cam.transform.localPosition -= cam.transform.forward * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.UpArrow))
+                {
+                    // Move up
+                    cam.transform.localPosition += cam.transform.up * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.DownArrow))
+                {
+                    // Move down
+                    cam.transform.localPosition -= cam.transform.up * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.LeftArrow))
+                {
+                    // Move left
+                    cam.transform.localPosition -= cam.transform.right * adjustSpeed * Time.deltaTime;
+                }
+                if (Input.GetKey(KeyCode.RightArrow))
+                {
+                    // Move right
+                    cam.transform.localPosition += cam.transform.right * adjustSpeed * Time.deltaTime;
+                }
+
+                // Handle rotation with Backspace key
+                if (Input.GetKeyDown(KeyCode.Backspace))
+                {
+                    cam.transform.Rotate(0, 90, 0);
+                }
             }
 
             // Save the new position and rotation
-            cockpitCamStartPosition = cockpitCam.transform.position;
-            cockpitCamStartRotation = cockpitCam.transform.rotation;
-        }
-
-
-        // Initialize the emissive arrays with the appropriate objects
-        private void InitializeEmissiveArrays()
-        {
-            // Find front emissive objects under "emissive" in the root
-            frontEmissiveObjects = new Renderer[16];
-            Transform emissiveObject = transform.Find("emissive");
-            if (emissiveObject != null)
+            if (vrCam != null)
             {
-                frontEmissiveObjects[0] = emissiveObject.Find("emissive1step1")?.GetComponent<Renderer>();
-                frontEmissiveObjects[1] = emissiveObject.Find("emissive1step2")?.GetComponent<Renderer>();
-                frontEmissiveObjects[2] = emissiveObject.Find("emissive1step3")?.GetComponent<Renderer>();
-                frontEmissiveObjects[3] = emissiveObject.Find("emissive1step4")?.GetComponent<Renderer>();
-                frontEmissiveObjects[4] = emissiveObject.Find("emissive2step1")?.GetComponent<Renderer>();
-                frontEmissiveObjects[5] = emissiveObject.Find("emissive2step2")?.GetComponent<Renderer>();
-                frontEmissiveObjects[6] = emissiveObject.Find("emissive2step3")?.GetComponent<Renderer>();
-                frontEmissiveObjects[7] = emissiveObject.Find("emissive2step4")?.GetComponent<Renderer>();
-                frontEmissiveObjects[8] = emissiveObject.Find("emissive3step1")?.GetComponent<Renderer>();
-                frontEmissiveObjects[9] = emissiveObject.Find("emissive3step2")?.GetComponent<Renderer>();
-                frontEmissiveObjects[10] = emissiveObject.Find("emissive3step3")?.GetComponent<Renderer>();
-                frontEmissiveObjects[11] = emissiveObject.Find("emissive3step4")?.GetComponent<Renderer>();
-                frontEmissiveObjects[12] = emissiveObject.Find("emissive4step1")?.GetComponent<Renderer>();
-                frontEmissiveObjects[13] = emissiveObject.Find("emissive4step2")?.GetComponent<Renderer>();
-                frontEmissiveObjects[14] = emissiveObject.Find("emissive4step3")?.GetComponent<Renderer>();
-                frontEmissiveObjects[15] = emissiveObject.Find("emissive4step4")?.GetComponent<Renderer>();
+                vrCamStartPosition = vrCam.transform.localPosition;
+                vrCamStartRotation = vrCam.transform.localRotation;
             }
-
-            // Initialize left and right arrays from thrustObject
-            leftEmissiveObjects = new Renderer[15];
-            rightEmissiveObjects = new Renderer[15];
-            thrustObject = r360ZObject.Find("thrust");
-            if (thrustObject != null)
+            else if (cockpitCam != null)
             {
-                // Left side
-                leftEmissiveObjects[0] = thrustObject.Find("thrustL_1_1")?.GetComponent<Renderer>();
-                leftEmissiveObjects[1] = thrustObject.Find("thrustL_1_2")?.GetComponent<Renderer>();
-                leftEmissiveObjects[2] = thrustObject.Find("thrustL_1_3")?.GetComponent<Renderer>();
-                leftEmissiveObjects[3] = thrustObject.Find("thrustL_2_1")?.GetComponent<Renderer>();
-                leftEmissiveObjects[4] = thrustObject.Find("thrustL_2_2")?.GetComponent<Renderer>();
-                leftEmissiveObjects[5] = thrustObject.Find("thrustL_2_3")?.GetComponent<Renderer>();
-                leftEmissiveObjects[6] = thrustObject.Find("thrustL_3_1")?.GetComponent<Renderer>();
-                leftEmissiveObjects[7] = thrustObject.Find("thrustL_3_2")?.GetComponent<Renderer>();
-                leftEmissiveObjects[8] = thrustObject.Find("thrustL_3_3")?.GetComponent<Renderer>();
-                leftEmissiveObjects[9] = thrustObject.Find("thrustL_4_1")?.GetComponent<Renderer>();
-                leftEmissiveObjects[10] = thrustObject.Find("thrustL_4_2")?.GetComponent<Renderer>();
-                leftEmissiveObjects[11] = thrustObject.Find("thrustL_4_3")?.GetComponent<Renderer>();
-                leftEmissiveObjects[12] = thrustObject.Find("thrustL_5_1")?.GetComponent<Renderer>();
-                leftEmissiveObjects[13] = thrustObject.Find("thrustL_5_2")?.GetComponent<Renderer>();
-                leftEmissiveObjects[14] = thrustObject.Find("thrustL_5_3")?.GetComponent<Renderer>();
-
-                // Right side
-                rightEmissiveObjects[0] = thrustObject.Find("thrustR_1_1")?.GetComponent<Renderer>();
-                rightEmissiveObjects[1] = thrustObject.Find("thrustR_1_2")?.GetComponent<Renderer>();
-                rightEmissiveObjects[2] = thrustObject.Find("thrustR_1_3")?.GetComponent<Renderer>();
-                rightEmissiveObjects[3] = thrustObject.Find("thrustR_2_1")?.GetComponent<Renderer>();
-                rightEmissiveObjects[4] = thrustObject.Find("thrustR_2_2")?.GetComponent<Renderer>();
-                rightEmissiveObjects[5] = thrustObject.Find("thrustR_2_3")?.GetComponent<Renderer>();
-                rightEmissiveObjects[6] = thrustObject.Find("thrustR_3_1")?.GetComponent<Renderer>();
-                rightEmissiveObjects[7] = thrustObject.Find("thrustR_3_2")?.GetComponent<Renderer>();
-                rightEmissiveObjects[8] = thrustObject.Find("thrustR_3_3")?.GetComponent<Renderer>();
-                rightEmissiveObjects[9] = thrustObject.Find("thrustR_4_1")?.GetComponent<Renderer>();
-                rightEmissiveObjects[10] = thrustObject.Find("thrustR_4_2")?.GetComponent<Renderer>();
-                rightEmissiveObjects[11] = thrustObject.Find("thrustR_4_3")?.GetComponent<Renderer>();
-                rightEmissiveObjects[12] = thrustObject.Find("thrustR_5_1")?.GetComponent<Renderer>();
-                rightEmissiveObjects[13] = thrustObject.Find("thrustR_5_2")?.GetComponent<Renderer>();
-                rightEmissiveObjects[14] = thrustObject.Find("thrustR_5_3")?.GetComponent<Renderer>();
+                cockpitCamStartPosition = cockpitCam.transform.localPosition;
+                cockpitCamStartRotation = cockpitCam.transform.localRotation;
             }
-
-            LogMissingObject(frontEmissiveObjects, "frontEmissiveObjects");
-            LogMissingObject(leftEmissiveObjects, "leftEmissiveObjects");
-            LogMissingObject(rightEmissiveObjects, "rightEmissiveObjects");
         }
-
 
         // Method to disable emission
         void DisableEmission(Renderer[] emissiveObjects)
@@ -1032,7 +744,7 @@ namespace WIGUx.Modules.r360MotionSim
                 }
                 else
                 {
-                    Debug.Log("Renderer component not found on one of the emissive objects.");
+                    logger.Debug("Renderer component not found on one of the emissive objects.");
                 }
             }
         }
@@ -1044,7 +756,7 @@ namespace WIGUx.Modules.r360MotionSim
             {
                 if (emissiveObjects[i] == null)
                 {
-               //    logger.Error($"{arrayName} object at index {i} not found.");
+                    //    logger.Error($"{arrayName} object at index {i} not found.");
                 }
             }
         }
@@ -1126,7 +838,6 @@ namespace WIGUx.Modules.r360MotionSim
                 previousIndex = -1; // Reset previous index for the next cycle
             }
         }
-
 
         IEnumerator FrontDangerPattern()
         {
@@ -1281,44 +992,59 @@ namespace WIGUx.Modules.r360MotionSim
             }
         }
 
-        // Method to toggle the lights
-        void ToggleLights(bool isActive)
+        void ToggleEmissiveRenderer(Renderer renderer, bool isOn)
         {
-            for (int i = 0; i < lights.Length; i++)
+            if (isOn)
             {
-                lights[i].enabled = isActive;
+                renderer.material.EnableKeyword("_EMISSION");
             }
-
-            logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
+            else
+            {
+                renderer.material.DisableKeyword("_EMISSION");
+            }
         }
 
-        // Method to toggle the fireemissive object
-        void ToggleFireEmissive(bool isActive)
+        void ToggleEmissive(GameObject targetObject, bool isActive)
         {
-            if (fireemissiveObject != null)
+            if (targetObject != null)
             {
-                Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
+                Renderer renderer = targetObject.GetComponent<Renderer>();
                 if (renderer != null)
                 {
+                    Material material = renderer.material;
+
                     if (isActive)
                     {
-                        renderer.material.EnableKeyword("_EMISSION");
+                        material.EnableKeyword("_EMISSION");
                     }
                     else
                     {
-                        renderer.material.DisableKeyword("_EMISSION");
+                        material.DisableKeyword("_EMISSION");
                     }
-                    logger.Info($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
+
+                    // logger.Debug($"{targetObject.name} emissive state set to {(isActive ? "ON" : "OFF")}.");
                 }
                 else
                 {
-                    logger.Debug("Renderer component is not found on fireemissive object.");
+                    logger.Debug($"{gameObject.name} Renderer component not found on {targetObject.name}.");
                 }
             }
             else
             {
-                logger.Debug("fireemissive object is not assigned.");
+                logger.Debug($"{gameObject.name} {targetObject.name} emissive object is not assigned.");
             }
+        }
+
+        void ToggleLight(Light targetLight, bool isActive)
+        {
+            if (targetLight == null) return;
+
+            // Ensure the GameObject itself is active
+            if (targetLight.gameObject.activeSelf != isActive)
+                targetLight.gameObject.SetActive(isActive);
+
+            // Then toggle the component
+            targetLight.enabled = isActive;
         }
 
         // Check if object is found and log appropriate message
@@ -1326,11 +1052,11 @@ namespace WIGUx.Modules.r360MotionSim
         {
             if (obj == null)
             {
-                logger.Error($"{name} not found!");
+                logger.Error($"{gameObject.name} {name} not found!");
             }
             else
             {
-                logger.Info($"{name} found.");
+                logger.Debug($"{gameObject.name} {name} found.");
             }
         }
 
@@ -1348,39 +1074,261 @@ namespace WIGUx.Modules.r360MotionSim
         {
             if (obj != null && originalParents.ContainsKey(obj))
             {
-                obj.transform.SetParent(originalParents[obj]);
-                logger.Info($"{name} restored to original parent.");
+                Transform originalParent = originalParents[obj];
+                // Restore original parent
+                obj.transform.SetParent(originalParent, false);
+                logger.Debug($"{gameObject.name} {name} restored to original parent.");
+
+                // Reapply offset AFTER reparenting
+                obj.transform.localPosition = originalParent.localPosition;
+                obj.transform.localRotation = originalParent.localRotation;
             }
         }
-
-        // Unset parent of object and log appropriate message
-        void UnsetParentObject(GameObject obj, string name)
+        private void CheckInsertedGameName()
         {
-            if (obj != null)
+            if (gameSystem != null && gameSystem.Game != null && !string.IsNullOrEmpty(gameSystem.Game.path))
+                insertedGameName = FileNameHelper.GetFileName(gameSystem.Game.path);
+            else
+                insertedGameName = string.Empty;
+        }
+
+        private void CheckControlledGameName()
+        {
+            if (GameSystem.ControlledSystem != null && GameSystem.ControlledSystem.Game != null
+                && !string.IsNullOrEmpty(GameSystem.ControlledSystem.Game.path))
+                controlledGameName = FileNameHelper.GetFileName(GameSystem.ControlledSystem.Game.path);
+            else
+                controlledGameName = string.Empty;
+        }
+
+        // Helper class to extract and sanitize file names.
+        public static class FileNameHelper
+        {
+            // Extracts the file name without the extension and replaces invalid file characters with underscores.
+            public static string GetFileName(string filePath)
             {
-                obj.transform.SetParent(null);
-                logger.Info($"{name} unset from parent.");
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string FileName = System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+                return FileName;
             }
         }
 
-        // Method to check if VR input is active
-        bool VRInputActive()
+        // Initialize the emissive arrays with the appropriate objects
+        private void InitializeEmissiveArrays()
         {
-            // Assuming you have methods to check VR input
-            return GetPrimaryThumbstick() != Vector2.zero || GetSecondaryThumbstick() != Vector2.zero;
+            // Find front emissive objects under "emissive" in the root
+            frontEmissiveObjects = new Renderer[16];
+            Transform emissiveObject = transform.Find("emissive");
+            if (emissiveObject != null)
+            {
+                frontEmissiveObjects[0] = emissiveObject.Find("emissive1step1")?.GetComponent<Renderer>();
+                frontEmissiveObjects[1] = emissiveObject.Find("emissive1step2")?.GetComponent<Renderer>();
+                frontEmissiveObjects[2] = emissiveObject.Find("emissive1step3")?.GetComponent<Renderer>();
+                frontEmissiveObjects[3] = emissiveObject.Find("emissive1step4")?.GetComponent<Renderer>();
+                frontEmissiveObjects[4] = emissiveObject.Find("emissive2step1")?.GetComponent<Renderer>();
+                frontEmissiveObjects[5] = emissiveObject.Find("emissive2step2")?.GetComponent<Renderer>();
+                frontEmissiveObjects[6] = emissiveObject.Find("emissive2step3")?.GetComponent<Renderer>();
+                frontEmissiveObjects[7] = emissiveObject.Find("emissive2step4")?.GetComponent<Renderer>();
+                frontEmissiveObjects[8] = emissiveObject.Find("emissive3step1")?.GetComponent<Renderer>();
+                frontEmissiveObjects[9] = emissiveObject.Find("emissive3step2")?.GetComponent<Renderer>();
+                frontEmissiveObjects[10] = emissiveObject.Find("emissive3step3")?.GetComponent<Renderer>();
+                frontEmissiveObjects[11] = emissiveObject.Find("emissive3step4")?.GetComponent<Renderer>();
+                frontEmissiveObjects[12] = emissiveObject.Find("emissive4step1")?.GetComponent<Renderer>();
+                frontEmissiveObjects[13] = emissiveObject.Find("emissive4step2")?.GetComponent<Renderer>();
+                frontEmissiveObjects[14] = emissiveObject.Find("emissive4step3")?.GetComponent<Renderer>();
+                frontEmissiveObjects[15] = emissiveObject.Find("emissive4step4")?.GetComponent<Renderer>();
+            }
+
+            // Initialize left and right arrays from thrustObject
+            leftEmissiveObjects = new Renderer[15];
+            rightEmissiveObjects = new Renderer[15];
+            thrustObject = ZObject.Find("thrust");
+            if (thrustObject != null)
+            {
+                // Left side
+                leftEmissiveObjects[0] = thrustObject.Find("thrustL_1_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[1] = thrustObject.Find("thrustL_1_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[2] = thrustObject.Find("thrustL_1_3")?.GetComponent<Renderer>();
+                leftEmissiveObjects[3] = thrustObject.Find("thrustL_2_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[4] = thrustObject.Find("thrustL_2_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[5] = thrustObject.Find("thrustL_2_3")?.GetComponent<Renderer>();
+                leftEmissiveObjects[6] = thrustObject.Find("thrustL_3_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[7] = thrustObject.Find("thrustL_3_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[8] = thrustObject.Find("thrustL_3_3")?.GetComponent<Renderer>();
+                leftEmissiveObjects[9] = thrustObject.Find("thrustL_4_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[10] = thrustObject.Find("thrustL_4_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[11] = thrustObject.Find("thrustL_4_3")?.GetComponent<Renderer>();
+                leftEmissiveObjects[12] = thrustObject.Find("thrustL_5_1")?.GetComponent<Renderer>();
+                leftEmissiveObjects[13] = thrustObject.Find("thrustL_5_2")?.GetComponent<Renderer>();
+                leftEmissiveObjects[14] = thrustObject.Find("thrustL_5_3")?.GetComponent<Renderer>();
+
+                // Right side
+                rightEmissiveObjects[0] = thrustObject.Find("thrustR_1_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[1] = thrustObject.Find("thrustR_1_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[2] = thrustObject.Find("thrustR_1_3")?.GetComponent<Renderer>();
+                rightEmissiveObjects[3] = thrustObject.Find("thrustR_2_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[4] = thrustObject.Find("thrustR_2_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[5] = thrustObject.Find("thrustR_2_3")?.GetComponent<Renderer>();
+                rightEmissiveObjects[6] = thrustObject.Find("thrustR_3_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[7] = thrustObject.Find("thrustR_3_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[8] = thrustObject.Find("thrustR_3_3")?.GetComponent<Renderer>();
+                rightEmissiveObjects[9] = thrustObject.Find("thrustR_4_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[10] = thrustObject.Find("thrustR_4_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[11] = thrustObject.Find("thrustR_4_3")?.GetComponent<Renderer>();
+                rightEmissiveObjects[12] = thrustObject.Find("thrustR_5_1")?.GetComponent<Renderer>();
+                rightEmissiveObjects[13] = thrustObject.Find("thrustR_5_2")?.GetComponent<Renderer>();
+                rightEmissiveObjects[14] = thrustObject.Find("thrustR_5_3")?.GetComponent<Renderer>();
+            }
+
+            LogMissingObject(frontEmissiveObjects, "frontEmissiveObjects");
+            LogMissingObject(leftEmissiveObjects, "leftEmissiveObjects");
+            LogMissingObject(rightEmissiveObjects, "rightEmissiveObjects");
         }
 
-        // Placeholder methods to get VR thumbstick input (to be implemented with actual VR input handling)
-        Vector2 GetPrimaryThumbstick()
+        void InitializeLights()
         {
-            // Implement VR primary thumbstick input handling here
-            return Vector2.zero;
-        }
+            // Gets all Light components in the target object and its children
+            Light[] lights = transform.GetComponentsInChildren<Light>(true);
 
-        Vector2 GetSecondaryThumbstick()
+            foreach (Light light in lights)
+            {
+                switch (light.gameObject.name)
+                {
+                    case "fire1light":
+                        fire1_light = light;
+                        logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                        break;
+                    default:
+                        logger.Debug($"{gameObject.name} Excluded Light found in object: " + light.gameObject.name);
+                        break;
+                }
+            }
+        }
+        void InitializeObjects()
         {
-            // Implement VR secondary thumbstick input handling here
-            return Vector2.zero;
+            gameSystem = GetComponent<GameSystem>();
+            // Find references to PlayerCamera and VR setup objects
+            playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
+
+            // Find and assign the whole VR rig try SteamVR first, then Oculus
+            playerVRSetup = GameObject.Find("Player/[SteamVRCameraRig]");
+            // If not found, try to find the Oculus VR rig
+            if (playerVRSetup == null)
+            {
+                playerVRSetup = GameObject.Find("OVRCameraRig");
+            }
+
+            // Check if objects are found
+            CheckObject(playerCamera, "PlayerCamera");
+            if (playerVRSetup != null)
+            {
+                CheckObject(playerVRSetup, playerVRSetup.name); // will print either [SteamVRCameraRig] or OVRCameraRig
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} No VR Devices found. No SteamVR or OVR present)");
+            }
+            // Find X object in hierarchy
+            XObject = transform.Find("X");
+            if (XObject != null)
+            {
+                logger.Debug($"{gameObject.name} X object found.");
+                XStartPosition = XObject.localPosition;
+                XStartRotation = XObject.localRotation;
+
+                // Find Y object under X
+                YObject = XObject.Find("Y");
+                if (YObject != null)
+                {
+                    logger.Debug($"{gameObject.name} Y object found.");
+                    YStartPosition = YObject.localPosition;
+                    YStartRotation = YObject.localRotation;
+
+                    // Find Z object under X
+                    ZObject = YObject.Find("Z");
+                    if (ZObject != null)
+                    {
+                        logger.Debug($"{gameObject.name} Z object found.");
+                        ZStartPosition = ZObject.localPosition;
+                        ZStartRotation = ZObject.localRotation;
+
+                        // Find Throttle under Z
+                        ThrottleObject = ZObject.Find("Throttle");
+                        if (ThrottleObject != null)
+                        {
+                            logger.Debug($"{gameObject.name} Throttle object found.");
+                            ThrottleStartPosition = ThrottleObject.localPosition;
+                            ThrottleStartRotation = ThrottleObject.localRotation;
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} Throttle object not found.");
+                        }
+
+                        // Find Stick under Z
+                        StickObject = ZObject.Find("Stick");
+                        if (StickObject != null)
+                        {
+                            logger.Debug($"{gameObject.name} Stick object found.");
+                            // Store initial position and rotation of the stick
+                            StickStartPosition = StickObject.localPosition;
+                            StickStartRotation = StickObject.localRotation;
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} Stick object not found.");
+                        }
+                        // Find fireemissive object under X
+                        Fire1Object = ZObject.Find("Fire1");
+                        if (Fire1Object != null)
+                        {
+                            logger.Debug($"{gameObject.name} object found.");
+                            // Ensure the fireemissive object is initially off
+                            Renderer renderer = Fire1Object.GetComponent<Renderer>();
+                            if (renderer != null)
+                            {
+                                renderer.material.DisableKeyword("_EMISSION");
+                            }
+                            else
+                            {
+                                logger.Debug($"{gameObject.name} Renderer component is not found on Fire1 object.");
+                            }
+                        }
+                        else
+                        {
+                            logger.Debug($"{gameObject.name} Fire1 object not found under Z.");
+                        }
+
+                    }
+                    else
+                    {
+                        logger.Debug($"{gameObject.name} Z object not found.");
+                    }
+                }
+                else
+                {
+                    logger.Debug($"{gameObject.name} Y object not found.");
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} X object not found.");
+            }
+
+            // Attempt to find cockpitCollider by name
+            if (cockpitCollider == null)
+            {
+                Collider[] colliders = GetComponentsInChildren<Collider>(true); // true = include inactive
+                foreach (var col in colliders)
+                {
+                    if (col.gameObject.name == "Cockpit")
+                    {
+                        cockpitCollider = col;
+                        logger.Debug($"{gameObject.name} cockpitCollider found in children: {cockpitCollider.name}");
+                        break;
+                    }
+                }
+            }
         }
     }
 }

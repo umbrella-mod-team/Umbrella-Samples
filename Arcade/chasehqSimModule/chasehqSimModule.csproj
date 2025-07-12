@@ -5,5 +5,11 @@
 		<AssemblyName>chasehqSimModule</AssemblyName>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<RootNamespace>WIGUx.Modules</RootNamespace>
-	</PropertyGroup>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MameHookModule">
+      <HintPath>..\..\Modules\MameHookModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

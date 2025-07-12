@@ -1,0 +1,786 @@
+﻿using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using UnityEngine;
+using WIGU;
+using System.Collections.Generic;
+using UnityEngine.Video;
+using TreeEditor;
+using System.Linq;
+using System.Collections;
+using Newtonsoft.Json.Linq;
+using System.Runtime.InteropServices.ComTypes;
+using System.Reflection;
+
+namespace WIGUx.Modules.attractmodeModule
+{
+    public class attractmodeController : MonoBehaviour
+    {
+        static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
+
+        [Header("Lights and Emissives")]
+        private Transform topEmissiveObject;
+        private Transform sideEmissiveObject;
+        private Transform bottomEmissiveObject;
+        private Transform segalightObject;
+        private Transform billsEmissiveObject;
+
+        [Header("Screen Stuff")]
+        private GameObject playerCamera;   // Reference to the player camera
+        private Transform playerCameraTransform;
+        private GameObject playerVRSetup;   // Reference to the player 
+        private UnityEngine.Video.VideoPlayer ugcVideoPlayer;
+        private RenderTexture attractRenderTexture;
+        private ScreenController screenController;
+        private ScreenReceiver screenReceiver;
+        private int realheight;
+        private int realwidth;
+        private bool isAttractMode = false;
+        private bool isTate = false;
+        private AudioSource audioSource;
+        private GameSystemState systemState;
+        private bool isSyncedScreenMesh = false;
+        public float levelBoxSize;  // size of the custom level light and reflection probes
+        public float levelBoxOffset; // offset of the custom level light and reflection probes
+        public float videoDistanceThreshold; // attractmode distance to play video
+        public float attractFadeStart; // attractmode audio fade distance start
+        public float attractFadeEnd;  // attractmode audio fade distance end
+        public float attractVolume;  //attract mode volume
+        private Dictionary<GameObject, GameObject> attractScreens = new Dictionary<GameObject, GameObject>();
+        [Header("Cabinet Settings")]
+        private Retroarch retroarchInstance;
+        private GameSystem gameSystem;
+        private float currentHue;
+        private float hueCycleSpeed = 0.5f;
+        private string insertedGameName = string.Empty;
+        private string controlledGameName = string.Empty;
+        private JObject saveJson;
+
+        void Awake()
+        {
+            systemState = GetComponent<GameSystemState>();
+        }
+
+        void Start()
+        {
+            Vector3 probePos = Vector3.zero; // or wherever you want the probe's transform
+            Vector3 probeSize = new Vector3(33f, 8.0f, 15.0f);
+            Vector3 probeCenter = new Vector3(2f, 4f, 1f);
+            SetupRealtimeReflectionProbe(probePos, probeSize, probeCenter);
+            /*
+            string savePath = GetActiveSavePath();
+
+            if (File.Exists(savePath))
+            {
+                string saveText = File.ReadAllText(savePath);
+                saveJson = JObject.Parse(saveText); 
+            }
+            else
+            {
+                Debug.LogWarning("Save file not found: " + savePath);
+                saveJson = new JObject();       
+            }
+               Debug.Log("[AttractMode] Save path: " + savePath);
+               LoadSettingsFromActiveSave();
+               LoadProbesFromSave();
+               StartCoroutine(UpdateReflectionProbe());
+            */
+            gameSystem = GetComponent<GameSystem>();
+            screenController = GetComponentInParent<ScreenController>() ?? FindObjectOfType<ScreenController>();
+            retroarchInstance = FindObjectOfType<Retroarch>();
+            // Find references to PlayerCamera and VR setup objects
+            playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
+
+            // Find and assign the whole VR rig try SteamVR first, then Oculus
+            playerVRSetup = GameObject.Find("Player/[SteamVRCameraRig]");
+            // If not found, try to find the Oculus VR rig
+            if (playerVRSetup == null)
+            {
+                playerVRSetup = GameObject.Find("OVRCameraRig");
+            }
+
+            // Check if objects are found
+            CheckObject(playerCamera, "PlayerCamera");
+            if (playerVRSetup != null)
+            {
+                CheckObject(playerVRSetup, playerVRSetup.name); // will print either [SteamVRCameraRig] or OVRCameraRig
+            }
+            else
+            {
+                //  logger.Debug($"{gameObject.name} No VR Devices found. No SteamVR or OVR present)");
+            }
+            CheckForMissingObjects();
+            currentHue = UnityEngine.Random.Range(0f, 1f);
+            // Find the ScreenReceiver if present
+            if (screenController != null)
+                screenReceiver = screenController.GetComponent<ScreenReceiver>();
+        }
+
+        void Update()
+        {
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            if (systemState != null && systemState.IsOn && isAttractMode == true)
+            {
+                StopAttractMode();
+            }
+            // Enable/Disable attract mode with Insert for demo purposes
+            if (Input.GetKeyDown(KeyCode.Insert))
+            {
+                if (!isAttractMode)
+                {
+                    if (isSyncedScreenMesh)
+                        StartAttractMode();
+                    else
+                        StartCoroutine(DelayedStartAttractMode());
+                }
+                else
+                {
+                    StopAttractMode();
+                }
+            }
+            if (isAttractMode && ugcVideoPlayer != null && playerCamera != null)
+            {
+                playerCameraTransform = playerCamera.transform;
+                // Compute distance and forward bias
+                // float dist = Vector3.Distance(playerCameraTransform.position, transform.position);
+                Vector3 toObj = transform.position - playerCameraTransform.position;
+                float rawDist = toObj.magnitude;
+                float forwardDot = Vector3.Dot(playerCameraTransform.forward, toObj.normalized);
+                float biasForward = 0.0f; // adjust bias: 0 (no bias) to 1 (full bias)
+                float dist = rawDist * (1f - biasForward * forwardDot);
+                float videoDistanceThreshold = 10f;
+                float attractFadeStart = 1.5f;
+                float attractFadeEnd = 3.0f;
+                float attractVolume = 0.35f;
+                float fadeLength = attractFadeEnd - attractFadeStart;
+
+                if (!isSyncedScreenMesh)
+                {
+                    if (dist <= videoDistanceThreshold)
+                    {
+                        if (!ugcVideoPlayer.isPlaying)
+                        {
+                            ugcVideoPlayer.Play();
+                            if (audioSource != null)
+                            {
+                                audioSource.mute = false;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (ugcVideoPlayer.isPlaying)
+                        {
+                            ugcVideoPlayer.Stop();
+                            // ugcVideoPlayer.Pause();
+                            if (audioSource != null)
+                            {
+                                audioSource.mute = true;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Let video play but still mute audio
+                    if (audioSource != null)
+                    {
+                        audioSource.mute = (dist > videoDistanceThreshold);
+                    }
+                }
+
+                //Audio fade logic
+                if (audioSource != null)
+                {
+                    float fade;
+                    if (dist <= attractFadeStart)
+                        fade = 1f;
+                    else if (dist >= attractFadeEnd)
+                        fade = 0f;
+                    else
+                        fade = 1f - ((dist - attractFadeStart) / fadeLength);
+
+                    audioSource.volume = fade * attractVolume; // max volume at closest
+                    audioSource.mute = (fade < 0.01f) || !ugcVideoPlayer.isPlaying;
+
+                    // Flush audio buffer if muted or video is paused to prevent overflow
+                    if ((fade < 0.01f || !ugcVideoPlayer.isPlaying) && audioSource.isPlaying)
+                    {
+                        audioSource.Stop();
+                        if (ugcVideoPlayer != null)
+                            ugcVideoPlayer.audioOutputMode = VideoAudioOutputMode.None;
+                    }
+
+                    // Reattach AudioSource and restart audio only when back in range and video is playing
+                    if ((fade >= 0.01f && ugcVideoPlayer.isPlaying) && !audioSource.isPlaying)
+                    {
+                        if (ugcVideoPlayer != null)
+                        {
+                            ugcVideoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
+                            ugcVideoPlayer.SetTargetAudioSource(0, audioSource);
+                        }
+                        audioSource.Play();
+                    }
+                }
+            }
+            CycleEmissiveColors();
+        }
+public static int GetCurrentSlotIndex()
+{
+    // Try to get the Settings type
+    var settingsType = Type.GetType("Settings");
+    if (settingsType == null)
+    {
+        // If in another assembly, use full name:
+        settingsType = AppDomain.CurrentDomain
+            .GetAssemblies()
+            .SelectMany(a => a.GetTypes())
+            .FirstOrDefault(t => t.Name == "Settings");
+    }
+    if (settingsType == null)
+    {
+        UnityEngine.Debug.LogWarning("[AttractMode] Could not find Settings type.");
+        return 0; // fallback to Autosave
+    }
+
+    // Try to get the AutoLoadLevel field
+    var field = settingsType.GetField("AutoLoadLevel", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+    if (field == null)
+    {
+        UnityEngine.Debug.LogWarning("[AttractMode] Could not find AutoLoadLevel field.");
+        return 0;
+    }
+
+    int slotIndex = (int)field.GetValue(null);
+    UnityEngine.Debug.Log("[AttractMode] AutoLoadLevel (current save slot index): " + slotIndex);
+    return slotIndex;
+}
+
+public static string GetActiveSavePath()
+{
+    // Find Settings type in loaded assemblies
+    Type settingsType = AppDomain.CurrentDomain
+        .GetAssemblies()
+        .SelectMany(a => a.GetTypes())
+        .FirstOrDefault(t => t.Name == "Settings");
+
+    int slotIndex = 0; // Default to Autosave
+    if (settingsType != null)
+    {
+        FieldInfo field = settingsType.GetField("AutoLoadLevel", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        if (field != null)
+        {
+            slotIndex = (int)field.GetValue(null);
+        }
+    }
+
+    // Build the correct file name
+    string fileName = slotIndex == 0 ? "Autosave" : $"Slot_{slotIndex}";
+
+    // Build the full save file path
+    string baseDirectory = Directory.GetCurrentDirectory();
+    string savesFolder = Path.Combine(baseDirectory, "Saved Data", "Rooms");
+    return Path.Combine(savesFolder, fileName + ".json");
+}
+
+void LoadSettingsFromActiveSave()
+{
+    string path = GetActiveSavePath();
+    if (!File.Exists(path)) return;
+
+    string json = File.ReadAllText(path);
+    JObject obj = JObject.Parse(json);
+
+    attractFadeStart = obj["attractFadeStart"] != null ? obj["attractFadeStart"].Value<float>() : 1.5f;
+    attractFadeEnd = obj["attractFadeEnd"] != null ? obj["attractFadeEnd"].Value<float>() : 3.0f;
+    // attractVolume = obj["attractVolume"] != null ? obj["attractVolume"].Value<float>() : 0.35f;
+    attractVolume = GetAttractVolumeForScreen(gameObject.name, insertedGameName, saveJson);
+    videoDistanceThreshold = obj["videoDistanceThreshold"] != null ? obj["videoDistanceThreshold"].Value<float>() : 5.5f;
+    Vector3 levelBoxSize = obj["levelBoxSize"] != null
+        ? new Vector3(
+            obj["levelBoxSize"][0].Value<float>(),
+            obj["levelBoxSize"][1].Value<float>(),
+            obj["levelBoxSize"][2].Value<float>())
+        // : new Vector3(4.841272f, 2.881437f, 4.799109f);
+      : new Vector3(33f, 8.0f, 15.0f);
+    Vector3 levelBoxOffset = obj["levelBoxOffset"] != null
+        ? new Vector3(
+            obj["levelBoxOffset"][0].Value<float>(),
+            obj["levelBoxOffset"][1].Value<float>(),
+            obj["levelBoxOffset"][2].Value<float>())
+      //  : new Vector3(-0.07063603f, 0.1346176f, 0.04955482f);
+      : new Vector3(2f, 4f, 1f);
+    Debug.Log("Loaded settings from: " + path);
+}
+
+        // Example usage: float volume = GetAttractVolumeForScreen(go.name, insertedGameRomName, saveJson);
+        public static float GetAttractVolumeForScreen(string gameObjectName, string insertedRomName, JObject saveJson)
+        {
+            const float fallbackVolume = 0.35f;
+
+            // Remove (Clone) if present
+            if (gameObjectName.EndsWith("(Clone)"))
+                gameObjectName = gameObjectName.Replace("(Clone)", "").Trim();
+
+            // Try to find the right "system"
+            JArray systems = saveJson["systems"] as JArray;
+            if (systems == null)
+                return fallbackVolume;
+
+            JObject matchedSystem = null;
+            foreach (JObject system in systems)
+            {
+                string id = system["id"]?.ToString();
+                string path = system["path"]?.ToString();
+
+                // Just use filename part for ROM (if path is e.g. Games\Arcade\gforce2sd.zip)
+                string romName = System.IO.Path.GetFileNameWithoutExtension(path);
+
+                if (id == gameObjectName && romName == insertedRomName)
+                {
+                    matchedSystem = system;
+                    break;
+                }
+            }
+
+            if (matchedSystem == null)
+                return fallbackVolume;
+
+            // Get embedded_screen
+            int? embeddedScreen = matchedSystem["embedded_screen"]?.Value<int>();
+            if (embeddedScreen == null)
+                return fallbackVolume;
+
+            // Try to find in "objects" array
+            JArray objects = saveJson["objects"] as JArray;
+            if (objects != null)
+            {
+                foreach (JObject obj in objects)
+                {
+                    int? es = obj["embedded_screen"]?.Value<int>();
+                    if (es == embeddedScreen)
+                    {
+                        float? customVolume = obj["volume"]?.Value<float>();
+                        if (customVolume != null)
+                            return customVolume.Value;
+                    }
+                }
+            }
+
+            // Try to find room/slot default (attractVolume) under this system
+            float? roomDefault = matchedSystem["attractVolume"]?.Value<float>();
+            if (roomDefault != null)
+                return roomDefault.Value;
+
+            // Try global save default (top-level attractVolume in save)
+            float? globalDefault = saveJson["attractVolume"]?.Value<float>();
+            if (globalDefault != null)
+                return globalDefault.Value;
+
+            // Fallback
+            return fallbackVolume;
+        }
+                */
+
+        private IEnumerator DelayedStartAttractMode()
+        {
+            float delay = UnityEngine.Random.Range(0.1f, 3f);
+            yield return new WaitForSeconds(delay);
+            StartAttractMode();
+        }
+
+        private void CheckInsertedGameName()
+        {
+            if (gameSystem != null && gameSystem.Game != null && !string.IsNullOrEmpty(gameSystem.Game.path))
+                insertedGameName = FileNameHelper.GetFileName(gameSystem.Game.path);
+            else
+                insertedGameName = string.Empty;
+        }
+
+        private void CheckControlledGameName()
+        {
+            if (GameSystem.ControlledSystem != null && GameSystem.ControlledSystem.Game != null
+                && !string.IsNullOrEmpty(GameSystem.ControlledSystem.Game.path))
+                controlledGameName = FileNameHelper.GetFileName(GameSystem.ControlledSystem.Game.path);
+            else
+                controlledGameName = string.Empty;
+        }
+        string GetEmuVRRoot()
+        {
+            var dataPath = Application.dataPath;
+            var root = Path.GetDirectoryName(dataPath);
+            return root;
+        }
+
+        private void StartAttractMode()
+        {
+            logger.Debug($"{gameObject.name} Starting Attract Mode...");
+            if (isAttractMode)
+            {
+                logger.Debug("Attract mode already running.");
+                return;
+            }
+            isAttractMode = true;
+
+            if (screenController == null || screenController.screens.Count == 0)
+            {
+                logger.Debug($"{gameObject.name} No screen controller or no screens found!");
+                isAttractMode = false;
+                return;
+            }
+
+            // --- CHECK VIDEO EXISTS BEFORE ANY SWAP ---
+            string folderAndName = CheckGameName();
+            if (string.IsNullOrEmpty(folderAndName))
+            {
+                isAttractMode = false;
+                return;
+            }
+            string emuvrRoot = GetEmuVRRoot();
+            string videoFilePath = Path.Combine(emuvrRoot, "Custom", "Videos", folderAndName + ".mp4");
+            string videoUrl = "file:///" + videoFilePath.Replace("\\", "/");
+            logger.Debug($"[Attractmode][Debug] Attempting to load Unity VideoPlayer video: {videoUrl}");
+
+            // --- ATTRACT SCREEN CLONE: Instantiate clones, hide originals ---
+            foreach (var origScreen in screenController.screens)
+            {
+                if (!attractScreens.ContainsKey(origScreen))
+                {
+                    // Instantiate first, then hide original
+                    GameObject clone = Instantiate(origScreen, origScreen.transform.parent);
+                    clone.name = origScreen.name + "_Attract";
+                    if (origScreen.name == "screen_mesh_9")
+                    {
+                        isSyncedScreenMesh = true;
+                        logger.Debug($"{gameObject.name} Syncing screens for screen_mesh_9.");
+                    }
+                    clone.SetActive(true);
+                    attractScreens[origScreen] = clone;
+
+                    if (audioSource == null && attractScreens.Count == 1) // only assign once
+                    {
+                        audioSource = clone.GetComponent<AudioSource>();
+                        if (audioSource == null)
+                        {
+                            audioSource = clone.AddComponent<AudioSource>();
+                            audioSource.playOnAwake = false;
+                            audioSource.spatialBlend = 0.0f; // 0 = 2D sound
+                        }
+                    }
+
+                    // Ensure renderer is enabled
+                    var rend = clone.GetComponent<Renderer>();
+                    if (rend) rend.enabled = true;
+                    clone.layer = origScreen.layer;
+
+                    // Remove any live/game-specific components from the clone
+                    var receiver = clone.GetComponent<ScreenReceiver>();
+                    if (receiver) Destroy(receiver);
+
+                    // The real screen is now hidden
+                    origScreen.SetActive(false);
+                }
+            }
+
+            // Clean up any previous player/texture
+            if (ugcVideoPlayer != null)
+            {
+                ugcVideoPlayer.Stop();
+                Destroy(ugcVideoPlayer);
+                ugcVideoPlayer = null;
+            }
+            if (attractRenderTexture != null)
+            {
+                attractRenderTexture.Release();
+                Destroy(attractRenderTexture);
+                attractRenderTexture = null;
+            }
+
+            ugcVideoPlayer = gameObject.AddComponent<VideoPlayer>();
+            ugcVideoPlayer.playOnAwake = false;
+            ugcVideoPlayer.renderMode = VideoRenderMode.RenderTexture;
+            ugcVideoPlayer.source = UnityEngine.Video.VideoSource.Url;
+            ugcVideoPlayer.url = videoUrl;
+            ugcVideoPlayer.isLooping = true;
+            if (screenController.screens != null && screenController.screens.Count > 0)
+            {
+                ugcVideoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
+                ugcVideoPlayer.SetTargetAudioSource(0, audioSource);
+                audioSource.volume = 0.5f;//set a default volume
+            }
+            ugcVideoPlayer.errorReceived += (vp, msg) => logger.Error("[AttractMode] VideoPlayer ERROR: " + msg);
+            // Video size will be corrected on prepareCompleted
+            ugcVideoPlayer.prepareCompleted += OnVideoPrepared;
+            ugcVideoPlayer.Prepare();
+        }
+
+        private void OnVideoPrepared(UnityEngine.Video.VideoPlayer source)
+        {
+            realwidth = Mathf.Max(2, (int)source.width);
+            realheight = Mathf.Max(2, (int)source.height);
+            logger.Debug($"[AttractMode] Video prepared:320x240 real size = {realwidth}x{realheight}");
+            // Check if this is a TATE (portrait) video
+            isTate = realheight > realwidth;
+            attractRenderTexture = new RenderTexture(realheight, realwidth, 0); // Use real video size
+            // attractRenderTexture = new RenderTexture(320, 240, 0); // resize to 320x240 for performance
+            attractRenderTexture.Create();
+            ugcVideoPlayer.targetTexture = attractRenderTexture;
+
+            var HologramObj = transform.Find("Hologram");
+            if (HologramObj == null)
+                logger.Debug($"{gameObject.name}: [DEBUG] Hologram cache not found under cab root.");
+
+            else
+                Debug.Log($"{gameObject.name}: [DEBUG] Found Hologram cache: {HologramObj.name}");
+
+            var TateObj = transform.Find("Tate");
+            if (TateObj == null)
+                logger.Debug($"{gameObject.name}: [DEBUG] Tate cache not found under cab root.");
+            else
+                Debug.Log($"{gameObject.name}: [DEBUG] Found Tate cache: {TateObj.name}");
+
+            var rootHologramObj = transform.Find("Hologram");
+            var rootTateObj = transform.Find("Tate");
+
+            foreach (var pair in attractScreens)
+            {
+                var clone = pair.Value;
+                if (clone == null) continue;
+                var rend = clone.GetComponent<Renderer>();
+                if (rend == null) continue;
+
+                // --- Hologram: Assign shader from root cache ---
+                if (rootHologramObj != null)
+                {
+                    var holoRend = rootHologramObj.GetComponent<Renderer>();
+                    if (holoRend != null && holoRend.sharedMaterial != null)
+                    {
+                        rend.material.shader = holoRend.sharedMaterial.shader;
+                        rend.material.SetTexture("_EmissionMap", attractRenderTexture);
+                        rend.material.SetColor("_EmissionColor", Color.white);
+                        rend.material.EnableKeyword("_EMISSION");
+                        Debug.Log($"[DEBUG] Assigned Hologram shader '{holoRend.sharedMaterial.shader.name}' to {clone.name}");
+                        continue;
+                    }
+                }
+
+                // --- Tate: Assign shader from root cache ---
+                if (isTate && rootTateObj != null)
+                {
+                    var tateRend = rootTateObj.GetComponent<Renderer>();
+                    if (tateRend != null && tateRend.sharedMaterial != null)
+                    {
+                        rend.material.shader = tateRend.sharedMaterial.shader;
+                        rend.material.SetTexture("_EmissionMap", attractRenderTexture);
+                        rend.material.SetColor("_EmissionColor", Color.white);
+                        rend.material.EnableKeyword("_EMISSION");
+                        Debug.Log($"[DEBUG] Assigned Tate shader '{tateRend.sharedMaterial.shader.name}' to {clone.name}");
+                        continue;
+                    }
+                }
+
+                // --- Standard fallback ---
+                rend.material.shader = Shader.Find("Standard");
+                rend.material.mainTexture = attractRenderTexture;
+                rend.material.SetTexture("_EmissionMap", attractRenderTexture);
+                rend.material.SetColor("_EmissionColor", Color.white);
+                rend.material.EnableKeyword("_EMISSION");
+                Debug.Log($"[DEBUG] Assigned Standard shader to {clone.name}");
+            }
+
+            ugcVideoPlayer.aspectRatio = UnityEngine.Video.VideoAspectRatio.Stretch;
+
+            Debug.Log("[AttractMode] ugcVideoPlayer.targetTexture: " + ugcVideoPlayer.targetTexture.GetInstanceID());
+            Debug.Log("[AttractMode] attractRenderTexture: " + attractRenderTexture.GetInstanceID());
+            if (systemState != null)
+            {
+                systemState.SetPowerLight(true);
+                // Play ON animation if available
+                var animation = systemState.GetComponent<Animation>();
+                if (systemState.onAnimation != null && animation != null)
+                    animation.Play(systemState.onAnimation.name);
+            }
+            ugcVideoPlayer.Play();
+            ugcVideoPlayer.prepareCompleted -= OnVideoPrepared;
+        }
+
+        private void StopAttractMode()
+        {
+            logger.Debug($"{gameObject.name} Stopping Attract Mode...");
+            if (!isAttractMode) return;
+            isAttractMode = false;
+
+            // --- ATTRACT SCREEN CLONE: destroy clones and unhide originals ---
+            foreach (var pair in attractScreens)
+            {
+                if (pair.Value != null)
+                    Destroy(pair.Value); // Destroy clone
+                if (pair.Key != null)
+                    pair.Key.SetActive(true); // Unhide original
+            }
+            attractScreens.Clear();
+
+            // Cleanup VideoPlayer and RenderTexture
+            if (ugcVideoPlayer != null)
+            {
+                ugcVideoPlayer.Stop();
+                Destroy(ugcVideoPlayer);
+                ugcVideoPlayer = null;
+            }
+            if (attractRenderTexture != null)
+            {
+                attractRenderTexture.Release();
+                Destroy(attractRenderTexture);
+                attractRenderTexture = null;
+            }
+            // --- Power Light/Emissive: OFF unless real system ON ---
+            if (systemState != null && !systemState.IsOn)
+            {
+                systemState.SetPowerLight(false);
+                // Play Off animation if available
+                var animation = systemState.GetComponent<Animation>();
+                if (systemState.offAnimation != null && animation != null)
+                    animation.Play(systemState.offAnimation.name);
+            }
+        }
+
+        private string CheckGameName()
+        {
+            if (gameSystem?.Game == null)
+                return string.Empty;
+
+            string projectRoot = Path.GetDirectoryName(Application.dataPath);
+            string videosRoot = Path.Combine(projectRoot, "Custom", "Videos");
+
+            // --- 1. Get System Folder from Game PATH (right after \Games\) ---
+            string systemFolder = null;
+            string path = gameSystem.Game.path.Replace('\\', '/'); // normalize
+            int gamesIdx = path.IndexOf("/Games/", StringComparison.OrdinalIgnoreCase);
+            if (gamesIdx >= 0)
+            {
+                int afterGames = gamesIdx + 7; // length of "/Games/"
+                int nextSlash = path.IndexOf('/', afterGames);
+                if (nextSlash > afterGames)
+                    systemFolder = path.Substring(afterGames, nextSlash - afterGames);
+                else
+                    systemFolder = path.Substring(afterGames);
+            }
+            else
+            {
+                // fallback: try using GameMedium.name first part
+                if (gameSystem.GameMedium != null && !string.IsNullOrEmpty(gameSystem.GameMedium.name))
+                {
+                    // Take only the first segment before '/'
+                    var parts = gameSystem.GameMedium.name.Split('/');
+                    systemFolder = FileNameHelper.Sanitize(parts[0].Trim());
+                }
+                else
+                {
+                    systemFolder = FileNameHelper.Sanitize(gameSystem.systemName);
+                }
+            }
+
+            // --- 2. Extract candidate names ---
+            string fileName = FileNameHelper.GetFileName(gameSystem.Game.path); // "mk4"
+
+            // If GameMedium.name has a second part, that's the full title
+            string fullTitle = null;
+            if (gameSystem.GameMedium != null && !string.IsNullOrEmpty(gameSystem.GameMedium.name))
+            {
+                var parts = gameSystem.GameMedium.name.Split('/');
+                if (parts.Length > 1)
+                    fullTitle = FileNameHelper.Sanitize(parts[1].Trim());
+            }
+            if (string.IsNullOrEmpty(fullTitle))
+                fullTitle = FileNameHelper.Sanitize(gameSystem.Game.name);
+
+            // Stripped title
+            string stripped = System.Text.RegularExpressions.Regex.Replace(
+                fullTitle, @"\s*\(.*?\)", "");
+            string shortTitle = FileNameHelper.Sanitize(stripped);
+
+            string[] names = { fileName, fullTitle, shortTitle };
+
+            // --- 3. Search only in the systemFolder extracted ---
+            string[] folders = { systemFolder };
+
+            foreach (var folder in folders)
+            {
+                if (string.IsNullOrEmpty(folder))
+                    continue;
+
+                foreach (var name in names)
+                {
+                    if (string.IsNullOrEmpty(name))
+                        continue;
+
+                    string candidate = Path.Combine(videosRoot, folder, name + ".mp4");
+                    if (File.Exists(candidate))
+                    {
+                        logger.Debug($"[Attractmode][Debug] Found attract video: {candidate}");
+                        // return rel-path (relative to Custom/Videos/)
+                        return Path.Combine(folder, name);
+                    }
+                }
+            }
+
+            logger.Debug($"[Attractmode][Debug] No .mp4 found for '{fileName}' ({fullTitle}/{shortTitle}) in folder: {systemFolder}");
+            return string.Empty;
+        }
+
+
+
+        private void CycleEmissiveColors()
+        {
+            currentHue += hueCycleSpeed * Time.deltaTime;
+            if (currentHue > 1f) currentHue -= 1f;
+            Color emissiveColor = Color.HSVToRGB(currentHue, 1f, 1f);
+            Transform[] emissives = { topEmissiveObject, sideEmissiveObject, bottomEmissiveObject, billsEmissiveObject, segalightObject };
+            foreach (var obj in emissives)
+            {
+                if (obj != null)
+                {
+                    var rend = obj.GetComponent<Renderer>();
+                    if (rend != null)
+                    {
+                        rend.material.SetColor("_EmissionColor", emissiveColor);
+                        rend.material.EnableKeyword("_EMISSION");
+                    }
+                }
+            }
+        }
+
+        void CheckForMissingObjects()
+        {
+            topEmissiveObject = transform.Find("topEmissive");
+            sideEmissiveObject = transform.Find("sideEmissive");
+            bottomEmissiveObject = transform.Find("bottomEmissive");
+            segalightObject = transform.Find("segalight");
+            billsEmissiveObject = transform.Find("coindoor/billsEmissive");
+        }
+        void CheckObject(GameObject obj, string name)     // Check if object is found and log appropriate message
+        {
+            if (obj == null)
+            {
+                logger.Error($"{gameObject.name} {name} not found!");
+            }
+            else
+            {
+                logger.Info($"{gameObject.name} {name} found.");
+            }
+        }
+        public static class FileNameHelper
+    {
+        public static string GetFileName(string filePath)
+        {
+            string fileName = Path.GetFileNameWithoutExtension(filePath);
+            return System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+        }
+        public static string Sanitize(string s)
+        {
+            return System.Text.RegularExpressions.Regex.Replace(s, "[\\\\/:*?\"<>|]", "_");
+        }
+    }
+}
+}

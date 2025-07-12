@@ -1,12 +1,10 @@
 ﻿using UnityEngine;
-using UnityEngine.XR;
-using WIGU;
 using System.Collections.Generic;
-using EmuVR.InputManager;
-using System.Collections;
-using static XInput;
-using static SteamVR_Utils;
 using System.IO;
+using WIGU;
+using System;
+using WIGUx.Modules.MameHookModule;
+using System.Reflection;
 
 namespace WIGUx.Modules.apbSim
 {
@@ -14,256 +12,251 @@ namespace WIGUx.Modules.apbSim
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        private readonly float keyboardVelocityX = 25.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityY = 25.5f;  // Velocity for keyboard input
-        private readonly float keyboardVelocityZ = 25.5f;  // Velocity for keyboard input
-        private readonly float vrVelocity = 20.5f;        // Velocity for VR controller input
+        [Header("Object Settings")]
+        private Transform WheelObject; // Reference to the throttle mirroring object
+        private Transform GasObject; // Reference to the throttle mirroring object
+        private Transform BrakeObject; // Reference to the throttle mirroring object
+        private Transform Light1Object; // Reference to the left light
+        private Transform Light2Object; // Reference to the right light
 
+        [Header("Input Settings")]
+        public string primaryThumbstickHorizontal = "Horizontal"; // Input axis for primary thumbstick horizontal
+        public string primaryThumbstickVertical = "Vertical"; // Input axis for primary thumbstick vertical
+        public string secondaryThumbstickHorizontal = "RightStickHorizontal"; // Input axis for secondary thumbstick horizontal
+        public string secondaryThumbstickVertical = "RightStickVertical"; // Input axis for secondary thumbstick forward/backward
+        public string leftTrigger = "LIndexTrigger";
+        public string rightTrigger = "RIndexTrigger";
+
+        [Header("Velocity Multiplier Settings")]        // Speeds for the animation of the in game flight stick or wheel
+        private float primaryThumbstickRotationMultiplier = 60f; // Multiplier for primary thumbstick rotation intensity
+        private float secondaryThumbstickRotationMultiplier = 25f; // Multiplier for secondary thumbstick rotation intensity
+        private float triggerRotationMultiplier = 20f; // Multiplier for trigger rotation intensity
         private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
+        private float WheelRotationDegrees = 100f; // Degrees for wheel rotation, adjust as needed
+        private readonly float rotationSmoothness = 5f;  //sets the smoothness of the rotation
+        private readonly float thumbstickVelocity = 30f;  // Velocity for keyboard input
 
-        // Controller animation 
+        [Header("Position Settings")]     // Initial positions setup
+        private Vector3 WheelStartPosition;  // Initial wheel positions for resetting
+        private Vector3 GasStartPosition;  // Initial gas positions for resetting
+        private Vector3 BrakeStartPosition;  // Initial brake positions for resetting
 
+        [Header("Rotation Settings")]     // Initial rotations setup
+        private Quaternion WheelStartRotation;  // Initial wheel rotation for resetting
+        private Quaternion GasStartRotation;  // Initial Gas rotations for resetting
+        private Quaternion BrakeStartRotation;  // Initial Brake rotations for resetting
 
-        // Speeds for the animation of the in game flight stick or wheel
-        private readonly float keyboardControllerVelocityX = 400.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityY = 400.5f;  // Velocity for keyboard input
-        private readonly float keyboardControllerVelocityZ = 400.5f;  // Velocity for keyboard input
-        private readonly float vrControllerVelocity = 400.5f;        // Velocity for VR/Controller input
-
-        // player 1
-
-        //p1 sticks
-
-        private float apbp1controllerrotationLimitX = 270f;  // Rotation limit for X-axis (stick or wheel)
-        private float apbp1controllerrotationLimitY = 0f;  // Rotation limit for Y-axis (stick or wheel)
-        private float apbp1controllerrotationLimitZ = 0f;  // Rotation limit for Z-axis (stick or wheel)
-
-        private float apbp1currentControllerRotationX = 0f;  // Current rotation for X-axis (stick or wheel)
-        private float apbp1currentControllerRotationY = 0f;  // Current rotation for Y-axis (stick or wheel)
-        private float apbp1currentControllerRotationZ = 0f;  // Current rotation for Z-axis (stick or wheel)
-
-        private readonly float apbp1centeringControllerVelocityX = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float apbp1centeringControllerVelocityY = 400.5f;  // Velocity for centering rotation (stick or wheel)
-        private readonly float apbp1centeringControllerVelocityZ = 400.5f;  // Velocity for centering rotation (stick or wheel)
-
-        private Transform apbp1controllerX; // Reference to the main animated controller (wheel)
-        private Vector3 apbp1controllerXStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion apbp1controllerXStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform apbp1controllerY; // Reference to the main animated controller (wheel)
-        private Vector3 apbp1controllerYStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion apbp1controllerYStartRotation; // Initial controlller positions and rotations for resetting
-        private Transform apbp1controllerZ; // Reference to the main animated controller (wheel)
-        private Vector3 apbp1controllerZStartPosition; // Initial controller positions and rotations for resetting
-        private Quaternion apbp1controllerZStartRotation; // Initial controlller positions and rotations for resetting
-
-        //lights
-        private Transform lightsObject;
-        public Light[] apbLights = new Light[2]; // Array to store lights
-        public Light apb1_light;
-        public Light apb2_light;
-        public Light apb3_light;
-        public Light apb4_light;
+        [Header("Lights and Emissives")]     // Setup Emissive and Lights
+        Dictionary<string, int> lastLampStates = new Dictionary<string, int>
+    {
+        { "led0", 0 }, { "led1", 0 }
+    };
+        private Light led0_light;
+        private Light led1_light;
+        private float lightDuration = 0.35f;
+        private float attractFlashDuration = 0.7f;
+        private float attractFlashDelay = 0.7f;
         private float flashDuration = 0.15f;
         private float flashInterval = 0.15f;
-        private float lightDuration = 0.5f; // Duration during which the lights will be on
-        private bool areapbLightsOn = false; // track strobe lights
+        private float dangerFlashDuration = 0.3f;
+        private float dangerFlashDelay = 0.3f;
         private Coroutine apbCoroutine; // Coroutine variable to control the strobe flashing
+        private Color emissiveOnColor = Color.white;
+        private Color emissiveOffColor = Color.black;
         private Light[] lights;
+
+        [Header("Timers and States")]  // Store last states and timers
+        private bool isFlashing = false; // track strobe lights
+        private bool isHigh = false; //set the high gear flag
         private bool inFocusMode = false;  // Flag to track focus mode state
-        private readonly string[] compatibleGames = { "apb" };
+        private GameSystemState systemState;
+
+        [Header("Rom Check")]
+        private GameSystem gameSystem;  // Cached GameSystem for this cabinet.
+        private string insertedGameName = string.Empty;
+        private string controlledGameName = string.Empty;
+        private string configPath;
         private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
-                                                                                                              // Public property to access the Game instance
+
         void Start()
         {
-            lightsObject = transform.Find("lights");
-            if (lightsObject != null)
-            {
-                logger.Info("lightsObject found.");
-            }
-            else
-            {
-                logger.Error("lightsObject object not found!");
-                return; // Early exit if lightsObject is not found
-            }
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            configPath = $"./Emulators/MAME/inputs/{insertedGameName}.ini";
+            gameSystem = GetComponent<GameSystem>();
+            InitializeLights();
+            InitializeObjects();
+            // Initialize lamp states
+            if (led0_light) ToggleLight(led0_light, false);
+            if (led1_light) ToggleLight(led1_light, false);
 
-            // Gets all Light components in the target object and its children
-            Light[] allLights = lightsObject.GetComponentsInChildren<Light>();
-
-            // Log the names of the objects containing the Light components and filter out unwanted lights
-            foreach (Light light in allLights)
-            {
-                logger.Info($"Light found: {light.gameObject.name}");
-                switch (light.gameObject.name)
-                {
-                    case "apb1_light":
-                        apb1_light = light;
-                        apbLights[0] = light;
-                        logger.Info("Included Light found in object: " + light.gameObject.name);
-                        break;
-                    case "apb2_light":
-                        apb2_light = light;
-                        apbLights[1] = light;
-                        logger.Info("Included Light found in object: " + light.gameObject.name);
-                        break;
-                    default:
-                        logger.Info("Excluded Light found in object: " + light.gameObject.name);
-                        break;
-                }
-            }
-
-            // Log the assigned lights for verification
-            for (int i = 0; i < apbLights.Length; i++)
-            {
-                if (apbLights[i] != null)
-                {
-                    logger.Info($"apbLights[{i}] assigned to: {apbLights[i].name}");
-                }
-                else
-                {
-                    logger.Error($"apbLights[{i}] is not assigned!");
-                }
-            }
-
-            // Find apbcontrollerX for player 1
-            apbp1controllerX = transform.Find("apbp1controllerX");
-            if (apbp1controllerX != null)
-            {
-                logger.Info("apbp1controllerX object found.");
-                // Store initial position and rotation of the stick
-                apbp1controllerXStartPosition = apbp1controllerX.transform.position;
-                apbp1controllerXStartRotation = apbp1controllerX.transform.rotation;
-
-                // Find apbp1controllerY under p1controllerX
-                apbp1controllerY = apbp1controllerX.Find("apbp1controllerY");
-                if (apbp1controllerY != null)
-                {
-                    logger.Info("apbp1controllerY object found.");
-                    // Store initial position and rotation of the stick
-                    apbp1controllerYStartPosition = apbp1controllerY.transform.position;
-                    apbp1controllerYStartRotation = apbp1controllerY.transform.rotation;
-
-                    // Find p1controllerZ under p1controllerY
-                    apbp1controllerZ = apbp1controllerY.Find("apbp1controllerZ");
-                    if (apbp1controllerZ != null)
-                    {
-                        logger.Info("apbp1controllerZ object found.");
-                        // Store initial position and rotation of the stick
-                        apbp1controllerZStartPosition = apbp1controllerZ.transform.position;
-                        apbp1controllerZStartRotation = apbp1controllerZ.transform.rotation;
-                    }
-                    else
-                    {
-                        logger.Error("apbp1controllerZ object not found under apbcontrollerY!");
-                    }
-                }
-                else
-                {
-                    logger.Error("apbp1controllerY object not found under apbcontrollerX!");
-                }
-            }
-            else
-            {
-                logger.Error("apbp1controllerX object not found!!");
-            }
         }
 
         void Update()
         {
-
-            bool inputDetected = false;  // Initialize at the beginning of the Update method
-
-            if (GameSystem.ControlledSystem != null && !inFocusMode)
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            if (MameHookController.ActiveRomsList != null)
             {
-                string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-                bool containsString = false;
-
-                foreach (var gameString in compatibleGames)
+                foreach (var rom in MameHookController.ActiveRomsList)
                 {
-                    if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
-                    {
-                        containsString = true;
-                        break;
-                    }
-                }
-
-                if (containsString)
-                {
-                    StartFocusMode();
+                    if (rom == insertedGameName)
+                        ReadData();
                 }
             }
-
+            // Enter focus when names match
+            if (!string.IsNullOrEmpty(insertedGameName)
+                && !string.IsNullOrEmpty(controlledGameName)
+                && insertedGameName == controlledGameName
+                && !inFocusMode)
+            {
+                StartFocusMode();
+            }
             if (GameSystem.ControlledSystem == null && inFocusMode)
             {
                 EndFocusMode();
             }
-
             if (inFocusMode)
             {
-                HandleInput(ref inputDetected);  // Pass by reference
+                MapThumbsticks();
             }
         }
+
         void StartFocusMode()
         {
-            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-            logger.Info($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Info("Compatible Rom Dectected, You are on Duty!...");
-            logger.Info("APB Module starting...");
-            logger.Info("Grab your Doughnuts!!..");
-
-            // Reset controllers to initial positions and rotations
-            if (apbp1controllerX != null)
-            {
-                apbp1controllerX.position = apbp1controllerXStartPosition;
-                apbp1controllerX.rotation = apbp1controllerXStartRotation;
-            }
-            if (apbp1controllerY != null)
-            {
-                apbp1controllerY.position = apbp1controllerYStartPosition;
-                apbp1controllerY.rotation = apbp1controllerYStartRotation;
-            }
-            if (apbp1controllerZ != null)
-            {
-                apbp1controllerZ.position = apbp1controllerZStartPosition;
-                apbp1controllerZ.rotation = apbp1controllerZStartRotation;
-            }
-
-            //player 1
-            apbp1currentControllerRotationX = 0f;
-            apbp1currentControllerRotationY = 0f;
-            apbp1currentControllerRotationZ = 0f;
-
+            logger.Debug($"{gameObject.name} Starting Focus Mode...");
+            //StopCurrentPatterns();
+            logger.Debug($"{gameObject.name} APB Module starting...");
+            logger.Debug($"{gameObject.name} Grab your Doughnuts!!..");
             inFocusMode = true;  // Set focus mode flag
         }
-
         void EndFocusMode()
         {
             // Reset controllers to initial positions and rotations
-            if (apbp1controllerX != null)
+            if (WheelObject != null)
             {
-                apbp1controllerX.position = apbp1controllerXStartPosition;
-                apbp1controllerX.rotation = apbp1controllerXStartRotation;
+                WheelObject.localPosition = WheelStartPosition;
+                WheelObject.localRotation = WheelStartRotation;
             }
-            if (apbp1controllerY != null)
+            if (GasObject != null)
             {
-                apbp1controllerY.position = apbp1controllerYStartPosition;
-                apbp1controllerY.rotation = apbp1controllerYStartRotation;
+                GasObject.localPosition = GasStartPosition;
+                GasObject.localRotation = GasStartRotation;
             }
-            if (apbp1controllerZ != null)
+            if (WheelObject != null)
             {
-                apbp1controllerZ.position = apbp1controllerZStartPosition;
-                apbp1controllerZ.rotation = apbp1controllerZStartRotation;
+                BrakeObject.localPosition = BrakeStartPosition;
+                BrakeObject.localRotation = BrakeStartRotation;
             }
-
-            StopCoroutine(apbCoroutine);
-            ToggleapbLight1(false);
-            ToggleapbLight2(false);
-
             inFocusMode = false;  // Clear focus mode flag
         }
+        public void ReadData()
+        {
+            // 1) Your original “zeroed” lamp list:
+            var currentLampStates = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "led0", 0 }, { "led1", 0 }
+    };
+            // 2) Reflectively fetch the lamp list (falling back if needed)
+            IEnumerable<string> lampList = null;
+            var hookType = Type.GetType(
+                "WIGUx.Modules.MameHookModule.MameHookController, WIGUx.Modules.MameHookModule"
+            );
+            if (hookType != null)
+            {
+                var lampProp = hookType.GetProperty(
+                    "currentLampState",
+                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                );
+                lampList = lampProp?.GetValue(null) as IEnumerable<string>;
+            }
+            if (lampList == null)
+                lampList = MameHookController.currentLampState;
 
+            // 3) Parse into your state dictionary
+            if (lampList != null)
+            {
+                foreach (var entry in lampList)
+                {
+                    var parts = entry.Split('|');
+                    if (parts.Length != 2) continue;
+
+                    string lamp = parts[0].Trim();
+                    if (currentLampStates.ContainsKey(lamp)
+                        && int.TryParse(parts[1].Trim(), out int value))
+                    {
+                        currentLampStates[lamp] = value;
+                    }
+                }
+            }
+
+            // 4) Dispatch only those lamps to your existing logic
+            foreach (var kv in currentLampStates)
+            {
+                // matches: void ProcessLampState(string lampKey, Dictionary<string,int> currentStates)
+                ProcessLampState(kv.Key, currentLampStates);
+            }
+
+        }
+
+        // 🔹 Helper function for safe lamp processing
+        void ProcessLampState(string lampKey, Dictionary<string, int> currentStates)
+        {
+            if (!lastLampStates.ContainsKey(lampKey))
+            {
+                lastLampStates[lampKey] = 0;
+                logger.Debug($"{gameObject.name} Added missing key '{lampKey}' to lastLampStates.");
+            }
+
+            if (currentStates.TryGetValue(lampKey, out int newValue))
+            {
+                if (lastLampStates[lampKey] != newValue)
+                {
+                    lastLampStates[lampKey] = newValue;
+
+                    // Call the corresponding function dynamically
+                    switch (lampKey)
+                    {
+                        case "led0":
+                            ProcessLamp0(newValue);
+                            break;
+                        case "led1":
+                            ProcessLamp1(newValue);
+                            break;
+                        default:
+                            logger.Debug($"{gameObject.name} No processing function for '{lampKey}'");
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Lamp key '{lampKey}' not found in current states.");
+            }
+        }
+
+        // Individual function for lamp0
+        void ProcessLamp0(int state)
+        {
+            logger.Debug($"{gameObject.name} led0 updated: {state}");
+            // Update lights
+            if (led0_light) ToggleLight(led0_light, state == 1);
+            // Update emissive material
+           // if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, state == 1);
+        }
+        // Individual function for lamp1
+        void ProcessLamp1(int state)
+        {
+            logger.Debug($"{gameObject.name} led1 updated: {state}");
+            // Update lights
+            if (led1_light) ToggleLight(led1_light, state == 1);
+            // Update emissive material
+           // if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, state == 1);
+
+        }
 
         //sexy new combined input handler
-        void HandleInput(ref bool inputDetected)
+        private void MapThumbsticks()
         {
             if (!inFocusMode) return;
 
@@ -281,57 +274,6 @@ namespace WIGUx.Modules.apbSim
                 float ovrSecondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
                 float ovrPrimaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
                 float ovrSecondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
-
-
-                // Check if the A button on the right controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.One))
-                {
-                //    logger.Info("OVR A button pressed");
-                }
-
-                // Check if the B button on the right controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Two))
-                {
-                //    logger.Info("OVR B button pressed");
-                }
-
-                // Check if the X button on the left controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Three))
-                {
-              //      logger.Info("OVR X button pressed");
-                }
-
-                // Check if the Y button on the left controller is pressed
-                if (OVRInput.GetDown(OVRInput.Button.Four))
-                {
-                  //  logger.Info("OVR Y button pressed");
-                }
-
-                // Check if the primary index trigger on the right controller is pressed
-             
-                if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger))
-                {
-                    if (!areapbLightsOn)
-                    {
-                        // Start the flashing if not already flashing
-                        apbCoroutine = StartCoroutine(FlashapbLights());
-                        areapbLightsOn = true;
-                    }
-                    inputDetected = true;
-                }
-                if (OVRInput.GetUp(OVRInput.Button.PrimaryIndexTrigger))
-                {
-                    if (apbCoroutine != null)
-                    {
-                        StopCoroutine(apbCoroutine);
-                        apbCoroutine = null;
-                    }
-                    ToggleapbLight1(false);
-                    ToggleapbLight2(false);
-                    areapbLightsOn = false;
-                    inputDetected = true;
-                }
-             
             }
             else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
@@ -340,218 +282,231 @@ namespace WIGUx.Modules.apbSim
                 primaryThumbstick = leftController.GetAxis();
                 secondaryThumbstick = rightController.GetAxis();
             }
-
             // Ximput controller input
             if (XInput.IsConnected)
             {
                 primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
+                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
                 Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
                 Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+                float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
+                float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
                 // Combine VR and Xbox inputs
                 primaryThumbstick += xboxPrimaryThumbstick;
-                secondaryThumbstick += xboxSecondaryThumbstick;               
+                secondaryThumbstick += xboxSecondaryThumbstick;
+            }
+            // Map primary thumbstick to wheel
+            if (WheelObject)
+            {
+                Quaternion primaryRotation = Quaternion.Euler(
+                    0f,
+                    0f,
+                   -primaryThumbstick.x * WheelRotationDegrees
+                );
+                WheelObject.localRotation = WheelStartRotation * primaryRotation;
             }
 
-            // Thumbstick direction: X
-            // Thumbstick direction: right
-            if ((Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) || primaryThumbstick.x > 0) && apbp1currentControllerRotationX < apbp1controllerrotationLimitX)
+            // Map triggers for gas and brake rotation on X-axis
+            if (GasObject)
             {
-                float p1controllerRotateX = (Input.GetKey(KeyCode.RightArrow) || XInput.Get(XInput.Button.DpadRight) ? keyboardControllerVelocityX : primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                apbp1controllerX.Rotate(-p1controllerRotateX, 0, 0);
-                apbp1currentControllerRotationX += p1controllerRotateX;
-                inputDetected = true;
+                float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+                Quaternion gasRotation = Quaternion.Euler(
+                    RIndexTrigger * triggerRotationMultiplier,
+                    0f,
+                    0f
+                );
+                GasObject.localRotation = GasStartRotation * gasRotation;
             }
-            // Thumbstick direction: left
-            if ((Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) || primaryThumbstick.x < 0) && apbp1currentControllerRotationX > -apbp1controllerrotationLimitX)
+            if (BrakeObject)
             {
-                float p1controllerRotateX = (Input.GetKey(KeyCode.LeftArrow) || XInput.Get(XInput.Button.DpadLeft) ? keyboardControllerVelocityX : -primaryThumbstick.x * vrControllerVelocity) * Time.deltaTime;
-                apbp1controllerX.Rotate(p1controllerRotateX, 0, 0);
-                apbp1currentControllerRotationX -= p1controllerRotateX;
-                inputDetected = true;
+                float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
+                Quaternion brakeRotation = Quaternion.Euler(
+                    LIndexTrigger * triggerRotationMultiplier,
+                    0f,
+                    0f
+                );
+                BrakeObject.localRotation = BrakeStartRotation * brakeRotation;
             }
+            // Calculate a new rotation from the thumbstick input.
+        }
 
-            // Handle Start button press for plunger position
-            if (Input.GetButtonDown("Fire2"))
+        void ToggleEmissive(GameObject targetObject, bool isActive)
+        {
+            if (targetObject != null)
             {
-                if (!areapbLightsOn)
+                Renderer renderer = targetObject.GetComponent<Renderer>();
+                if (renderer != null)
                 {
-                    // Start the flashing if not already flashing
-                    apbCoroutine = StartCoroutine(FlashapbLights());
-                    areapbLightsOn = true;
-                }
-                inputDetected = true;
-            }
+                    Material material = renderer.material;
 
-            // Fire2 button released
-            if (Input.GetButtonUp("Fire2"))
-            {
-                if (apbCoroutine != null)
-                {
-                    StopCoroutine(apbCoroutine);
-                    apbCoroutine = null;
-                }
-                ToggleapbLight1(false);
-                ToggleapbLight2(false);
-                areapbLightsOn = false;
-                inputDetected = true;
-            }
-            if (!inputDetected)
-            {
-                CenterRotation();
-            }
-        }
+                    if (isActive)
+                    {
+                        material.EnableKeyword("_EMISSION");
+                    }
+                    else
+                    {
+                        material.DisableKeyword("_EMISSION");
+                    }
 
-        void CenterRotation()
-        {
-            //Centering for contoller 1
-
-            // Center X-Axis Controller rotation
-            if (apbp1currentControllerRotationX > 0)
-            {
-                float p1unrotateX = Mathf.Min(apbp1centeringControllerVelocityX * Time.deltaTime, apbp1currentControllerRotationX);
-                apbp1controllerX.Rotate(p1unrotateX, 0, 0);   // Rotating to reduce the rotation
-                apbp1currentControllerRotationX -= p1unrotateX;    // Reducing the positive rotation
-            }
-            else if (apbp1currentControllerRotationX < 0)
-            {
-                float p1unrotateX = Mathf.Min(apbp1centeringControllerVelocityX * Time.deltaTime, -apbp1currentControllerRotationX);
-                apbp1controllerX.Rotate(-p1unrotateX, 0, 0);   // Rotating to reduce the rotation
-                apbp1currentControllerRotationX += p1unrotateX;    // Reducing the positive rotation
-            }
-
-            // Center Y-axis Controller rotation
-            if (apbp1currentControllerRotationY > 0)
-            {
-                float p1unrotateY = Mathf.Min(apbp1centeringControllerVelocityY * Time.deltaTime, apbp1currentControllerRotationY);
-                apbp1controllerY.Rotate(0, p1unrotateY, 0);   // Rotating to reduce the rotation
-                apbp1currentControllerRotationY -= p1unrotateY;    // Reducing the positive rotation
-            }
-            else if (apbp1currentControllerRotationY < 0)
-            {
-                float p1unrotateY = Mathf.Min(apbp1centeringControllerVelocityY * Time.deltaTime, -apbp1currentControllerRotationY);
-                apbp1controllerY.Rotate(0, -p1unrotateY, 0);  // Rotating to reduce the rotation
-                apbp1currentControllerRotationY += p1unrotateY;    // Reducing the negative rotation
-            }
-
-
-            // Center Z-axis Controller rotation
-            if (apbp1currentControllerRotationZ > 0)
-            {
-                float p1unrotateZ = Mathf.Min(apbp1centeringControllerVelocityZ * Time.deltaTime, apbp1currentControllerRotationZ);
-                apbp1controllerZ.Rotate(0, 0, p1unrotateZ);   // Rotating to reduce the rotation
-                apbp1currentControllerRotationZ -= p1unrotateZ;    // Reducing the positive rotation
-            }
-            else if (apbp1currentControllerRotationZ < 0)
-            {
-                float p1unrotateZ = Mathf.Min(apbp1centeringControllerVelocityZ * Time.deltaTime, -apbp1currentControllerRotationZ);
-                apbp1controllerZ.Rotate(0, 0, -p1unrotateZ);   // Rotating to reduce the rotation
-                apbp1currentControllerRotationZ += p1unrotateZ;    // Reducing the positive rotation
-            }
-        }
-
-        // Check if object is found and log appropriate message
-        void CheckObject(GameObject obj, string name)
-        {
-            if (obj == null)
-            {
-                logger.Error($"{name} not found!");
-            }
-            else
-            {
-                logger.Info($"{name} found.");
-            }
-        }
-
-        // Method to check if VR input is active
-        bool VRInputActive()
-        {
-            // Assuming you have methods to check VR input
-            return GetPrimaryThumbstick() != Vector2.zero || GetSecondaryThumbstick() != Vector2.zero;
-        }
-
-        // Placeholder methods to get VR thumbstick input (to be implemented with actual VR input handling)
-        Vector2 GetPrimaryThumbstick()
-        {
-            // Implement VR primary thumbstick input handling here
-            return Vector2.zero;
-        }
-
-        Vector2 GetSecondaryThumbstick()
-        {
-            // Implement VR secondary thumbstick input handling here
-            return Vector2.zero;
-        }
-
-        // Method to toggle the lights
-        void ToggleapbLights(bool isActive)
-        {
-            for (int i = 0; i < lights.Length; i++)
-            {
-                lights[i].enabled = isActive;
-            }
-
-            logger.Info($"Lights turned {(isActive ? "on" : "off")}.");
-        }
-
-        IEnumerator FlashapbLights()
-        {
-            int currentIndex = 0; // Start with the first light in the array
-
-            while (true)
-            {
-                // Select the current light
-                Light light = apbLights[currentIndex];
-
-                // Check if the light is not null
-                if (light != null)
-                {
-                    // Log the chosen light
-                    // logger.Debug($"Flashing {light.name}");
-
-                    // Turn on the chosen light
-                    ToggleapbLight(light, true);
-
-                    // Wait for the flash duration
-                    yield return new WaitForSeconds(flashDuration);
-
-                    // Turn off the chosen light
-                    ToggleapbLight(light, false);
-
-                    // Wait for the next flash interval
-                    yield return new WaitForSeconds(flashInterval - flashDuration);
+                    // logger.Debug($"{gameObject.name} {targetObject.name} emissive state set to {(isActive ? "ON" : "OFF")}.");
                 }
                 else
                 {
-                    logger.Debug("Light is null.");
+                    logger.Debug($"{gameObject.name}Renderer component not found on {targetObject.name}.");
                 }
-
-                // Move to the next light in the array
-                currentIndex = (currentIndex + 1) % apbLights.Length;
-            }
-        }
-
-        void ToggleapbLight(Light light, bool isActive)
-        {
-            if (light != null)
-            {
-                light.enabled = isActive;
-                // logger.Info($"{light.name} light turned {(isActive ? "on" : "off")}.");
             }
             else
             {
-                logger.Debug($"{light?.name} light component is not found.");
+                logger.Debug($"{gameObject.name} {targetObject.name} emissive object is not assigned.");
+            }
+        }
+        void ChangeColorEmissive(GameObject targetObject, Color emissionColor, float intensity, bool isActive)
+        {
+            if (targetObject != null)
+            {
+                Renderer renderer = targetObject.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    Material material = renderer.material;
+
+                    if (isActive)
+                    {
+                        material.EnableKeyword("_EMISSION");
+                        material.SetColor("_EmissionColor", emissionColor * intensity);
+                    }
+                    else
+                    {
+                        material.DisableKeyword("_EMISSION");
+                    }
+
+                    //    logger.Debug($"{gameObject.name} {targetObject.name} emissive state set to {(isActive ? "ON" : "OFF")} with color {emissionColor} and intensity {intensity}.");
+                }
+                else
+                {
+                    //    logger.Debug($"{gameObject.name} Renderer component not found on {targetObject.name}.");
+                }
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Target emissive object is not assigned.");
+            }
+        }
+        void ToggleLight(Light targetLight, bool isActive) // Toggle light dynamically
+        {
+            if (targetLight != null)
+            {
+                targetLight.enabled = isActive;
+                // logger.Debug($"{targetLight.name} light turned {(isActive ? "on" : "off")}.");
+            }
+            else
+            {
+                // logger.Debug($"{targetLight.name} light component is not assigned.");
+            }
+        }
+        void DisableEmission(Renderer[] emissiveObjects)        // Method to disable emission
+        {
+            foreach (var renderer in emissiveObjects)
+            {
+                if (renderer != null)
+                {
+                    renderer.material.DisableKeyword("_EMISSION");
+                }
+                else
+                {
+                    logger.Debug($"{gameObject.name} Renderer component not found on one of the emissive objects.");
+                }
             }
         }
 
-        void ToggleapbLight1(bool isActive)
+        private void CheckInsertedGameName()
         {
-            ToggleapbLight(apb1_light, isActive);
+            if (gameSystem != null && gameSystem.Game != null && !string.IsNullOrEmpty(gameSystem.Game.path))
+                insertedGameName = FileNameHelper.GetFileName(gameSystem.Game.path);
+            else
+                insertedGameName = string.Empty;
         }
 
-        void ToggleapbLight2(bool isActive)
+        private void CheckControlledGameName()
         {
-            ToggleapbLight(apb2_light, isActive);
+            if (GameSystem.ControlledSystem != null && GameSystem.ControlledSystem.Game != null
+                && !string.IsNullOrEmpty(GameSystem.ControlledSystem.Game.path))
+                controlledGameName = FileNameHelper.GetFileName(GameSystem.ControlledSystem.Game.path);
+            else
+                controlledGameName = string.Empty;
         }
 
+        // Helper class to extract and sanitize file names.
+        public static class FileNameHelper
+        {
+            // Extracts the file name without the extension and replaces invalid file characters with underscores.
+            public static string GetFileName(string filePath)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string FileName = System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+                return FileName;
+            }
+        }
+        void InitializeObjects()
+        {
+            // Find Wheel
+            WheelObject = transform.Find("Wheel");
+            if (WheelObject != null)
+            {
+                logger.Debug($"{gameObject.name} Wheel object found.");
+                // Store initial position and rotation Wheel
+                WheelStartPosition = WheelObject.transform.localPosition;
+                WheelStartRotation = WheelObject.transform.localRotation;
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Wheel object not found!");
+            }
+            GasObject = transform.Find("Gas");
+            if (GasObject != null)
+            {
+                logger.Debug($"{gameObject.name} Gas object found.");
+                GasStartPosition = GasObject.transform.localPosition;
+                GasStartRotation = GasObject.transform.localRotation;
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Gas object not found!");
+            }
+            BrakeObject = transform.Find("Brake");
+            if (BrakeObject != null)
+            {
+                logger.Debug($"{gameObject.name} Brake object found.");
+                BrakeStartPosition = BrakeObject.transform.localPosition;
+                BrakeStartRotation = BrakeObject.transform.localRotation;
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} Brake object not found!");
+            }
+        }
+        void InitializeLights()
+        {
+            // Gets all Light components in the target object and its children
+            Light[] lights = transform.GetComponentsInChildren<Light>(true);
+
+            // Log the names of the objects containing the Light components and filter out unwanted lights
+            foreach (Light light in lights)
+            {
+                if (light.gameObject.name == "led0")
+                {
+                    led0_light = light;
+                    logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                }
+                else if (light.gameObject.name == "led1")
+                {
+                    led1_light = light;
+                    logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                }
+                else
+                {
+                    logger.Debug($"{gameObject.name} Excluded Light found in object: " + light.gameObject.name);
+                }
+            }
+        }
     }
 }

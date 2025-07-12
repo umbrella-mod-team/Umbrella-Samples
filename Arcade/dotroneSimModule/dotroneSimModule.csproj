@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../UGC.targets" />
+  <PropertyGroup>
+   <OutputType>Library</OutputType>
+      <AssemblyName>dotroneSimModule</AssemblyName>
+      <TargetFramework>netstandard2.0</TargetFramework>
+      <RootNamespace>WIGUx.Modules</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MameHookModule">
+      <HintPath>..\..\Modules\MameHookModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

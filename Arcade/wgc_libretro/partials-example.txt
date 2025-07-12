@@ -1,0 +1,6 @@
+# Dolphin GameCube/Wii Emulator
+Dolphin
+# PCSX2 PlayStation 2 Emulator
+EE
+# xemu Xbox Emulator
+xemu

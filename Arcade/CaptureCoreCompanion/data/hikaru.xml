@@ -1,0 +1,35 @@
+<?xml version="1.0" standalone="yes"?>
+<LaunchBox>
+  <Game>
+    <Title>Brave Firefighters</Title>
+    <ApplicationPath>braveff.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Air Trix (Rev. A)</Title>
+    <ApplicationPath>airtrix.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Air Trix (original)</Title>
+    <ApplicationPath>airtrixo.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Planet Harriers (Rev. A)</Title>
+    <ApplicationPath>pharrier.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>Star Wars: Racers Arcade</Title>
+    <ApplicationPath>swracer.zip</ApplicationPath>
+  </Game>
+    <Game>
+    <Title>Star Wars: Racers Arcade (Rev A)</Title>
+    <ApplicationPath>podrace.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>NASCAR Racing (Rev. A)</Title>
+    <ApplicationPath>sgnascar.zip</ApplicationPath>
+  </Game>
+  <Game>
+    <Title>NASCAR Racing (original)</Title>
+    <ApplicationPath>sgnascaro.zip</ApplicationPath>
+  </Game>
+ </LaunchBox>
