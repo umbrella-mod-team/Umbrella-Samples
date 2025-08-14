@@ -1,12 +1,13 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.XR;
 using WIGU;
-using System.Collections.Generic;
-using System.Collections;
-using System.IO;
-using System;
 using WIGUx.Modules.MameHookModule;
-using System.Reflection;
 
 namespace WIGUx.Modules.gforce2MotionSim
 {
@@ -15,7 +16,6 @@ namespace WIGUx.Modules.gforce2MotionSim
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
         [Header("Object Settings")]
-        private Transform StartObject; // Reference to the start button object
         private Transform StickObject; // Reference to the stick mirroring object
         private Transform ThrottleObject; // Reference to the left stick mirroring object
         private Transform XObject; // Reference to the main X object
@@ -38,11 +38,11 @@ namespace WIGUx.Modules.gforce2MotionSim
 
         [Header("Velocity Multiplier Settings")]        // Speeds for the animation of the in game flight stick or wheel
         public float primaryThumbstickRotationMultiplier = 25f; // Multiplier for primary thumbstick rotation intensity
-        public float secondaryThumbstickRotationMultiplier = 200f; // Multiplier for secondary thumbstick rotation intensity
+        public float secondaryThumbstickRotationMultiplier = 100f; // Multiplier for secondary thumbstick rotation intensity
         public float triggerRotationMultiplier = 15f; // Multiplier for trigger rotation intensity
         private readonly float thumbstickVelocity = 25f;  // Velocity for keyboard input
         private readonly float centeringVelocityX = 15f;  // Velocity for centering rotation
-        private readonly float centeringVelocityY = 150f;  // Velocity for centering rotation
+        private readonly float centeringVelocityY = 100f;  // Velocity for centering rotation
         private readonly float centeringVelocityZ = 15f;  // Velocity for centering rotation
         private float StickXRotationDegrees = 15f; // Degrees for Stick rotation, adjust as needed
         private float StickYRotationDegrees = 15f; // Degrees for Stick rotation, adjust as needed
@@ -72,6 +72,8 @@ namespace WIGUx.Modules.gforce2MotionSim
         private Vector3 playerVRSetupStartPosition;  // Initial PlayerVR positions for resetting
         private Vector3 cockpitCamStartPosition;  // Initial cockpitCam positionsfor resetting
         private Vector3 vrCamStartPosition;    // Initial vrCam positionsfor resetting
+        private Vector3 playerCameraInitialWorldScale; // Initial Player Camera world scale for resetting
+        private Vector3 playerVRSetupInitialWorldScale; // Initial PlayerVR world scale for resetting
 
         [Header("Rotation Settings")]     // Initial rotations setup
         private Quaternion XStartRotation;  // Initial X rotation for resetting
@@ -87,7 +89,8 @@ namespace WIGUx.Modules.gforce2MotionSim
         [Header("Lights and Emissives")]     // Setup Emissive and Lights
         public Light firelight1;
         public Light firelight2;
-        public Light startlight;
+        public Light start_light;
+        private Transform StartObject; // Reference to the start button object
         public Light strobe1_light;
         public Light strobe2_light;
         public Light strobe3_light;
@@ -153,6 +156,7 @@ namespace WIGUx.Modules.gforce2MotionSim
             if (StartObject) ToggleEmissive(StartObject.gameObject, false);
             if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
             if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
+            if (start_light) ToggleLight(start_light, false);
             if (firelight1) ToggleLight(firelight1, false);
             if (firelight2) ToggleLight(firelight2, false);
             ToggleBrightness1(false);
@@ -163,7 +167,7 @@ namespace WIGUx.Modules.gforce2MotionSim
         void Update()
         {
             bool inputDetected = false;  // Initialize for centering
-            bool throttleDetected = false;// Initialize for centering
+            
             CheckInsertedGameName();
             CheckControlledGameName();
             if (WIGUx.Modules.MameHookModule.MameHookController.ActiveRomsList != null)
@@ -174,7 +178,7 @@ namespace WIGUx.Modules.gforce2MotionSim
                         ReadData();
                 }
             }
-            if (isCenteringRotation && !throttleDetected && !inputDetected)
+            if (isCenteringRotation && !inputDetected)
             {
                 bool centeredX = false, centeredY = false, centeredZ = false;
 
@@ -251,8 +255,8 @@ namespace WIGUx.Modules.gforce2MotionSim
             }
             if (inFocusMode)
             {
-                MapThumbsticks(ref inputDetected, ref throttleDetected);
-                MapButtons(ref inputDetected, ref throttleDetected);
+                MapThumbsticks(ref inputDetected);
+                MapButtons(ref inputDetected);
                 HandleTransformAdjustment();
             }
         }
@@ -324,7 +328,8 @@ namespace WIGUx.Modules.gforce2MotionSim
                     // Call the corresponding function dynamically
                     switch (lampKey)
                     {
-                        case "start_lamp": ProcessStartLamp(newValue); break;
+                        case "start_lamp": ProcessStartLamp(newValue);
+                            break;
                         default:
                             logger.Debug($"No processing function for '{lampKey}'");
                             break;
@@ -342,7 +347,7 @@ namespace WIGUx.Modules.gforce2MotionSim
             logger.Debug($"Start Lamp updated: {state}");
 
             // Update lights
-            if (startlight) ToggleLight(startlight, state == 1);
+            if (start_light) ToggleLight(start_light, state == 1);
             // Update emissive material
             if (StartObject) ToggleEmissive(StartObject.gameObject, state == 1);
         }
@@ -377,15 +382,15 @@ namespace WIGUx.Modules.gforce2MotionSim
                 playerVRSetupStartPosition = playerVRSetup.transform.position;
                 playerVRSetupStartRotation = playerVRSetup.transform.rotation;
             }
+            // Check containment
             bool inside = false;
             if (cockpitCollider != null)
             {
                 Vector3 camPos = playerCamera.transform.position;
+                bool boundsContains = cockpitCollider.bounds.Contains(camPos);
                 Vector3 closest = cockpitCollider.ClosestPoint(camPos);
-                float dist = Vector3.Distance(closest, camPos);
-                const float touchingEpsilon = 0.01f; // 1 cm, tweak as needed
-                inside = dist <= touchingEpsilon;
-               // logger.Debug($"Containment check - ClosestPoint distance: {dist} (inside={inside})");
+                inside = (closest == camPos);
+                // logger.Debug($"{gameObject.name} Containment check - bounds.Contains: {boundsContains}, ClosestPoint==pos: {inside}");
             }
 
             if (cockpitCollider != null && inside)
@@ -394,7 +399,15 @@ namespace WIGUx.Modules.gforce2MotionSim
                 {
                     // Parent and apply offset to PlayerCamera
                     SaveOriginalParent(playerCamera);
-                    playerCamera.transform.SetParent(cockpitCam.transform, true);
+                    Vector3 worldPos = playerCamera.transform.position;
+                    Quaternion worldRot = playerCamera.transform.rotation;
+                    playerCameraInitialWorldScale = playerCamera.transform.lossyScale;
+                    KeyEmulator.SendQandEKeypress();
+                    playerCamera.transform.SetParent(cockpitCam.transform, false);
+                    playerCamera.transform.position = worldPos;
+                    playerCamera.transform.rotation = worldRot;
+                    NormalizeWorldScale(playerCamera, cockpitCam.transform);
+
                     logger.Debug($"{gameObject.name} Player is aboard and strapped in.");
                     isRiding = true; // Set riding state to true
                 }
@@ -402,7 +415,16 @@ namespace WIGUx.Modules.gforce2MotionSim
                 {
                     // Parent and apply offset to PlayerVRSetup
                     SaveOriginalParent(playerVRSetup);
-                    playerVRSetup.transform.SetParent(vrCam.transform, true);
+
+                    Vector3 worldPos = playerVRSetup.transform.position;
+                    Quaternion worldRot = playerVRSetup.transform.rotation;
+                    playerVRSetupInitialWorldScale = playerVRSetup.transform.lossyScale;
+                    KeyEmulator.SendQandEKeypress();
+                    playerVRSetup.transform.SetParent(vrCam.transform, false);
+                    playerVRSetup.transform.position = worldPos;
+                    playerVRSetup.transform.rotation = worldRot;
+                    NormalizeWorldScale(playerVRSetup, vrCam.transform);
+
                     logger.Debug($"{gameObject.name} VR Player is aboard and strapped in!");
                     logger.Debug("Sega Galaxy Force II Motion Sim starting...Please Work");
                     logger.Debug("Magic Word Used! Hold on your Butts!...");
@@ -505,70 +527,63 @@ namespace WIGUx.Modules.gforce2MotionSim
             input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
             return input;
         }
-        private void MapThumbsticks(ref bool inputDetected, ref bool throttleDetected)
+        private void MapThumbsticks(ref bool inputDetected)
         {
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
-
-            // Declare variables for triggers or extra inputs
-            float primaryIndexTrigger = 0f, secondaryIndexTrigger = 0f;
+            float LIndexTrigger = 0f, RIndexTrigger = 0f;
             float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
-            float xboxLIndexTrigger = 0f, xboxRIndexTrigger = 0f;
 
             // === INPUT SELECTION WITH DEADZONE ===
-            // VR CONTROLLERS
+            // OVR CONTROLLERS (adds to VR input if both are present)
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
                 primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
                 secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
 
-                // Oculus-specific inputs
-                primaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-                secondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                LIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                RIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
                 primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
                 secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
-                // Apply deadzone
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your oculus-specific mapping logic goes here, using the above values ---
             }
-            else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
+
+            // STEAMVR CONTROLLERS (adds to VR input if both are present)
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
                 var leftController = SteamVRInput.GetController(HandType.Left);
                 var rightController = SteamVRInput.GetController(HandType.Right);
-                primaryThumbstick = leftController.GetAxis();
-                secondaryThumbstick = rightController.GetAxis();
+                if (leftController != null) primaryThumbstick += leftController.GetAxis();
+                if (rightController != null) secondaryThumbstick += rightController.GetAxis();
 
-                // If you need extra OpenVR/SteamVR inputs, grab them here.
+                LIndexTrigger = Mathf.Max(LIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Left));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Right));
 
-                // Apply deadzone
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your OpenVR-specific mapping logic goes here ---
             }
-            // XBOX CONTROLLER (only if NOT in VR)
-            else if (XInput.IsConnected)
+
+            // XBOX CONTROLLER (adds to VR input if both are present)
+            if (XInput.IsConnected)
             {
-                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
-                xboxLIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
-                xboxRIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+                primaryThumbstick += XInput.Get(XInput.Axis.LThumbstick);
+                secondaryThumbstick += XInput.Get(XInput.Axis.RThumbstick);
 
                 // Optionally use Unity Input axes as backup:
-                // primaryThumbstick   = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                // secondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+                primaryThumbstick += new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                secondaryThumbstick += new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
 
-                // Apply deadzone
+                LIndexTrigger = Mathf.Max(LIndexTrigger, XInput.Get(XInput.Trigger.LIndexTrigger));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, XInput.Get(XInput.Trigger.RIndexTrigger));
+
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your Xbox-specific mapping logic goes here, using xboxLIndexTrigger etc. ---
             }
+
             // Map thumbstick for Stick 
             if (StickObject)
             {
@@ -580,30 +595,20 @@ namespace WIGUx.Modules.gforce2MotionSim
                 );
                 StickObject.localRotation = StickStartRotation * primaryRotation;
                 if (Mathf.Abs(primaryThumbstick.x) > 0.01f || Mathf.Abs(primaryThumbstick.y) > 0.01f)
-                    inputDetected = true; 
- isCenteringRotation = false; // Set if thumbstick moved
+                    inputDetected = true;
             }
 
-            // Map secondary thumbstick to right stick rotation on X-axis
+            // Map triggers to throttle rotation on X-axis
             if (ThrottleObject)
             {
-                // Triggers for throttle rotation on X-axis (not Z unless your axis is set up that way)
-                float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
-                float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
-
-                // This is the rotation you want to "add" to the starting rotation
+                // Triggers for throttle rotation on X-axis
                 Quaternion triggerRotation = Quaternion.Euler(
-                    (LIndexTrigger - RIndexTrigger) * triggerRotationMultiplier, // X-axis
+                    (RIndexTrigger - LIndexTrigger) * triggerRotationMultiplier, // X-axis
                     0f,
                     0f
                 );
-                // Apply it relative to the starting rotation
                 ThrottleObject.localRotation = ThrottleStartRotation * triggerRotation;
-                if (Mathf.Abs(LIndexTrigger) > 0.01f || Mathf.Abs(RIndexTrigger) > 0.01f)
-                    inputDetected = true; 
- isCenteringRotation = false; // Set if either trigger is pressed
             }
-
             // X ROTATION (Pitch, up/down on stick, XObject)
             if (primaryThumbstick.y != 0f)
             {
@@ -614,55 +619,52 @@ namespace WIGUx.Modules.gforce2MotionSim
                 {
                     XObject.Rotate(rotateX, 0f, 0f);
                     currentRotationX = targetX;
-                    inputDetected = true; 
- isCenteringRotation = false;
+                    inputDetected = true;
                 }
             }
-            
+
             // Y ROTATION (Yaw, left/right on stick, YObject)
             if (primaryThumbstick.x != 0f)
             {
-                float inputValue = -primaryThumbstick.x * secondaryThumbstickRotationMultiplier * Time.deltaTime;
+                float inputValue = primaryThumbstick.x * secondaryThumbstickRotationMultiplier * Time.deltaTime;
                 float targetY = Mathf.Clamp(currentRotationY + inputValue, minRotationY, maxRotationY);
                 float rotateY = targetY - currentRotationY;
                 if (Mathf.Abs(rotateY) > 0.0001f)
                 {
                     YObject.Rotate(0f, rotateY, 0f);
                     currentRotationY = targetY;
-                    inputDetected = true; 
- isCenteringRotation = false;
+                    inputDetected = true;
                 }
             }
-            
+
             // Z ROTATION (Roll, e.g., left/right on primary stick, ZObject)
             if (primaryThumbstick.x != 0f)
             {
-                float inputValue = -primaryThumbstick.x * primaryThumbstickRotationMultiplier * Time.deltaTime;
+                float inputValue = primaryThumbstick.x * primaryThumbstickRotationMultiplier * Time.deltaTime;
                 float targetZ = Mathf.Clamp(currentRotationZ + inputValue, minRotationZ, maxRotationZ);
                 float rotateZ = targetZ - currentRotationZ;
                 if (Mathf.Abs(rotateZ) > 0.0001f)
                 {
                     ZObject.Rotate(0f, 0f, rotateZ);
                     currentRotationZ = targetZ;
-                    inputDetected = true; 
- isCenteringRotation = false;
+                    inputDetected = true;
                 }
             }
             if (!inputDetected)
             {
                 CenterRotation();    // Center the rotation if no input is detected
             }
-            if (!throttleDetected)
-            {
-                CenterThrottle();    // Center the rotation if no throttle input is detected
-            }
         }
 
-        private void MapButtons(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
+
+        private void MapButtons(ref bool inputDetected) // Pass by reference
         {
             if (!inFocusMode) return;
-            // Fire Missle
-            if (Input.GetButtonDown("Fire2") || XInput.GetDown(XInput.Button.B))
+            // Fire Missile
+            if (XInput.GetDown(XInput.Button.B)
+                || OVRInput.GetDown(OVRInput.Button.Two) // Oculus "B" (right controller)
+                || SteamVRInput.GetDown(SteamVRInput.TouchButton.B)
+            )
             {
                 // Set lights to bright
                 ToggleBrightness1(true);
@@ -671,12 +673,13 @@ namespace WIGUx.Modules.gforce2MotionSim
                 if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, true);
                 if (firelight1) ToggleLight(firelight1, true);
                 if (firelight2) ToggleLight(firelight2, true);
-                //   inputDetected = true; 
- isCenteringRotation = false;
             }
 
-            // Release Missle Button
-            if (Input.GetButtonUp("Fire2") || XInput.GetUp(XInput.Button.B))
+            // Release Missile Button
+            if (XInput.GetUp(XInput.Button.B)
+                || OVRInput.GetUp(OVRInput.Button.Two)
+                || SteamVRInput.GetUp(SteamVRInput.TouchButton.B)
+            )
             {
                 if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
                 if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
@@ -684,9 +687,8 @@ namespace WIGUx.Modules.gforce2MotionSim
                 if (firelight2) ToggleLight(firelight2, false);
                 ToggleBrightness1(false);
                 ToggleBrightness2(false);
-                // inputDetected = true; 
- isCenteringRotation = false;
             }
+
         }
         private void CheckInsertedGameName()
         {
@@ -716,11 +718,31 @@ namespace WIGUx.Modules.gforce2MotionSim
                 return FileName;
             }
         }
-        void CenterRotation()
+        public static class KeyEmulator
         {
-            isCenteringRotation = true;
+            // Virtual key codes for Q and E
+            const byte VK_Q = 0x51;
+            const byte VK_E = 0x45;
+            const uint KEYEVENTF_KEYDOWN = 0x0000;
+            const uint KEYEVENTF_KEYUP = 0x0002;
+
+            [DllImport("user32.dll")]
+            static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+            public static void SendQandEKeypress()
+            {
+                // Send Q down
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+                // Send E down
+                keybd_event(VK_E, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+
+                // Send Q up
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                // Send E up
+                keybd_event(VK_E, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            }
         }
-        void CenterThrottle()
+        void CenterRotation()
         {
             isCenteringRotation = true;
         }
@@ -728,60 +750,106 @@ namespace WIGUx.Modules.gforce2MotionSim
         void HandleTransformAdjustment()
         {
             if (!inFocusMode) return;
-            // Choose target camera: use vrCam if available, otherwise fallback to cockpitCam
-            var cam = vrCam != null ? vrCam : cockpitCam;
 
-            if (cam != null && isRiding)
+            bool cockpitCamMoved = false;
+            bool vrCamMoved = false;
+
+            // Move BOTH cameras if isRiding is true
+            if (isRiding)
             {
-                // Handle position adjustments
-                if (Input.GetKey(KeyCode.Home))
+                // Desktop camera (cockpitCam)
+                if (cockpitCam != null)
                 {
-                    // Move forward
-                    cam.transform.localPosition += cam.transform.forward * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.End))
-                {
-                    // Move backward
-                    cam.transform.localPosition -= cam.transform.forward * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.UpArrow))
-                {
-                    // Move up
-                    cam.transform.localPosition += cam.transform.up * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.DownArrow))
-                {
-                    // Move down
-                    cam.transform.localPosition -= cam.transform.up * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.LeftArrow))
-                {
-                    // Move left
-                    cam.transform.localPosition -= cam.transform.right * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.RightArrow))
-                {
-                    // Move right
-                    cam.transform.localPosition += cam.transform.right * adjustSpeed * Time.deltaTime;
+                    if (Input.GetKey(KeyCode.Home))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.forward * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.End))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.back * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.UpArrow))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.up * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.DownArrow))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.down * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.LeftArrow))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.left * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.RightArrow))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.right * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Backspace))
+                    {
+                        cockpitCam.transform.Rotate(0, 90, 0);
+                        cockpitCamMoved = true;
+                    }
                 }
 
-                // Handle rotation with Backspace key
-                if (Input.GetKeyDown(KeyCode.Backspace))
+                // VR camera (vrCam)
+                if (vrCam != null)
                 {
-                    cam.transform.Rotate(0, 90, 0);
+                    if (Input.GetKey(KeyCode.Home))
+                    {
+                        vrCam.transform.localPosition += Vector3.forward * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.End))
+                    {
+                        vrCam.transform.localPosition += Vector3.back * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.UpArrow))
+                    {
+                        vrCam.transform.localPosition += Vector3.up * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.DownArrow))
+                    {
+                        vrCam.transform.localPosition += Vector3.down * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.LeftArrow))
+                    {
+                        vrCam.transform.localPosition += Vector3.left * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.RightArrow))
+                    {
+                        vrCam.transform.localPosition += Vector3.right * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Backspace))
+                    {
+                        vrCam.transform.Rotate(0, 90, 0);
+                        vrCamMoved = true;
+                    }
                 }
             }
 
-            // Save the new position and rotation
-            if (vrCam != null)
+            // Save and log **only if there was a change**
+            if (vrCam != null && vrCamMoved)
             {
                 vrCamStartPosition = vrCam.transform.localPosition;
                 vrCamStartRotation = vrCam.transform.localRotation;
+                Debug.Log($"{gameObject.name}vrCam localPosition: " + vrCam.transform.localPosition.ToString("F4"));
             }
-            else if (cockpitCam != null)
+            if (cockpitCam != null && cockpitCamMoved)
             {
                 cockpitCamStartPosition = cockpitCam.transform.localPosition;
                 cockpitCamStartRotation = cockpitCam.transform.localRotation;
+                Debug.Log($"{gameObject.name} cockpitCam localPosition: " + cockpitCam.transform.localPosition.ToString("F4"));
             }
         }
         void ToggleEmissiveRenderer(Renderer renderer, bool isOn)
@@ -850,7 +918,28 @@ namespace WIGUx.Modules.gforce2MotionSim
                 logger.Debug($"{gameObject.name} {name} found.");
             }
         }
+        void NormalizeWorldScale(GameObject obj, Transform newParent)
+        {
+            if (obj == null || newParent == null) return;
 
+            Vector3 parentWorldScale = newParent.lossyScale;
+            Vector3 targetWorldScale = Vector3.one;
+
+            // Use the correct initial world scale for each object
+            if (obj == playerCamera)
+                targetWorldScale = playerCameraInitialWorldScale;
+            else if (obj == playerVRSetup)
+                targetWorldScale = playerVRSetupInitialWorldScale;
+            else
+                return; // Do nothing for unknown objects
+
+            obj.transform.localScale = new Vector3(
+                targetWorldScale.x / parentWorldScale.x,
+                targetWorldScale.y / parentWorldScale.y,
+                targetWorldScale.z / parentWorldScale.z
+            );
+        }
+        // Save original parent of object in dictionary
         void SaveOriginalParent(GameObject obj)
         {
             if (obj != null && !originalParents.ContainsKey(obj))
@@ -862,11 +951,12 @@ namespace WIGUx.Modules.gforce2MotionSim
                 else
                 {
                     originalParents[obj] = null; // Explicitly store that this was in the root
-                    logger.Debug($"Object {obj.name} was in the root and has no parent.");
+                    logger.Debug($"{gameObject.name} Object {obj.name} was in the root and has no parent.");
                 }
             }
         }
 
+        // Restore original parent of object and log appropriate message
         void RestoreOriginalParent(GameObject obj, string name)
         {
             if (obj == null)
@@ -883,19 +973,34 @@ namespace WIGUx.Modules.gforce2MotionSim
 
             Transform originalParent = originalParents[obj];
 
+            Vector3 worldPos = obj.transform.position;
+            Quaternion worldRot = obj.transform.rotation;
+
             // If the original parent was NULL, place the object back in the root
             if (originalParent == null)
             {
-                obj.transform.SetParent(null, true);  // Moves it back to the root
+                obj.transform.SetParent(null, false);  // Moves it back to the root
+                obj.transform.position = worldPos;
+                obj.transform.rotation = worldRot;
+
+                // When no parent, just set localScale to initial world scale
+                if (obj == playerCamera)
+                    obj.transform.localScale = playerCameraInitialWorldScale;
+                else if (obj == playerVRSetup)
+                    obj.transform.localScale = playerVRSetupInitialWorldScale;
+
                 logger.Debug($"{name} restored to root.");
             }
             else
             {
                 obj.transform.SetParent(originalParent, false);
+                obj.transform.position = worldPos;
+                obj.transform.rotation = worldRot;
+                NormalizeWorldScale(obj, originalParent);
+
                 logger.Debug($"{name} restored to original parent: {originalParent.name}");
             }
         }
-
         // Method to change the brightness of the lights
         void ToggleBrightness(bool isBright)
         {
@@ -1154,7 +1259,7 @@ namespace WIGUx.Modules.gforce2MotionSim
                 }
                 else if (light.gameObject.name == "startlight")
                 {
-                    startlight = light;
+                    start_light = light;
                     logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
                 }
                 else
@@ -1186,7 +1291,6 @@ namespace WIGUx.Modules.gforce2MotionSim
             {
                 logger.Debug($"{gameObject.name} No VR Devices found. No SteamVR or OVR present)");
             }
-
             // Find X object in hierarchy
             XObject = transform.Find("X");
             if (XObject != null)

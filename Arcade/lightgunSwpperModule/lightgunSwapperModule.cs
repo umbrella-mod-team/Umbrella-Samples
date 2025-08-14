@@ -1,11 +1,12 @@
-﻿using System.IO;
-using System.Reflection;
+﻿using System;
+using System.IO;
 using System.Linq;
-using UnityEngine;
-using WIGU;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using static ServerInfo;
+using UnityEngine;
 using Valve.VR;
+using WIGU;
+using static ServerInfo;
 
 
 namespace WIGUx.Modules.lightgunSwapperModule
@@ -108,7 +109,7 @@ namespace WIGUx.Modules.lightgunSwapperModule
                     }
                 }
             }
-
+            /*
             // Aim override and mouse emulation
             if (inFocusMode && TryGetLightgunController())
             {
@@ -185,7 +186,8 @@ namespace WIGUx.Modules.lightgunSwapperModule
                 }
             }
 
-            HandleModelSwap();
+           HandleModelSwap();
+            */
         }
 
         private bool TryGetLightgunController()
@@ -324,12 +326,36 @@ namespace WIGUx.Modules.lightgunSwapperModule
 
         // Helper class to extract and sanitize file names.
         public static class FileNameHelper
-    {
-        public static string GetFileName(string filePath)
         {
-            string fileName = Path.GetFileNameWithoutExtension(filePath);
-            return System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+            public static string GetFileName(string filePath)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                return System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+            }
+        }
+        public static class KeyEmulator
+        {
+            // Virtual key codes for Q and E
+            const byte VK_Q = 0x51;
+            const byte VK_E = 0x45;
+            const uint KEYEVENTF_KEYDOWN = 0x0000;
+            const uint KEYEVENTF_KEYUP = 0x0002;
+
+            [DllImport("user32.dll")]
+            static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+            public static void SendQandEKeypress()
+            {
+                // Send Q down
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+                // Send E down
+                keybd_event(VK_E, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+
+                // Send Q up
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                // Send E up
+                keybd_event(VK_E, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            }
         }
     }
-}
 }

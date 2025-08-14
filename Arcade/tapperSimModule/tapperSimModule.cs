@@ -219,35 +219,69 @@ namespace WIGUx.Modules.tapperSim
             tapp1currenttapRotationZ = 0f;
             inFocusMode = false;  // Clear focus mode flag
         }
+        private const float THUMBSTICK_DEADZONE = 0.13f; // Adjust as needed
 
-        //sexy new combined input handler
-        // Handle input method
-        //sexy new combined input handler
-        void HandleInput(ref bool inputDetected)
+        private Vector2 ApplyDeadzone(Vector2 input, float deadzone)
+        {
+            input.x = Mathf.Abs(input.x) < deadzone ? 0f : input.x;
+            input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
+            return input;
+        }
+        private void MapThumbsticks(ref bool inputDetected)
         {
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
-            Vector2 secondaryThumbstick = Vector2.zero; ;
+            Vector2 secondaryThumbstick = Vector2.zero;
+            float LIndexTrigger = 0f, RIndexTrigger = 0f;
+            float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
 
-            // VR controller input
+            // === INPUT SELECTION WITH DEADZONE ===
+            // OVR CONTROLLERS (adds to VR input if both are present)
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
                 primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
                 secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
-                Vector2 ovrPrimaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
-                Vector2 ovrSecondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
-                float ovrPrimaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-                float ovrSecondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
-                float ovrPrimaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
-                float ovrSecondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
+
+                LIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                RIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
+                secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
+
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
             }
-            else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
+
+            // STEAMVR CONTROLLERS (adds to VR input if both are present)
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
                 var leftController = SteamVRInput.GetController(HandType.Left);
                 var rightController = SteamVRInput.GetController(HandType.Right);
-                primaryThumbstick = leftController.GetAxis();
-                secondaryThumbstick = rightController.GetAxis();
+                if (leftController != null) primaryThumbstick += leftController.GetAxis();
+                if (rightController != null) secondaryThumbstick += rightController.GetAxis();
+
+                LIndexTrigger = Mathf.Max(LIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Left));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Right));
+
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+            }
+
+            // XBOX CONTROLLER (adds to VR input if both are present)
+            if (XInput.IsConnected)
+            {
+                primaryThumbstick += XInput.Get(XInput.Axis.LThumbstick);
+                secondaryThumbstick += XInput.Get(XInput.Axis.RThumbstick);
+
+                // Optionally use Unity Input axes as backup:
+                primaryThumbstick += new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                secondaryThumbstick += new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+
+                LIndexTrigger = Mathf.Max(LIndexTrigger, XInput.Get(XInput.Trigger.LIndexTrigger));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, XInput.Get(XInput.Trigger.RIndexTrigger));
+
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
             }
 
 

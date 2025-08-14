@@ -1,13 +1,14 @@
-﻿using System;
-using System.IO;
-using UnityEngine;
-using WIGU;
-using System.Collections.Generic;
-using UnityEngine.Video;
-using System.Linq;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections;
-using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
+using UnityEngine;
+using UnityEngine.Video;
+using WIGU;
 
 namespace WIGUx.Modules.attractmodeModule
 {
@@ -39,16 +40,20 @@ namespace WIGUx.Modules.attractmodeModule
         private bool isSyncedScreenMesh = false;
         public VideoPlayer videoPlayer;
         public GameObject emissiveLight; // whatever lights up
-        private bool attractModeAutoStart = false; // Default is off, can be set from config
+        public static bool attractModeAutoStart = false; // Default is off, can be set from config
         private bool videoLoaded = false;
+        private bool lastSystemPowerState = false;
+        private bool attractModeVideoMissing = false;
         private float videoDistanceThreshold; // attractmode distance to play video
         private float attractFadeStart; // attractmode audio fade distance start
         private float attractFadeEnd;  // attractmode audio fade distance end
         private float attractVolume;  //attract mode volume
+        public static int retroarchLimit;
         private int attractRenderWidth = 320; //  0 (auto)
         private int attractRenderHeight = 240; //  0 (auto)
         private KeyCode attractModeHotkey = KeyCode.Insert; // Default is Insert, can be set from config
         private Dictionary<GameObject, GameObject> attractScreens = new Dictionary<GameObject, GameObject>();
+        public static Dictionary<int, DateTime> retroarchLaunchTimes = new Dictionary<int, DateTime>();
         [Header("Cabinet Settings")]
         private Retroarch retroarchInstance;
         private GameSystem gameSystem;
@@ -103,30 +108,46 @@ namespace WIGUx.Modules.attractmodeModule
             // Find the ScreenReceiver if present
             if (screenController != null)
                 screenReceiver = screenController.GetComponent<ScreenReceiver>();
+            lastSystemPowerState = systemState != null && systemState.IsOn;
         }
         void Update()
         {
             CheckInsertedGameName();
             CheckControlledGameName();
+            bool isOn = (systemState != null && systemState.IsOn);
 
-            if (systemState != null && systemState.IsOn && isAttractMode == true)
+            // Only act when system transitions OFF -> ON, and attract mode is active
+            if (!lastSystemPowerState && isOn && attractmodeController.attractModeAutoStart)
             {
                 StopAttractMode();
+                StartCoroutine(EnforceRetroarchLimitOnPowerOn());
             }
 
-            // Enable/Disable attract mode with Insert for demo purposes
+            // Update the last system power state
+            lastSystemPowerState = isOn;
+
             if (Input.GetKeyDown(attractModeHotkey))
             {
-                if (!isAttractMode)
+                attractModeAutoStart = !attractModeAutoStart;
+
+                if (attractModeAutoStart)
                 {
-                    if (isSyncedScreenMesh)
-                        StartAttractMode();
-                    else
-                        StartCoroutine(DelayedStartAttractMode());
+                    // Start attract mode on ALL cabs
+                    foreach (var attract in UnityEngine.Object.FindObjectsOfType<attractmodeController>())
+                    {
+                        if (attract.isSyncedScreenMesh)
+                            attract.StartAttractMode();
+                        else
+                            attract.StartCoroutine(attract.DelayedStartAttractMode());
+                    }
                 }
                 else
                 {
-                    StopAttractMode();
+                    // Stop attract mode on ALL cabs
+                    foreach (var attract in UnityEngine.Object.FindObjectsOfType<attractmodeController>())
+                    {
+                        attract.StopAttractMode();
+                    }
                 }
             }
 
@@ -134,9 +155,6 @@ namespace WIGUx.Modules.attractmodeModule
             if (isAttractMode && systemState != null)
             {
                 systemState.SetPowerLight(true);
-                var animation = systemState.GetComponent<Animation>();
-                if (systemState.onAnimation != null && animation != null)
-                    animation.Play(systemState.onAnimation.name);
             }
 
             // --- Handle Attract Mode video (distance, streaming logic) ---
@@ -213,14 +231,34 @@ namespace WIGUx.Modules.attractmodeModule
                 }
                 else // SyncedScreenMesh: let video play, only mute audio by range
                 {
-                    if (audioSource != null)
+                    // Always create and play the VideoPlayer for synced screens if it doesn't exist
+                    if (ugcVideoPlayer == null)
                     {
-                        audioSource.mute = (dist > videoDistanceThreshold);
+                        ugcVideoPlayer = gameObject.AddComponent<VideoPlayer>();
+                        ugcVideoPlayer.playOnAwake = false;
+                        ugcVideoPlayer.renderMode = VideoRenderMode.RenderTexture;
+                        ugcVideoPlayer.source = UnityEngine.Video.VideoSource.Url;
+                        ugcVideoPlayer.url = videoUrl; // should be set up in StartAttractMode()
+                        ugcVideoPlayer.isLooping = true;
+                        if (audioSource != null)
+                        {
+                            ugcVideoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
+                            ugcVideoPlayer.SetTargetAudioSource(0, audioSource);
+                            audioSource.volume = attractVolume;
+                        }
+                        ugcVideoPlayer.errorReceived += (vp, msg) => logger.Error("[AttractMode] VideoPlayer ERROR: " + msg);
+                        ugcVideoPlayer.prepareCompleted += OnVideoPrepared;
+                        ugcVideoPlayer.Prepare();
+                    }
+                    // Always play for synced screens
+                    if (ugcVideoPlayer != null && !ugcVideoPlayer.isPlaying)
+                    {
+                        ugcVideoPlayer.Play();
                     }
                 }
 
-                // --- Audio fade logic (applies if audioSource exists and video is playing) ---
-                if (audioSource != null && ugcVideoPlayer != null)
+                    // --- Audio fade logic (applies if audioSource exists and video is playing) ---
+                    if (audioSource != null && ugcVideoPlayer != null)
                 {
                     float fade;
                     if (dist <= attractFadeStart)
@@ -253,15 +291,85 @@ namespace WIGUx.Modules.attractmodeModule
                     }
                 }
             }
+            // --- Auto-restart Attract Mode when system turns off and attractModeAutoStart is enabled ---
+            if (attractModeAutoStart && !isAttractMode && !attractModeVideoMissing
+                && systemState != null && !systemState.IsOn)
+            {
+                var retro = GetComponentInParent<Retroarch>();
+                if (retro != null && retro.isRunning)
+                    return; // don't auto-restart over RetroArch
 
+                StartCoroutine(DelayedStartAttractMode());
+            }
+            // Power-on edge: stop attract and enforce retroarch limit
+            if (!lastSystemPowerState && isOn && isAttractMode && retroarchLimit > 0)
+            {
+                StopAttractMode();
+                StartCoroutine(EnforceRetroarchLimitOnPowerOn());
+            }
             CycleEmissiveColors();
         }
 
+        private IEnumerator EnforceRetroarchLimitOnPowerOn()
+        {
+            yield return null; // Wait a frame to ensure the new Retroarch is running
 
+            // Get this cab's Retroarch and its game path (current one being powered on)
+            var myRetro = this.GetComponentInChildren<Retroarch>() ?? this.GetComponentInParent<Retroarch>();
+            string myGamePath = null;
+            if (myRetro != null && myRetro.game != null)
+                myGamePath = myRetro.game.path;
+
+            // Find all other running Retroarchs NOT for our game
+            var others = UnityEngine.Object.FindObjectsOfType<Retroarch>()
+                .Where(r => r.isRunning
+                    && r != myRetro // Don't close self
+                    && r.game != null
+                    && !string.IsNullOrEmpty(r.game.path)
+                    && !string.Equals(r.game.path, myGamePath, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            // Only close if we're over the limit (e.g., limit == 1)
+            int limit = retroarchLimit;
+            int runningCount = 1 + others.Count; // Ours + others
+            while (runningCount > limit && others.Count > 0)
+            {
+                var toClose = others[0];
+                others.RemoveAt(0);
+                runningCount--;
+
+                var attractMode = toClose.GetComponent<attractmodeController>();
+                // This is the correct way to access the static flag:
+                bool autoRestart = attractMode != null && attractmodeController.attractModeAutoStart;
+
+                toClose.Close();
+
+                if (autoRestart)
+                {
+                    if (attractMode.isSyncedScreenMesh)
+                        attractMode.StartAttractMode();
+                    else
+                        attractMode.StartCoroutine(attractMode.DelayedStartAttractMode());
+                }
+            }
+        }
         private IEnumerator DelayedStartAttractMode()
         {
             float delay = UnityEngine.Random.Range(0.1f, 5f);
             yield return new WaitForSeconds(delay);
+
+            yield return null;
+
+            if (isAttractMode)
+                yield break;
+
+            var retro = GetComponentInParent<Retroarch>();
+            if (retro != null && retro.isRunning)
+                yield break;
+
+            if (systemState != null && systemState.IsOn)
+                yield break;
+
             StartAttractMode();
         }
 
@@ -296,11 +404,20 @@ namespace WIGUx.Modules.attractmodeModule
         private void StartAttractMode()
         {
             logger.Debug($"{gameObject.name} Starting Attract Mode...");
+
             if (isAttractMode)
             {
                 logger.Debug("Attract mode already running.");
                 return;
             }
+
+            var retro = GetComponentInParent<Retroarch>();
+            if (retro != null && retro.isRunning)
+            {
+                logger.Debug("RetroArch is running, skipping attract mode start.");
+                return;
+            }
+
             isAttractMode = true;
 
             if (screenController == null || screenController.screens.Count == 0)
@@ -314,9 +431,12 @@ namespace WIGUx.Modules.attractmodeModule
             string folderAndName = CheckGameName();
             if (string.IsNullOrEmpty(folderAndName))
             {
+                attractModeVideoMissing = true;   // Prevent future retries
                 isAttractMode = false;
                 return;
             }
+
+            attractModeVideoMissing = false; // Reset if video is found
             string emuvrRoot = GetEmuVRRoot();
             string videoFilePath = Path.Combine(emuvrRoot, "Custom", "Videos", folderAndName + ".mp4");
             videoUrl = "file:///" + videoFilePath.Replace("\\", "/"); // <-- assign to field!
@@ -369,18 +489,6 @@ namespace WIGUx.Modules.attractmodeModule
                 Destroy(attractRenderTexture);
                 attractRenderTexture = null;
             }
-
-            // --- DO NOT CREATE THE VIDEOPLAYER HERE! ---
-            // VideoPlayer will be created in Update(), when player is in range.
-
-            // Visuals/animation ON always in attract mode (optional if you want extra safety)
-            if (systemState != null)
-            {
-                systemState.SetPowerLight(true);
-                var animation = systemState.GetComponent<Animation>();
-                if (systemState.onAnimation != null && animation != null)
-                    animation.Play(systemState.onAnimation.name);
-            }
         }
 
 
@@ -421,7 +529,21 @@ namespace WIGUx.Modules.attractmodeModule
                 if (clone == null) continue;
                 var rend = clone.GetComponent<Renderer>();
                 if (rend == null) continue;
-
+                // --- Matte Screen: Assign shader from root cache ---
+                var rootMatteObj = transform.Find("Matte");
+                if (rootMatteObj != null)
+                {
+                    var matteRend = rootMatteObj.GetComponent<Renderer>();
+                    if (matteRend != null && matteRend.sharedMaterial != null)
+                    {
+                        rend.material.shader = matteRend.sharedMaterial.shader;
+                        rend.material.SetTexture("_EmissionMap", attractRenderTexture);     
+                        rend.material.SetColor("_EmissionColor", Color.white);    
+                        rend.material.EnableKeyword("_EMISSION");                           
+                        logger.Debug($"[DEBUG] Assigned Matte screen shader '{matteRend.sharedMaterial.shader.name}' to {clone.name}");
+                        continue;
+                    }
+                }
                 // --- Hologram: Assign shader from root cache ---
                 if (rootHologramObj != null)
                 {
@@ -465,13 +587,19 @@ namespace WIGUx.Modules.attractmodeModule
 
             logger.Debug("[AttractMode] ugcVideoPlayer.targetTexture: " + ugcVideoPlayer.targetTexture.GetInstanceID());
             logger.Debug("[AttractMode] attractRenderTexture: " + attractRenderTexture.GetInstanceID());
+
             if (systemState != null)
             {
                 systemState.SetPowerLight(true);
-                // Play ON animation if available
-                var animation = systemState.GetComponent<Animation>();
-                if (systemState.onAnimation != null && animation != null)
-                    animation.Play(systemState.onAnimation.name);
+                /*
+                var animatorField = typeof(GameSystemState).GetField("animator", BindingFlags.NonPublic | BindingFlags.Instance);
+                Animator animator = animatorField?.GetValue(systemState) as Animator;
+
+                if (animator != null)
+                {
+                    animator.Play("On"); // or whatever the state is called
+                }
+                */
             }
             ugcVideoPlayer.Play();
             ugcVideoPlayer.prepareCompleted -= OnVideoPrepared;
@@ -510,10 +638,6 @@ namespace WIGUx.Modules.attractmodeModule
             if (systemState != null && !systemState.IsOn)
             {
                 systemState.SetPowerLight(false);
-                // Play Off animation if available
-                var animation = systemState.GetComponent<Animation>();
-                if (systemState.offAnimation != null && animation != null)
-                    animation.Play(systemState.offAnimation.name);
             }
         }
         public void LoadAttractSettingsFromSaveAndConfig()
@@ -524,6 +648,7 @@ namespace WIGUx.Modules.attractmodeModule
             float defaultAttractVolume = 0.35f;
             int defaultAttractRenderWidth = 0;
             int defaultAttractRenderHeight = 0;
+            int defaultRetroarchLimit = 1;
 
             // Assign defaults first
             videoDistanceThreshold = defaultVideoDistanceThreshold;
@@ -534,6 +659,7 @@ namespace WIGUx.Modules.attractmodeModule
             attractVolume = defaultAttractVolume;
             attractModeAutoStart = false;
             attractModeHotkey = KeyCode.Insert;
+            retroarchLimit = defaultRetroarchLimit;
 
             int slot = Settings.AutoLoadLevel;
             string slotSection = $"Slot{slot}";
@@ -549,9 +675,10 @@ namespace WIGUx.Modules.attractmodeModule
             attractRenderWidth = (int)ini.GetFloat(slotSection, "attractRenderWidth", defaultAttractRenderWidth);
             attractRenderHeight = (int)ini.GetFloat(slotSection, "attractRenderHeight", defaultAttractRenderHeight);
             attractVolume = ini.GetFloat(slotSection, "attractVolume", defaultAttractVolume);
-
+            retroarchLimit = (int)ini.GetFloat("Global", "retroarchLimit", defaultRetroarchLimit);
             // --- Per-slot autostart and hotkey ---
             attractModeAutoStart = ini.GetString(slotSection, "attractModeAutoStart", "false").ToLower() == "true";
+
 
             string hotkeyString = ini.GetString(slotSection, "attractModeHotkey", "Insert");
             if (System.Enum.TryParse<KeyCode>(hotkeyString, out var parsedKey))
@@ -566,6 +693,7 @@ namespace WIGUx.Modules.attractmodeModule
             logger.Debug($"   attractRenderHeight = {attractRenderHeight}");
             logger.Debug($"   attractModeAutoStart = {attractModeAutoStart}");
             logger.Debug($"   attractModeHotkey = {attractModeHotkey}");
+            logger.Debug($"   retroarchLimit = {retroarchLimit}");
 
             // --- Override volume from save JSON (per-cabinet), if present ---
             try
@@ -753,6 +881,7 @@ namespace WIGUx.Modules.attractmodeModule
                 return System.Text.RegularExpressions.Regex.Replace(s, "[\\\\/:*?\"<>|]", "_");
             }
         }
+
         // INI parser for arcade.cfg
         public class IniFile
         {

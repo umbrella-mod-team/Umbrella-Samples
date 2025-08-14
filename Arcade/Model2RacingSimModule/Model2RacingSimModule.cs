@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using UnityEngine;
 using WIGU;
 
 namespace WIGUx.Modules.Model2RacingSim
@@ -46,10 +48,10 @@ namespace WIGUx.Modules.Model2RacingSim
         private Quaternion BrakeStartRotation;  // Initial Brake rotations for resetting
 
         [Header("Lights and Emissives")]     // Setup Emissive and Lights
-        private Light RaceLeaderLight;
-        private Light ShiftLight;
+        private Light raceLeaderLight_light;
+        private Light shiftLight_light;
         private bool lastShiftLightState = false;
-        bool lastStartButtonState = false;
+        private bool lastStartButtonState = false;
         private Transform VRRedEmissiveObject;
         private Transform VRBlueEmissiveObject;
         private Transform VRYellowEmissiveObject;
@@ -90,7 +92,7 @@ namespace WIGUx.Modules.Model2RacingSim
         {
             ReadData();
             bool inputDetected = false;  // Initialize for centering
-            bool throttleDetected = false;// Initialize for centering
+            
             // Enter focus when names match
             if (!string.IsNullOrEmpty(insertedGameName)
                 && !string.IsNullOrEmpty(controlledGameName)
@@ -105,7 +107,7 @@ namespace WIGUx.Modules.Model2RacingSim
             }
             if (inFocusMode)
             {
-                MapThumbsticks(ref inputDetected, ref throttleDetected);
+                MapThumbsticks(ref inputDetected);
             }
         }
         void WriteLampConfig(string filePath)
@@ -169,70 +171,63 @@ namespace WIGUx.Modules.Model2RacingSim
             input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
             return input;
         }
-        private void MapThumbsticks(ref bool inputDetected, ref bool throttleDetected)
+        private void MapThumbsticks(ref bool inputDetected)
         {
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
-
-            // Declare variables for triggers or extra inputs
-            float primaryIndexTrigger = 0f, secondaryIndexTrigger = 0f;
+            float LIndexTrigger = 0f, RIndexTrigger = 0f;
             float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
-            float xboxLIndexTrigger = 0f, xboxRIndexTrigger = 0f;
 
             // === INPUT SELECTION WITH DEADZONE ===
-            // VR CONTROLLERS
+            // OVR CONTROLLERS (adds to VR input if both are present)
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
                 primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
                 secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
 
-                // Oculus-specific inputs
-                primaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-                secondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                LIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                RIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
                 primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
                 secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
-                // Apply deadzone
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your oculus-specific mapping logic goes here, using the above values ---
             }
-            else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
+
+            // STEAMVR CONTROLLERS (adds to VR input if both are present)
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
                 var leftController = SteamVRInput.GetController(HandType.Left);
                 var rightController = SteamVRInput.GetController(HandType.Right);
-                primaryThumbstick = leftController.GetAxis();
-                secondaryThumbstick = rightController.GetAxis();
+                if (leftController != null) primaryThumbstick += leftController.GetAxis();
+                if (rightController != null) secondaryThumbstick += rightController.GetAxis();
 
-                // If you need extra OpenVR/SteamVR inputs, grab them here.
+                LIndexTrigger = Mathf.Max(LIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Left));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Right));
 
-                // Apply deadzone
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your OpenVR-specific mapping logic goes here ---
             }
-            // XBOX CONTROLLER (only if NOT in VR)
-            else if (XInput.IsConnected)
+
+            // XBOX CONTROLLER (adds to VR input if both are present)
+            if (XInput.IsConnected)
             {
-                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
-                xboxLIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
-                xboxRIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+                primaryThumbstick += XInput.Get(XInput.Axis.LThumbstick);
+                secondaryThumbstick += XInput.Get(XInput.Axis.RThumbstick);
 
                 // Optionally use Unity Input axes as backup:
-                // primaryThumbstick   = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                // secondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+                primaryThumbstick += new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                secondaryThumbstick += new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
 
-                // Apply deadzone
+                LIndexTrigger = Mathf.Max(LIndexTrigger, XInput.Get(XInput.Trigger.LIndexTrigger));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, XInput.Get(XInput.Trigger.RIndexTrigger));
+
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your Xbox-specific mapping logic goes here, using xboxLIndexTrigger etc. ---
             }
+
             // Map primary thumbstick to wheel
             if (WheelObject)
             {
@@ -243,36 +238,27 @@ namespace WIGUx.Modules.Model2RacingSim
                 );
                 WheelObject.localRotation = WheelStartRotation * primaryRotation;
                 if (Mathf.Abs(primaryThumbstick.x) > 0.01f) // Only set if wheel is being turned
-                    inputDetected = true; 
- isCenteringRotation = false;
+                    inputDetected = true;                   
             }
 
             // Map triggers for gas and brake rotation on X-axis
             if (GasObject)
             {
-                float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
                 Quaternion gasRotation = Quaternion.Euler(
                     RIndexTrigger * triggerRotationMultiplier,
                     0f,
                     0f
                 );
-                GasObject.localRotation = GasStartRotation * gasRotation;
-                if (Mathf.Abs(RIndexTrigger) > 0.01f) // Only set if trigger is being pressed
-                    throttleDetected = true; 
- isCenteringRotation = false;
+                GasObject.localRotation = GasStartRotation * gasRotation;                  
             }
             if (BrakeObject)
             {
-                float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
                 Quaternion brakeRotation = Quaternion.Euler(
                     LIndexTrigger * triggerRotationMultiplier,
                     0f,
                     0f
                 );
-                BrakeObject.localRotation = BrakeStartRotation * brakeRotation;
-                if (Mathf.Abs(LIndexTrigger) > 0.01f) // Only set if trigger is being pressed
-                    throttleDetected = true; 
- isCenteringRotation = false;
+                BrakeObject.localRotation = BrakeStartRotation * brakeRotation;                               
             }
 
         }
@@ -305,12 +291,35 @@ namespace WIGUx.Modules.Model2RacingSim
                 return FileName;
             }
         }
+        public static class KeyEmulator
+        {
+            // Virtual key codes for Q and E
+            const byte VK_Q = 0x51;
+            const byte VK_E = 0x45;
+            const uint KEYEVENTF_KEYDOWN = 0x0000;
+            const uint KEYEVENTF_KEYUP = 0x0002;
 
+            [DllImport("user32.dll")]
+            static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+            public static void SendQandEKeypress()
+            {
+                // Send Q down
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+                // Send E down
+                keybd_event(VK_E, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+
+                // Send Q up
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                // Send E up
+                keybd_event(VK_E, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            }
+        }
         void ReadData()
         {
             if (!File.Exists(filePath))
             {
-                logger.Debug($"{gameObject.name} outputs file not found: {filePath}");
+             //   logger.Debug($"{gameObject.name} outputs file not found: {filePath}");
                 return;
             }
 
@@ -407,9 +416,9 @@ namespace WIGUx.Modules.Model2RacingSim
             // Only update if the state has changed
             if (shiftLightOn != lastShiftLightState)
             {
-                if (ShiftLight != null)
+                if (shiftLight_light != null)
                 {
-                    ShiftLight.enabled = shiftLightOn;
+                    shiftLight_light.enabled = shiftLightOn;
                     logger.Debug($"{gameObject.name} Shift Light is now {(shiftLightOn ? "ON" : "OFF")}");
                 }
                 else
@@ -454,12 +463,12 @@ namespace WIGUx.Modules.Model2RacingSim
             {
                 if (light.gameObject.name == "RaceLeaderLight")
                 {
-                    RaceLeaderLight = light;
+                    raceLeaderLight_light = light;
                     logger.Debug($"{gameObject.name} RaceLeaderLight found in object: " + light.gameObject.name);
                 }
                 else if (light.gameObject.name == "ShiftLight")
                 {
-                    ShiftLight = light;
+                    shiftLight_light = light;
                     logger.Debug($"{gameObject.name} ShiftLight found in object: " + light.gameObject.name);
                 }
                 else
@@ -596,8 +605,8 @@ namespace WIGUx.Modules.Model2RacingSim
                 logger.Debug($"{gameObject.name} VRYellowEmissive object not found.");
             }
             string missingObjects = "";
-            if (RaceLeaderLight == null) missingObjects += "Race Leader Light, ";
-            if (ShiftLight == null) missingObjects += "Shift Light, ";
+            if (raceLeaderLight_light == null) missingObjects += "Race Leader Light, ";
+            if (shiftLight_light == null) missingObjects += "Shift Light, ";
             if (VRRedEmissiveObject == null) missingObjects += "VR Red Emissive, ";
             if (VRBlueEmissiveObject == null) missingObjects += "VR Blue Emissive, ";
             if (VRYellowEmissiveObject == null) missingObjects += "VR Yellow Emissive, ";
@@ -681,13 +690,13 @@ namespace WIGUx.Modules.Model2RacingSim
             }
 
             // Disable additional lights
-            if (RaceLeaderLight != null)
-                RaceLeaderLight.enabled = false;
+            if (raceLeaderLight_light != null)
+                raceLeaderLight_light.enabled = false;
             else
                 logger.Debug($"{gameObject.name} Race Leader Light is missing!");
 
-            if (ShiftLight != null)
-                ShiftLight.enabled = false;
+            if (shiftLight_light != null)
+                shiftLight_light.enabled = false;
             else
                 logger.Debug($"{gameObject.name} Shift Light is missing!");
         }

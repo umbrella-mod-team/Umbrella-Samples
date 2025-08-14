@@ -127,13 +127,13 @@ namespace WIGUx.Modules.MameHookModule
                 }
                 catch (IOException ex)
                 {
-                    logger.Error("[MAMEHOOK] IOException: " + ex.Message + " (retrying in 1s)");
+                 //   logger.Error("[MAMEHOOK] IOException: " + ex.Message + " (retrying in 1s)");
                     break;
                     // Thread.Sleep(1000);
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("[MAMEHOOK] Exception: " + ex.Message + " (retrying in 1s)");
+                   // logger.Error("[MAMEHOOK] Exception: " + ex.Message + " (retrying in 1s)");
                     break;
                     // Thread.Sleep(1000);
                 }
@@ -145,7 +145,7 @@ namespace WIGUx.Modules.MameHookModule
         {
             if (string.IsNullOrEmpty(line))
                 return;
-            logger.Debug("[MAMEHOOK] Pipe received line: " + line);
+          //  logger.Debug("[MAMEHOOK] Pipe received line: " + line);
             // Example: lamp_update|rom|lamp|state
             if (line.StartsWith("lamp_update|"))
             {

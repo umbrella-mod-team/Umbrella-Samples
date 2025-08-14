@@ -1,12 +1,13 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.XR;
 using WIGU;
-using System.Collections.Generic;
-using System.Collections;
-using System;
-using System.IO;
 using WIGUx.Modules.MameHookModule;
-using System.Reflection;
 
 namespace WIGUx.Modules.virtuaracingSimModule
 {
@@ -20,13 +21,6 @@ namespace WIGUx.Modules.virtuaracingSimModule
         private Transform GasObject; // Reference to the Gas mirroring object
         private Transform BrakeObject; // Reference to the Throttle mirroring object
         private Transform StartObject; // Reference to the Start button object
-        private Transform XObject; // Reference to the main X object
-        private Transform YObject; // Reference to the main Y object
-        private Transform ZObject; // Reference to the main Z object
-        private Transform Fire1Object; // Reference to the Fire left light emissive
-        private Transform Fire2Object; // Reference to the Fire right light emissive
-        private Transform Danger1Object; // Reference to the Danger1 light emissive
-        private Transform Danger2Object; // Reference to the Danger2 light emissive
 
         [Header("Input Settings")]
         public string primaryThumbstickHorizontal = "Horizontal"; // Input axis for primary thumbstick horizontal
@@ -121,14 +115,12 @@ namespace WIGUx.Modules.virtuaracingSimModule
             if (firelight1) ToggleLight(firelight1, false);
             if (firelight2) ToggleLight(firelight2, false);
             if (StartObject) ToggleEmissive(StartObject.gameObject, false);
-            if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
-            if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
             //  StartAttractPattern();
         }
         void Update()
         {
 			bool inputDetected = false;
-			bool throttleDetected = false;
+			
 			CheckInsertedGameName();
             CheckControlledGameName();
             if (WIGUx.Modules.MameHookModule.MameHookController.ActiveRomsList != null)
@@ -137,69 +129,6 @@ namespace WIGUx.Modules.virtuaracingSimModule
                 {
                     if (rom == insertedGameName)
                         ReadData();
-                }
-            }
-            if (isCenteringRotation && !throttleDetected && !inputDetected)
-            {
-                bool centeredX = false, centeredY = false, centeredZ = false;
-
-                // X axis
-                float angleX = Quaternion.Angle(XObject.localRotation, XStartRotation);
-                if (angleX > 0.01f)
-                {
-                    XObject.localRotation = Quaternion.RotateTowards(
-                        XObject.localRotation,
-                        XStartRotation,
-                        centeringVelocityX * Time.deltaTime);
-                    currentRotationX = Mathf.MoveTowards(
-                        currentRotationX, 0f, centeringVelocityX * Time.deltaTime);
-                }
-                else
-                {
-                    XObject.localRotation = XStartRotation;
-                    currentRotationX = 0f;
-                    centeredX = true;
-                }
-
-                // Y axis
-                float angleY = Quaternion.Angle(YObject.localRotation, YStartRotation);
-                if (angleY > 0.01f)
-                {
-                    YObject.localRotation = Quaternion.RotateTowards(
-                        YObject.localRotation,
-                        YStartRotation,
-                        centeringVelocityY * Time.deltaTime);
-                    currentRotationY = Mathf.MoveTowards(
-                        currentRotationY, 0f, centeringVelocityY * Time.deltaTime);
-                }
-                else
-                {
-                    YObject.localRotation = YStartRotation;
-                    currentRotationY = 0f;
-                    centeredY = true;
-                }
-
-                // Z axis
-                float angleZ = Quaternion.Angle(ZObject.localRotation, ZStartRotation);
-                if (angleZ > 0.01f)
-                {
-                    ZObject.localRotation = Quaternion.RotateTowards(
-                        ZObject.localRotation,
-                        ZStartRotation,
-                        centeringVelocityZ * Time.deltaTime);
-                    currentRotationZ = Mathf.MoveTowards(
-                        currentRotationZ, 0f, centeringVelocityZ * Time.deltaTime);
-                }
-                else
-                {
-                    ZObject.localRotation = ZStartRotation;
-                    currentRotationZ = 0f;
-                    centeredZ = true;
-                }
-
-                if (centeredX && centeredY && centeredZ)
-                {
-                    isCenteringRotation = false;
                 }
             }
             // Enter focus when names match
@@ -216,8 +145,8 @@ namespace WIGUx.Modules.virtuaracingSimModule
             }
             if (inFocusMode)
             {
-                MapThumbsticks(ref inputDetected, ref throttleDetected);
-                MapButtons(ref inputDetected, ref throttleDetected);
+                MapThumbsticks(ref inputDetected);
+                MapButtons(ref inputDetected);
             }
         }
         void StartFocusMode()
@@ -273,69 +202,61 @@ namespace WIGUx.Modules.virtuaracingSimModule
             input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
             return input;
         }
-        private void MapThumbsticks(ref bool inputDetected, ref bool throttleDetected)
+        private void MapThumbsticks(ref bool inputDetected)
         {
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
-
-            // Declare variables for triggers or extra inputs
-            float primaryIndexTrigger = 0f, secondaryIndexTrigger = 0f;
+            float LIndexTrigger = 0f, RIndexTrigger = 0f;
             float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
-            float xboxLIndexTrigger = 0f, xboxRIndexTrigger = 0f;
 
             // === INPUT SELECTION WITH DEADZONE ===
-            // VR CONTROLLERS
+            // OVR CONTROLLERS (adds to VR input if both are present)
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
                 primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
                 secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
 
-                // Oculus-specific inputs
-                primaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-                secondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                LIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                RIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
                 primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
                 secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
-                // Apply deadzone
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your oculus-specific mapping logic goes here, using the above values ---
             }
-            else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
+
+            // STEAMVR CONTROLLERS (adds to VR input if both are present)
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
                 var leftController = SteamVRInput.GetController(HandType.Left);
                 var rightController = SteamVRInput.GetController(HandType.Right);
-                primaryThumbstick = leftController.GetAxis();
-                secondaryThumbstick = rightController.GetAxis();
+                if (leftController != null) primaryThumbstick += leftController.GetAxis();
+                if (rightController != null) secondaryThumbstick += rightController.GetAxis();
 
-                // If you need extra OpenVR/SteamVR inputs, grab them here.
+                LIndexTrigger = Mathf.Max(LIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Left));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Right));
 
-                // Apply deadzone
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your OpenVR-specific mapping logic goes here ---
             }
-            // XBOX CONTROLLER (only if NOT in VR)
-            else if (XInput.IsConnected)
+
+            // XBOX CONTROLLER (adds to VR input if both are present)
+            if (XInput.IsConnected)
             {
-                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
-                xboxLIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
-                xboxRIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+                primaryThumbstick += XInput.Get(XInput.Axis.LThumbstick);
+                secondaryThumbstick += XInput.Get(XInput.Axis.RThumbstick);
 
                 // Optionally use Unity Input axes as backup:
-                // primaryThumbstick   = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                // secondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+                primaryThumbstick += new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                secondaryThumbstick += new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
 
-                // Apply deadzone
+                LIndexTrigger = Mathf.Max(LIndexTrigger, XInput.Get(XInput.Trigger.LIndexTrigger));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, XInput.Get(XInput.Trigger.RIndexTrigger));
+
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your Xbox-specific mapping logic goes here, using xboxLIndexTrigger etc. ---
             }
 
             // Map primary thumbstick to wheel
@@ -344,15 +265,16 @@ namespace WIGUx.Modules.virtuaracingSimModule
                 Quaternion primaryRotation = Quaternion.Euler(
                     0f,
                     0f,
-                   -primaryThumbstick.x * WheelRotationDegrees
+                    -primaryThumbstick.x * WheelRotationDegrees
                 );
                 WheelObject.localRotation = WheelStartRotation * primaryRotation;
+                if (Mathf.Abs(primaryThumbstick.x) > 0.01f) // Only set if wheel is being turned
+                    inputDetected = true;
             }
 
             // Map triggers for gas and brake rotation on X-axis
             if (GasObject)
             {
-                float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
                 Quaternion gasRotation = Quaternion.Euler(
                     RIndexTrigger * triggerRotationMultiplier,
                     0f,
@@ -362,7 +284,6 @@ namespace WIGUx.Modules.virtuaracingSimModule
             }
             if (BrakeObject)
             {
-                float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
                 Quaternion brakeRotation = Quaternion.Euler(
                     LIndexTrigger * triggerRotationMultiplier,
                     0f,
@@ -370,66 +291,67 @@ namespace WIGUx.Modules.virtuaracingSimModule
                 );
                 BrakeObject.localRotation = BrakeStartRotation * brakeRotation;
             }
+
             if (!inputDetected)
             {
                 CenterRotation();    // Center the rotation if no input is detected
             }
-            if (!throttleDetected)
-            {
-                CenterThrottle();    // Center the rotation if no throttle input is detected
-            }
         }
 
-        private void MapButtons(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
+        private void MapButtons(ref bool inputDetected) // Pass by reference
         {
             if (!inFocusMode) return;
-            /*
-                        // LeftTrigger           
-                        if (XInput.GetDown(XInput.Button.LIndexTrigger))
-                        {
-                            if (brakelight1) ToggleLight(brakelight1, true);
-                            if (brakelight2) ToggleLight(brakelight2, true);
-                            if (StartObject) ToggleEmissive(StartObject.gameObject, true);
-                            if (Brakelight1) ToggleEmissive(Brakelight1.gameObject, true);
-                            if (Brakelight2) ToggleEmissive(Brakelight2.gameObject, true);
-                            if (Brakelight3) ToggleEmissive(Brakelight3.gameObject, true);
-                            throttleDetected = true; 
- isCenteringRotation = false;
-                        }
-                        // Reset position on button release
-                        if (XInput.GetUp(XInput.Button.LIndexTrigger))
-                        {
-                            if (brakelight1) ToggleLight(brakelight1, false);
-                            if (brakelight2) ToggleLight(brakelight2, false);
-                            if (StartObject) ToggleEmissive(StartObject.gameObject, false);
-                            if (Brakelight1) ToggleEmissive(Brakelight1.gameObject, false);
-                            if (Brakelight2) ToggleEmissive(Brakelight2.gameObject, false);
-                            if (Brakelight3) ToggleEmissive(Brakelight3.gameObject, false);
-                            throttleDetected = true; 
- isCenteringRotation = false;
-                        }
-                        if (XInput.GetDown(XInput.Button.Y))
-                        {
-                            if (!isHigh)
-                            {
-                                // Shift if not in high
-                                ShifterObject.Rotate(0, 0, 45f);
-                                isHigh = true;
-                            }
-                            else
-                            {
-                                ShifterObject.Rotate(0, 0, -45f);
-                                isHigh = false;
-                            }
-                        }
+            /*// LeftTrigger
+if (
+    XInput.GetDown(XInput.Button.LIndexTrigger)
+    || OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger)
+    || SteamVRInput.GetDown(SteamVRInput.TouchButton.LTrigger)
+)
+{
+    if (brakelight1) ToggleLight(brakelight1, true);
+    if (brakelight2) ToggleLight(brakelight2, true);
+    if (StartObject) ToggleEmissive(StartObject.gameObject, true);
+    if (Brakelight1) ToggleEmissive(Brakelight1.gameObject, true);
+    if (Brakelight2) ToggleEmissive(Brakelight2.gameObject, true);
+    if (Brakelight3) ToggleEmissive(Brakelight3.gameObject, true);
+}
+
+// Reset position on button release
+if (
+    XInput.GetUp(XInput.Button.LIndexTrigger)
+    || OVRInput.GetUp(OVRInput.Button.PrimaryIndexTrigger)
+    || SteamVRInput.GetUp(SteamVRInput.TouchButton.LTrigger)
+)
+{
+    if (brakelight1) ToggleLight(brakelight1, false);
+    if (brakelight2) ToggleLight(brakelight2, false);
+    if (StartObject) ToggleEmissive(StartObject.gameObject, false);
+    if (Brakelight1) ToggleEmissive(Brakelight1.gameObject, false);
+    if (Brakelight2) ToggleEmissive(Brakelight2.gameObject, false);
+    if (Brakelight3) ToggleEmissive(Brakelight3.gameObject, false);
+}                      
+            bool shifterPressed =
+                XInput.GetDown(XInput.Button.Y)
+                || OVRInput.GetDown(OVRInput.Button.Two)   // Oculus Y (left controller)
+                || SteamVRInput.GetDown(SteamVRInput.TouchButton.Y);
+
+            if (shifterPressed)
+            {
+                if (!isHigh)
+                {
+                    ShifterObject.Rotate(-15f, 0, 0);
+                    isHigh = true;
+                }
+                else
+                {
+                    ShifterObject.Rotate(15f, 0, 0);
+                    isHigh = false;
+                }
+            }
                     }
             */
         }
         void CenterRotation()
-        {
-            isCenteringRotation = true;
-        }
-        void CenterThrottle()
         {
             isCenteringRotation = true;
         }
@@ -460,6 +382,30 @@ namespace WIGUx.Modules.virtuaracingSimModule
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 string FileName = System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
                 return FileName;
+            }
+        }
+        public static class KeyEmulator
+        {
+            // Virtual key codes for Q and E
+            const byte VK_Q = 0x51;
+            const byte VK_E = 0x45;
+            const uint KEYEVENTF_KEYDOWN = 0x0000;
+            const uint KEYEVENTF_KEYUP = 0x0002;
+
+            [DllImport("user32.dll")]
+            static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+            public static void SendQandEKeypress()
+            {
+                // Send Q down
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+                // Send E down
+                keybd_event(VK_E, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+
+                // Send Q up
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                // Send E up
+                keybd_event(VK_E, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
             }
         }
         void ToggleEmissiveRenderer(Renderer renderer, bool isOn)
@@ -660,51 +606,6 @@ namespace WIGUx.Modules.virtuaracingSimModule
             }
         }
 
-        void SaveOriginalParent(GameObject obj)
-        {
-            if (obj != null && !originalParents.ContainsKey(obj))
-            {
-                if (obj.transform.parent != null)
-                {
-                    originalParents[obj] = obj.transform.parent;
-                }
-                else
-                {
-                    originalParents[obj] = null; // Explicitly store that this was in the root
-                    logger.Debug($"{gameObject.name} Object {obj.name} was in the root and has no parent.");
-                }
-            }
-        }
-
-        void RestoreOriginalParent(GameObject obj, string name)
-        {
-            if (obj == null)
-            {
-                logger.Error($"{gameObject.name} RestoreOriginalParent: {name} is NULL!");
-                return;
-            }
-
-            if (!originalParents.ContainsKey(obj))
-            {
-                logger.Error($"{gameObject.name} RestoreOriginalParent: No original parent found for {name}");
-                return;
-            }
-
-            Transform originalParent = originalParents[obj];
-
-            // If the original parent was NULL, place the object back in the root
-            if (originalParent == null)
-            {
-                obj.transform.SetParent(null, true);  // Moves it back to the root
-                logger.Debug($"{gameObject.name} {name} restored to root.");
-            }
-            else
-            {
-                obj.transform.SetParent(originalParent, false);
-                logger.Debug($"{gameObject.name} {name} restored to original parent: {originalParent.name}");
-            }
-        }
-
         void ChangeColorEmissive(GameObject targetObject, Color emissionColor, float intensity, bool isActive)
         {
             if (targetObject != null)
@@ -742,11 +643,9 @@ namespace WIGUx.Modules.virtuaracingSimModule
 			yield return new WaitForSeconds(UnityEngine.Random.Range(0f, 1f));
 			while (true)
             {
-                if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
-                if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
+
                 yield return new WaitForSeconds(attractFlashDuration);
-				if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, true);
-				if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, true);
+
 				yield return new WaitForSeconds(attractFlashDelay);
             }
         }
@@ -754,11 +653,8 @@ namespace WIGUx.Modules.virtuaracingSimModule
         {
             while (true)
             {
-                if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
-                if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
                 yield return new WaitForSeconds(dangerFlashDuration);
-				if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, true);
-				if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, true);
+
 				yield return new WaitForSeconds(dangerFlashDelay);
             }
         }

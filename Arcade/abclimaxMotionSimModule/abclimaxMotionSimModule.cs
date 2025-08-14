@@ -1,8 +1,10 @@
-﻿using UnityEngine;
-using WIGU;
-using System.Collections.Generic;
+﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using UnityEngine;
+using WIGU;
 using WIGUx.Modules.MameHookModule;
 
 namespace WIGUx.Modules.abclimaxMotionSim
@@ -44,7 +46,7 @@ namespace WIGUx.Modules.abclimaxMotionSim
         private readonly float rotationSmoothness = 5f;  //sets the smoothness of the rotation
         private float StickXRotationDegrees = 15f; // Degrees for Stick rotation, adjust as needed
         private float StickYRotationDegrees = 15f; // Degrees for Stick rotation, adjust as needed
-        private readonly float thumbstickVelocity = 50f;  // Velocity for keyboard input
+        private readonly float thumbstickVelocity = 25f;  // Velocity for keyboard input
         private readonly float centeringVelocityX = 25f;  // Velocity for centering rotation
         private readonly float centeringVelocityY = 25f;  // Velocity for centering rotation
         private readonly float centeringVelocityZ = 25f;  // Velocity for centering rotation
@@ -55,12 +57,12 @@ namespace WIGUx.Modules.abclimaxMotionSim
         private float currentRotationZ = 0f;  // Current rotation for Z-axis
 
         [Header("Rotation Limits")]        // Rotation Limits 
-        [SerializeField] float minRotationX = -15f;
-        [SerializeField] float maxRotationX = 15f;
-        [SerializeField] float minRotationY = -5f;
-        [SerializeField] float maxRotationY = 5f;
-        [SerializeField] float minRotationZ = -15f;
-        [SerializeField] float maxRotationZ = 15f;
+        [SerializeField] float minRotationX = -8.5f;
+        [SerializeField] float maxRotationX = 8.5f;
+        [SerializeField] float minRotationY = -2.5f;
+        [SerializeField] float maxRotationY = 2.5f;
+        [SerializeField] float minRotationZ = -8.5f;
+        [SerializeField] float maxRotationZ = 8.5f;
 
         [Header("Position Settings")]     // Initial positions setup
         private Vector3 XStartPosition;  // Initial X position for resetting
@@ -72,6 +74,8 @@ namespace WIGUx.Modules.abclimaxMotionSim
         private Vector3 playerVRSetupStartPosition;  // Initial PlayerVR positions for resetting
         private Vector3 cockpitCamStartPosition;  // Initial cockpitCam positionsfor resetting
         private Vector3 vrCamStartPosition;    // Initial vrCam positionsfor resetting
+        private Vector3 playerCameraInitialWorldScale; // Initial Player Camera world scale for resetting
+        private Vector3 playerVRSetupInitialWorldScale; // Initial PlayerVR world scale for resetting
 
         [Header("Rotation Settings")]     // Initial rotations setup
         private Quaternion XStartRotation;  // Initial X rotation for resetting
@@ -124,17 +128,19 @@ namespace WIGUx.Modules.abclimaxMotionSim
             // if (startObject) ToggleEmissive(startObject.gameObject, false);
             if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
             if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
-           // StartAttractPattern();
+            // StartAttractPattern();
         }
 
         void Update()
-            {
-			bool inputDetected = false;  // Initialize for centering
-			bool throttleDetected = false;// Initialize for centering
-			if (isCenteringRotation && !throttleDetected && !inputDetected)
+        {
+            bool inputDetected = false;  // Initialize for centering
+
+            // ReadData();
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            if (isCenteringRotation && !inputDetected)
             {
                 bool centeredX = false, centeredY = false, centeredZ = false;
-
                 // X axis
                 float angleX = Quaternion.Angle(XObject.localRotation, XStartRotation);
                 if (angleX > 0.01f)
@@ -144,7 +150,7 @@ namespace WIGUx.Modules.abclimaxMotionSim
                         XStartRotation,
                         centeringVelocityX * Time.deltaTime);
                     currentRotationX = Mathf.MoveTowards(
-                        currentRotationX, 0f, centeringVelocityX * Time.deltaTime);
+                    currentRotationX, 0f, centeringVelocityX * Time.deltaTime);
                 }
                 else
                 {
@@ -152,7 +158,6 @@ namespace WIGUx.Modules.abclimaxMotionSim
                     currentRotationX = 0f;
                     centeredX = true;
                 }
-
                 // Y axis
                 float angleY = Quaternion.Angle(YObject.localRotation, YStartRotation);
                 if (angleY > 0.01f)
@@ -170,7 +175,6 @@ namespace WIGUx.Modules.abclimaxMotionSim
                     currentRotationY = 0f;
                     centeredY = true;
                 }
-
                 // Z axis
                 float angleZ = Quaternion.Angle(ZObject.localRotation, ZStartRotation);
                 if (angleZ > 0.01f)
@@ -194,10 +198,6 @@ namespace WIGUx.Modules.abclimaxMotionSim
                     isCenteringRotation = false;
                 }
             }
-           // ReadData();
-            CheckInsertedGameName();
-            CheckControlledGameName();
-
             // Enter focus when names match
             if (!string.IsNullOrEmpty(insertedGameName)
                 && !string.IsNullOrEmpty(controlledGameName)
@@ -211,12 +211,12 @@ namespace WIGUx.Modules.abclimaxMotionSim
                 EndFocusMode();
             }
             if (inFocusMode)
-                {
-                    MapThumbsticks(ref inputDetected, ref throttleDetected);
-                    MapButtons(ref inputDetected, ref throttleDetected);
-                    HandleTransformAdjustment();
-                }
+            {
+                MapThumbsticks(ref inputDetected);
+                MapButtons(ref inputDetected);
+                HandleTransformAdjustment();
             }
+        }
         void WriteLampConfig(string filePath)
         {
             string content = "start_lamp = 0\n" +
@@ -236,12 +236,11 @@ namespace WIGUx.Modules.abclimaxMotionSim
         }
         void StartFocusMode()
         {
+            logger.Debug($"{gameObject.name} Starting Focus Mode...");
             if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, true);
             if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, true);
-            logger.Debug($"{gameObject.name} Starting Focus Mode...");
             // StopCurrentPatterns();
             // StartDangerPattern();
-
             if (cockpitCam != null)
             {
                 cockpitCam.transform.localPosition = cockpitCamStartPosition;
@@ -271,7 +270,7 @@ namespace WIGUx.Modules.abclimaxMotionSim
                 bool boundsContains = cockpitCollider.bounds.Contains(camPos);
                 Vector3 closest = cockpitCollider.ClosestPoint(camPos);
                 inside = (closest == camPos);
-              //  logger.Debug($"Containment check - bounds.Contains: {boundsContains}, ClosestPoint==pos: {inside}");
+                // logger.Debug($"{gameObject.name} Containment check - bounds.Contains: {boundsContains}, ClosestPoint==pos: {inside}");
             }
 
             if (cockpitCollider != null && inside)
@@ -280,17 +279,31 @@ namespace WIGUx.Modules.abclimaxMotionSim
                 {
                     // Parent and apply offset to PlayerCamera
                     SaveOriginalParent(playerCamera);
-                    playerCamera.transform.SetParent(cockpitCam.transform, true);
+                    Vector3 worldPos = playerCamera.transform.position;
+                    Quaternion worldRot = playerCamera.transform.rotation;
+                    playerCameraInitialWorldScale = playerCamera.transform.lossyScale;
+                    KeyEmulator.SendQandEKeypress();
+                    playerCamera.transform.SetParent(cockpitCam.transform, false);
+                    playerCamera.transform.position = worldPos;
+                    playerCamera.transform.rotation = worldRot;
+                    NormalizeWorldScale(playerCamera, cockpitCam.transform);
+
                     logger.Debug($"{gameObject.name} Player is aboard and strapped in.");
                     isRiding = true; // Set riding state to true
                 }
-                // Check if objects are found
-                CheckObject(playerCamera, "PlayerCamera");
                 if (playerVRSetup != null)
                 {
                     // Parent and apply offset to PlayerVRSetup
                     SaveOriginalParent(playerVRSetup);
-                    playerVRSetup.transform.SetParent(vrCam.transform, true);
+                    Vector3 worldPos = playerVRSetup.transform.position;
+                    Quaternion worldRot = playerVRSetup.transform.rotation;
+                    playerVRSetupInitialWorldScale = playerVRSetup.transform.lossyScale;
+                    KeyEmulator.SendQandEKeypress();
+                    playerVRSetup.transform.SetParent(vrCam.transform, false);
+                    playerVRSetup.transform.position = worldPos;
+                    playerVRSetup.transform.rotation = worldRot;
+                    NormalizeWorldScale(playerVRSetup, vrCam.transform);
+
                     logger.Debug($"{gameObject.name} VR Player is aboard and strapped in!");
                     logger.Debug("Sega After Burner Climax Motion Sim starting...");
                     logger.Debug("GET READY, AGAIN!!!...");
@@ -392,107 +405,91 @@ namespace WIGUx.Modules.abclimaxMotionSim
             input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
             return input;
         }
-        private void MapThumbsticks(ref bool inputDetected, ref bool throttleDetected)
+        private void MapThumbsticks(ref bool inputDetected)
         {
             if (!inFocusMode) return;
 
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
-
-            // Declare variables for triggers or extra inputs
-            float primaryIndexTrigger = 0f, secondaryIndexTrigger = 0f;
+            float LIndexTrigger = 0f, RIndexTrigger = 0f;
             float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
-            float xboxLIndexTrigger = 0f, xboxRIndexTrigger = 0f;
 
             // === INPUT SELECTION WITH DEADZONE ===
-            // VR CONTROLLERS
+            // OVR CONTROLLERS (adds to VR input if both are present)
             if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
             {
                 primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
                 secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
 
-                // Oculus-specific inputs
-                primaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-                secondaryIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                LIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                RIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
                 primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
                 secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
 
-                // Apply deadzone
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your oculus-specific mapping logic goes here, using the above values ---
             }
-            else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
+
+            // STEAMVR CONTROLLERS (adds to VR input if both are present)
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
             {
                 var leftController = SteamVRInput.GetController(HandType.Left);
                 var rightController = SteamVRInput.GetController(HandType.Right);
-                primaryThumbstick = leftController.GetAxis();
-                secondaryThumbstick = rightController.GetAxis();
+                if (leftController != null) primaryThumbstick += leftController.GetAxis();
+                if (rightController != null) secondaryThumbstick += rightController.GetAxis();
 
-                // If you need extra OpenVR/SteamVR inputs, grab them here.
+                LIndexTrigger = Mathf.Max(LIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Left));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Right));
 
-                // Apply deadzone
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your OpenVR-specific mapping logic goes here ---
             }
-            // XBOX CONTROLLER (only if NOT in VR)
-            else if (XInput.IsConnected)
+
+            // XBOX CONTROLLER (adds to VR input if both are present)
+            if (XInput.IsConnected)
             {
-                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
-                xboxLIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
-                xboxRIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+                primaryThumbstick += XInput.Get(XInput.Axis.LThumbstick);
+                secondaryThumbstick += XInput.Get(XInput.Axis.RThumbstick);
 
                 // Optionally use Unity Input axes as backup:
-                // primaryThumbstick   = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                // secondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+                primaryThumbstick += new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                secondaryThumbstick += new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
 
-                // Apply deadzone
+                LIndexTrigger = Mathf.Max(LIndexTrigger, XInput.Get(XInput.Trigger.LIndexTrigger));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, XInput.Get(XInput.Trigger.RIndexTrigger));
+
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-
-                // --- Your Xbox-specific mapping logic goes here, using xboxLIndexTrigger etc. ---
             }
-			// Map thumbstick for Stick 
-			
-			{
-				// Rotation applied on top of starting rotation
-				Quaternion primaryRotation = Quaternion.Euler(
-					primaryThumbstick.y * StickYRotationDegrees,
-					0f,
-					-primaryThumbstick.x * StickXRotationDegrees
-				);
-				StickObject.localRotation = StickStartRotation * primaryRotation;
-				if (Mathf.Abs(primaryThumbstick.x) > 0.01f || Mathf.Abs(primaryThumbstick.y) > 0.01f)
-					inputDetected = true; 
- isCenteringRotation = false; // Set if thumbstick moved
-			}
 
-			// Map secondary thumbstick to right stick rotation on X-axis
-			if (ThrottleObject)
-			{
-				// Triggers for throttle rotation on X-axis (not Z unless your axis is set up that way)
-				float LIndexTrigger = XInput.Get(XInput.Trigger.LIndexTrigger);
-				float RIndexTrigger = XInput.Get(XInput.Trigger.RIndexTrigger);
+            // Map thumbstick for Stick 
+            if (StickObject)
+            {
+                // Rotation applied on top of starting rotation
+                Quaternion primaryRotation = Quaternion.Euler(
+                    primaryThumbstick.y * StickYRotationDegrees,
+                    0f,
+                    -primaryThumbstick.x * StickXRotationDegrees
+                );
+                StickObject.localRotation = StickStartRotation * primaryRotation;
+                if (Mathf.Abs(primaryThumbstick.x) > 0.01f || Mathf.Abs(primaryThumbstick.y) > 0.01f)
+                    inputDetected = true;
+            }
 
-				// This is the rotation you want to "add" to the starting rotation
-				Quaternion triggerRotation = Quaternion.Euler(
-					(LIndexTrigger - RIndexTrigger) * triggerRotationMultiplier, // X-axis
-					0f,
-					0f
-				);
-				// Apply it relative to the starting rotation
-				ThrottleObject.localRotation = ThrottleStartRotation * triggerRotation;
-				if (Mathf.Abs(LIndexTrigger) > 0.01f || Mathf.Abs(RIndexTrigger) > 0.01f)
-					inputDetected = true; 
- isCenteringRotation = false; // Set if either trigger is pressed
-			}
+            // Map triggers to throttle rotation on X-axis
+            if (ThrottleObject)
+            {
+                // Triggers for throttle rotation on X-axis
+                Quaternion triggerRotation = Quaternion.Euler(
+                    (RIndexTrigger - LIndexTrigger) * triggerRotationMultiplier, // X-axis
+                    0f,
+                    0f
+                );
+                ThrottleObject.localRotation = ThrottleStartRotation * triggerRotation;
+            }
 
-			// X ROTATION (Pitch, up/down on stick, XObject)
-			if (primaryThumbstick.y != 0f)
+            // X ROTATION (Pitch, up/down on stick, XObject)
+            if (primaryThumbstick.y != 0f)
             {
                 float inputValue = primaryThumbstick.y * thumbstickVelocity * Time.deltaTime;
                 float targetX = Mathf.Clamp(currentRotationX + inputValue, minRotationX, maxRotationX);
@@ -501,55 +498,53 @@ namespace WIGUx.Modules.abclimaxMotionSim
                 {
                     XObject.Rotate(rotateX, 0f, 0f);
                     currentRotationX = targetX;
-                    inputDetected = true; 
- isCenteringRotation = false;
+                    inputDetected = true;
                 }
             }
 
             // Y ROTATION (Yaw, left/right on stick, YObject)
             if (primaryThumbstick.x != 0f)
             {
-                float inputValue = primaryThumbstick.x * thumbstickVelocity * Time.deltaTime;
+                float inputValue = -primaryThumbstick.x * thumbstickVelocity * Time.deltaTime;
                 float targetY = Mathf.Clamp(currentRotationY + inputValue, minRotationY, maxRotationY);
                 float rotateY = targetY - currentRotationY;
                 if (Mathf.Abs(rotateY) > 0.0001f)
                 {
                     YObject.Rotate(0f, rotateY, 0f);
                     currentRotationY = targetY;
-                    inputDetected = true; 
- isCenteringRotation = false;
+                    inputDetected = true;
                 }
             }
+
             // Z ROTATION (Roll, e.g., left/right on primary stick, ZObject)
             if (primaryThumbstick.x != 0f)
             {
-                float inputValue = primaryThumbstick.x * thumbstickVelocity * Time.deltaTime;
+                float inputValue = -primaryThumbstick.x * thumbstickVelocity * Time.deltaTime;
                 float targetZ = Mathf.Clamp(currentRotationZ + inputValue, minRotationZ, maxRotationZ);
                 float rotateZ = targetZ - currentRotationZ;
                 if (Mathf.Abs(rotateZ) > 0.0001f)
                 {
                     ZObject.Rotate(0f, 0f, rotateZ);
                     currentRotationZ = targetZ;
-                    inputDetected = true; 
- isCenteringRotation = false;
+                    inputDetected = true;
                 }
             }
             if (!inputDetected)
             {
                 CenterRotation();    // Center the rotation if no input is detected
             }
-            if (!throttleDetected)
-            {
-                CenterThrottle();    // Center the rotation if no throttle input is detected
-            }
         }
 
 
-        private void MapButtons(ref bool inputDetected, ref bool throttleDetected) // Pass by reference
+
+        private void MapButtons(ref bool inputDetected) // Pass by reference
         {
             if (!inFocusMode) return;
-     
-            if (Input.GetButtonDown("Fire3") || XInput.GetDown(XInput.Button.X))    // press Fire3 turn on lights
+
+            if (XInput.GetDown(XInput.Button.X)
+              || OVRInput.GetDown(OVRInput.Button.One) // Oculus "X" (left controller)
+              || SteamVRInput.GetDown(SteamVRInput.TouchButton.X)
+          )
             {
                 ChangeColorEmissive(Fire1Object.gameObject, Color.red, 10.0f, true);
                 ChangeColorEmissive(Fire2Object.gameObject, Color.red, 10.0f, true);
@@ -557,80 +552,126 @@ namespace WIGUx.Modules.abclimaxMotionSim
                 if (firelight2) ToggleLight(firelight2, true);
             }
 
-            if (Input.GetButtonUp("Fire3") || XInput.GetUp(XInput.Button.X))     // release Fire3 turn off lights
+            if (XInput.GetUp(XInput.Button.X)
+                || OVRInput.GetUp(OVRInput.Button.One)
+                || SteamVRInput.GetUp(SteamVRInput.TouchButton.X)
+            )
             {
                 ChangeColorEmissive(Fire1Object.gameObject, Color.white, 2.0f, true);
                 ChangeColorEmissive(Fire2Object.gameObject, Color.white, 2.0f, true);
-                if (firelight1) ToggleLight(firelight1, false);  
-                if (firelight2) ToggleLight(firelight2, false);  
+                if (firelight1) ToggleLight(firelight1, false);
+                if (firelight2) ToggleLight(firelight2, false);
             }
+
         }
         void CenterRotation()
         {
             isCenteringRotation = true;
         }
-        void CenterThrottle()
+
+        void HandleTransformAdjustment()
         {
-            isCenteringRotation = true;
-        }
+            if (!inFocusMode) return;
 
-		void HandleTransformAdjustment()
-		{
-			if (!inFocusMode) return;
-			// Choose target camera: use vrCam if available, otherwise fallback to cockpitCam
-			var cam = vrCam != null ? vrCam : cockpitCam;
+            bool cockpitCamMoved = false;
+            bool vrCamMoved = false;
 
-			if (cam != null && isRiding)
-			{
-                // Handle position adjustments
-                if (Input.GetKey(KeyCode.Home))
+            // Move BOTH cameras if isRiding is true
+            if (isRiding)
+            {
+                // Desktop camera (cockpitCam)
+                if (cockpitCam != null)
                 {
-                    // Move forward
-                    cam.transform.localPosition += cam.transform.forward * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.End))
-                {
-                    // Move backward
-                    cam.transform.localPosition -= cam.transform.forward * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.UpArrow))
-                {
-                    // Move up
-                    cam.transform.localPosition += cam.transform.up * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.DownArrow))
-                {
-                    // Move down
-                    cam.transform.localPosition -= cam.transform.up * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.LeftArrow))
-                {
-                    // Move left
-                    cam.transform.localPosition -= cam.transform.right * adjustSpeed * Time.deltaTime;
-                }
-                if (Input.GetKey(KeyCode.RightArrow))
-                {
-                    // Move right
-                    cam.transform.localPosition += cam.transform.right * adjustSpeed * Time.deltaTime;
+                    if (Input.GetKey(KeyCode.Home))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.forward * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.End))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.back * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.UpArrow))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.up * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.DownArrow))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.down * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.LeftArrow))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.left * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.RightArrow))
+                    {
+                        cockpitCam.transform.localPosition += Vector3.right * adjustSpeed * Time.deltaTime;
+                        cockpitCamMoved = true;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Backspace))
+                    {
+                        cockpitCam.transform.Rotate(0, 90, 0);
+                        cockpitCamMoved = true;
+                    }
                 }
 
-                // Handle rotation with Backspace key
-                if (Input.GetKeyDown(KeyCode.Backspace))
+                // VR camera (vrCam)
+                if (vrCam != null)
                 {
-                    cam.transform.Rotate(0, 90, 0);
+                    if (Input.GetKey(KeyCode.Home))
+                    {
+                        vrCam.transform.localPosition += Vector3.forward * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.End))
+                    {
+                        vrCam.transform.localPosition += Vector3.back * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.UpArrow))
+                    {
+                        vrCam.transform.localPosition += Vector3.up * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.DownArrow))
+                    {
+                        vrCam.transform.localPosition += Vector3.down * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.LeftArrow))
+                    {
+                        vrCam.transform.localPosition += Vector3.left * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKey(KeyCode.RightArrow))
+                    {
+                        vrCam.transform.localPosition += Vector3.right * adjustSpeed * Time.deltaTime;
+                        vrCamMoved = true;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Backspace))
+                    {
+                        vrCam.transform.Rotate(0, 90, 0);
+                        vrCamMoved = true;
+                    }
                 }
             }
 
-            // Save the new position and rotation
-            if (vrCam != null)
+            // Save and log **only if there was a change**
+            if (vrCam != null && vrCamMoved)
             {
                 vrCamStartPosition = vrCam.transform.localPosition;
                 vrCamStartRotation = vrCam.transform.localRotation;
+                Debug.Log($"{gameObject.name}vrCam localPosition: " + vrCam.transform.localPosition.ToString("F4"));
             }
-            else if (cockpitCam != null)
+            if (cockpitCam != null && cockpitCamMoved)
             {
                 cockpitCamStartPosition = cockpitCam.transform.localPosition;
                 cockpitCamStartRotation = cockpitCam.transform.localRotation;
+                Debug.Log($"{gameObject.name} cockpitCam localPosition: " + cockpitCam.transform.localPosition.ToString("F4"));
             }
         }
         private void CheckInsertedGameName()
@@ -661,7 +702,30 @@ namespace WIGUx.Modules.abclimaxMotionSim
                 return FileName;
             }
         }
+        public static class KeyEmulator
+        {
+            // Virtual key codes for Q and E
+            const byte VK_Q = 0x51;
+            const byte VK_E = 0x45;
+            const uint KEYEVENTF_KEYDOWN = 0x0000;
+            const uint KEYEVENTF_KEYUP = 0x0002;
 
+            [DllImport("user32.dll")]
+            static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+            public static void SendQandEKeypress()
+            {
+                // Send Q down
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+                // Send E down
+                keybd_event(VK_E, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+
+                // Send Q up
+                keybd_event(VK_Q, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                // Send E up
+                keybd_event(VK_E, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            }
+        }
         void CheckObject(GameObject obj, string name)     // Check if object is found and log appropriate message
         {
             if (obj == null)
@@ -673,7 +737,28 @@ namespace WIGUx.Modules.abclimaxMotionSim
                 logger.Debug($"{gameObject.name} {name} found.");
             }
         }
+        void NormalizeWorldScale(GameObject obj, Transform newParent)
+        {
+            if (obj == null || newParent == null) return;
 
+            Vector3 parentWorldScale = newParent.lossyScale;
+            Vector3 targetWorldScale = Vector3.one;
+
+            // Use the correct initial world scale for each object
+            if (obj == playerCamera)
+                targetWorldScale = playerCameraInitialWorldScale;
+            else if (obj == playerVRSetup)
+                targetWorldScale = playerVRSetupInitialWorldScale;
+            else
+                return; // Do nothing for unknown objects
+
+            obj.transform.localScale = new Vector3(
+                targetWorldScale.x / parentWorldScale.x,
+                targetWorldScale.y / parentWorldScale.y,
+                targetWorldScale.z / parentWorldScale.z
+            );
+        }
+        // Save original parent of object in dictionary
         void SaveOriginalParent(GameObject obj)
         {
             if (obj != null && !originalParents.ContainsKey(obj))
@@ -690,32 +775,49 @@ namespace WIGUx.Modules.abclimaxMotionSim
             }
         }
 
+        // Restore original parent of object and log appropriate message
         void RestoreOriginalParent(GameObject obj, string name)
         {
             if (obj == null)
             {
-                logger.Error($"{gameObject.name} RestoreOriginalParent: {name} is NULL!");
+                logger.Error($"RestoreOriginalParent: {name} is NULL!");
                 return;
             }
 
             if (!originalParents.ContainsKey(obj))
             {
-                logger.Warning($"{gameObject.name} RestoreOriginalParent: No original parent found for {name}");
+                logger.Warning($"RestoreOriginalParent: No original parent found for {name}");
                 return;
             }
 
             Transform originalParent = originalParents[obj];
 
+            Vector3 worldPos = obj.transform.position;
+            Quaternion worldRot = obj.transform.rotation;
+
             // If the original parent was NULL, place the object back in the root
             if (originalParent == null)
             {
-                obj.transform.SetParent(null, true);  // Moves it back to the root
-                logger.Debug($"{gameObject.name} {name} restored to root.");
+                obj.transform.SetParent(null, false);  // Moves it back to the root
+                obj.transform.position = worldPos;
+                obj.transform.rotation = worldRot;
+
+                // When no parent, just set localScale to initial world scale
+                if (obj == playerCamera)
+                    obj.transform.localScale = playerCameraInitialWorldScale;
+                else if (obj == playerVRSetup)
+                    obj.transform.localScale = playerVRSetupInitialWorldScale;
+
+                logger.Debug($"{name} restored to root.");
             }
             else
             {
                 obj.transform.SetParent(originalParent, false);
-                logger.Debug($"{gameObject.name} {name} restored to original parent: {originalParent.name}");
+                obj.transform.position = worldPos;
+                obj.transform.rotation = worldRot;
+                NormalizeWorldScale(obj, originalParent);
+
+                logger.Debug($"{name} restored to original parent: {originalParent.name}");
             }
         }
 
@@ -824,11 +926,11 @@ namespace WIGUx.Modules.abclimaxMotionSim
             yield return new WaitForSeconds(UnityEngine.Random.Range(0f, 1f));
             while (true)
             {
-              //  if (startObject) ToggleEmissive(startObject.gameObject, false);
+                //  if (startObject) ToggleEmissive(startObject.gameObject, false);
                 if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
                 if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
                 yield return new WaitForSeconds(attractFlashDuration);
-             //   if (startObject) ToggleEmissive(startObject.gameObject, true);
+                //   if (startObject) ToggleEmissive(startObject.gameObject, true);
                 yield return new WaitForSeconds(attractFlashDelay);
             }
         }
@@ -836,14 +938,14 @@ namespace WIGUx.Modules.abclimaxMotionSim
         {
             while (true)
             {
-             //   if (startObject) ToggleEmissive(startObject.gameObject, true);
-             //   if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
-             //   if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
-             //   if (danger1Object) ToggleEmissive(danger1Object.gameObject, true);
-             //   if (danger2Object) ToggleEmissive(danger2Object.gameObject, false);
+                //   if (startObject) ToggleEmissive(startObject.gameObject, true);
+                //   if (Fire1Object) ToggleEmissive(Fire1Object.gameObject, false);
+                //   if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
+                //   if (danger1Object) ToggleEmissive(danger1Object.gameObject, true);
+                //   if (danger2Object) ToggleEmissive(danger2Object.gameObject, false);
                 yield return new WaitForSeconds(dangerFlashDuration);
-            //    if (danger1Object) ToggleEmissive(danger1Object.gameObject, false);
-             //   if (danger2Object) ToggleEmissive(danger2Object.gameObject, true);
+                //    if (danger1Object) ToggleEmissive(danger1Object.gameObject, false);
+                //   if (danger2Object) ToggleEmissive(danger2Object.gameObject, true);
                 yield return new WaitForSeconds(dangerFlashDelay);
             }
         }
@@ -858,7 +960,7 @@ namespace WIGUx.Modules.abclimaxMotionSim
                 renderer.material.DisableKeyword("_EMISSION");
             }
         }
-      
+
         public void StartAttractPattern()
         {
             // Stop any currently running coroutines
@@ -932,7 +1034,6 @@ namespace WIGUx.Modules.abclimaxMotionSim
             {
                 logger.Debug($"{gameObject.name} No VR Devices found. No SteamVR or OVR present)");
             }
-
             // Find X object in hierarchy
             XObject = transform.Find("X");
             if (XObject != null)
@@ -958,7 +1059,7 @@ namespace WIGUx.Modules.abclimaxMotionSim
                         ZStartRotation = ZObject.localRotation;
 
                         // Find cockpit camera
-                        GameObject cockpitCam = ZObject.Find("eyes/cockpitcam")?.gameObject;
+                        cockpitCam = ZObject.Find("eyes/cockpitcam")?.gameObject;
                         if (cockpitCam != null)
                         {
                             logger.Debug($"{gameObject.name} Cockpitcam object found.");
@@ -971,7 +1072,7 @@ namespace WIGUx.Modules.abclimaxMotionSim
                         }
 
                         // Find vr camera
-                        GameObject vrCam = ZObject.Find("eyes/vrcam")?.gameObject;
+                        vrCam = ZObject.Find("eyes/vrcam")?.gameObject;
                         if (vrCam != null)
                         {
                             logger.Debug($"{gameObject.name} vrCam object found.");

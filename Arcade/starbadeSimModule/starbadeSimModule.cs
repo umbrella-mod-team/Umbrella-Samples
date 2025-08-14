@@ -128,158 +128,182 @@ namespace WIGUx.Modules.starbladeSim
                     }
                 }
 
-            else
-            {
-                logger.Debug($"{gameObject.name} Turret object not found.");
-            }
+                else
+                {
+                    logger.Debug($"{gameObject.name} Turret object not found.");
+                }
 
                 // Gets all Light components in the target object and its children
                 Light[] Lights = transform.GetComponentsInChildren<Light>();
 
-            // Log the names of the objects containing the Light components and filter out unwanted lights
-            foreach (Light light in Lights)
-            {
-                logger.Debug($"Light found: {light.gameObject.name}");
-                switch (light.gameObject.name)
+                // Log the names of the objects containing the Light components and filter out unwanted lights
+                foreach (Light light in Lights)
                 {
-                    case "starblade1":
-                        starblade1_light = light;
-                        Lights[0] = light;
-                        logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
-                        break;
-                    case "starblade2":
-                        starblade2_light = light;
-                        Lights[1] = light;
-                        logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
-                        break;
-                    case "firelight":
-                        firelight_light = light;
-                        Lights[0] = light;
-                        logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
-                        break;
-                    default:
-                        logger.Debug($"{gameObject.name} Excluded Light found in object: " + light.gameObject.name);
-                        break;
+                    logger.Debug($"Light found: {light.gameObject.name}");
+                    switch (light.gameObject.name)
+                    {
+                        case "starblade1":
+                            starblade1_light = light;
+                            Lights[0] = light;
+                            logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                            break;
+                        case "starblade2":
+                            starblade2_light = light;
+                            Lights[1] = light;
+                            logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                            break;
+                        case "firelight":
+                            firelight_light = light;
+                            Lights[0] = light;
+                            logger.Debug($"{gameObject.name} Included Light found in object: " + light.gameObject.name);
+                            break;
+                        default:
+                            logger.Debug($"{gameObject.name} Excluded Light found in object: " + light.gameObject.name);
+                            break;
+                    }
                 }
-            }
                 // Find Turret object in hierarchy
                 TurretObject = transform.Find("Turret");
-            if (TurretObject != null)
-            {
-                logger.Debug($"{gameObject.name} Turret object found.");
-                TurretStartPosition = TurretObject.localPosition;
-                TurretStartRotation = TurretObject.localRotation;
-
-                // Find the _firelight within ControllerZ
-                // Find fireemissive object
-                FireEmissiveObject = TurretObject.Find("FireEmissive");
-                if (FireEmissiveObject != null)
+                if (TurretObject != null)
                 {
-                    logger.Debug("fireemissive object found.");
-                    // Ensure the fireemissive object is initially off
-                    Renderer renderer = FireEmissiveObject.GetComponent<Renderer>();
-                    if (renderer != null)
+                    logger.Debug($"{gameObject.name} Turret object found.");
+                    TurretStartPosition = TurretObject.localPosition;
+                    TurretStartRotation = TurretObject.localRotation;
+
+                    // Find the _firelight within ControllerZ
+                    // Find fireemissive object
+                    FireEmissiveObject = TurretObject.Find("FireEmissive");
+                    if (FireEmissiveObject != null)
                     {
-                        renderer.material.DisableKeyword("_EMISSION");
+                        logger.Debug("fireemissive object found.");
+                        // Ensure the fireemissive object is initially off
+                        Renderer renderer = FireEmissiveObject.GetComponent<Renderer>();
+                        if (renderer != null)
+                        {
+                            renderer.material.DisableKeyword("_EMISSION");
+                        }
+                        else
+                        {
+                            logger.Debug("Renderer component is not found on FireEmissive object.");
+                        }
                     }
                     else
                     {
-                        logger.Debug("Renderer component is not found on FireEmissive object.");
+                        logger.Debug("FireEmissive object not found under aburnerX.");
                     }
-                }
-                else
-                {
-                    logger.Debug("FireEmissive object not found under aburnerX.");
-                }
-                ToggleFireLight(false);
-                ToggleFireEmissive(false);
-                ToggleLight1(false);
-                ToggleLight2(false);
+                    ToggleFireLight(false);
+                    ToggleFireEmissive(false);
+                    ToggleLight1(false);
+                    ToggleLight2(false);
 
+                }
             }
 
             void Update()
-        {
-
-            bool inputDetected = false;  // Initialize at the beginning of the Update method
-
-            if (GameSystem.ControlledSystem != null && !inFocusMode)
             {
-                string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-                bool containsString = false;
 
-                foreach (var gameString in compatibleGames)
+                bool inputDetected = false;  // Initialize at the beginning of the Update method
+
+                if (GameSystem.ControlledSystem != null && !inFocusMode)
                 {
-                    if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
+                    string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
+                    bool containsString = false;
+
+                    foreach (var gameString in compatibleGames)
                     {
-                        containsString = true;
-                        break;
+                        if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
+                        {
+                            containsString = true;
+                            break;
+                        }
+                    }
+
+                    if (containsString)
+                    {
+                        StartFocusMode();
                     }
                 }
 
-                if (containsString)
+                if (GameSystem.ControlledSystem == null && inFocusMode)
                 {
-                    StartFocusMode();
+                    EndFocusMode();
+                }
+
+                if (inFocusMode)
+                {
+                    HandleInput(ref inputDetected);  // Pass by reference
+                    HandleMouseRotation(ref inputDetected);
+                    MapThumbsticks(ref inputDetected);
                 }
             }
-
-            if (GameSystem.ControlledSystem == null && inFocusMode)
-            {
-                EndFocusMode();
-            }
-
-            if (inFocusMode)
-            {
-                HandleInput(ref inputDetected);  // Pass by reference
-                HandleMouseRotation(ref inputDetected);
-            }
         }
 
-        private void HandleXInput()
+        private const float THUMBSTICK_DEADZONE = 0.13f; // Adjust as needed
+
+        private Vector2 ApplyDeadzone(Vector2 input, float deadzone)
         {
+            input.x = Mathf.Abs(input.x) < deadzone ? 0f : input.x;
+            input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
+            return input;
+        }
+
+        private void MapThumbsticks(ref bool inputDetected)
+        {
+            if (!inFocusMode) return;
+
             Vector2 primaryThumbstick = Vector2.zero;
             Vector2 secondaryThumbstick = Vector2.zero;
+            float LIndexTrigger = 0f, RIndexTrigger = 0f;
+            float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
 
+            // === INPUT SELECTION WITH DEADZONE ===
+            // OVR CONTROLLERS (adds to VR input if both are present)
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
+            {
+                primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
+                secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
+
+                LIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                RIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
+                secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
+
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+            }
+
+            // STEAMVR CONTROLLERS (adds to VR input if both are present)
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
+            {
+                var leftController = SteamVRInput.GetController(HandType.Left);
+                var rightController = SteamVRInput.GetController(HandType.Right);
+                if (leftController != null) primaryThumbstick += leftController.GetAxis();
+                if (rightController != null) secondaryThumbstick += rightController.GetAxis();
+
+                LIndexTrigger = Mathf.Max(LIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Left));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Right));
+
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+            }
+
+            // XBOX CONTROLLER (adds to VR input if both are present)
             if (XInput.IsConnected)
             {
-                primaryThumbstick = XInput.Get(XInput.Axis.LThumbstick);
-                secondaryThumbstick = XInput.Get(XInput.Axis.RThumbstick);
+                primaryThumbstick += XInput.Get(XInput.Axis.LThumbstick);
+                secondaryThumbstick += XInput.Get(XInput.Axis.RThumbstick);
 
-                Vector2 xboxPrimaryThumbstick = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                Vector2 xboxSecondaryThumbstick = new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+                // Optionally use Unity Input axes as backup:
+                primaryThumbstick += new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                secondaryThumbstick += new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
 
-                // Combine VR and Xbox inputs
-                primaryThumbstick += xboxPrimaryThumbstick;
-                secondaryThumbstick += xboxSecondaryThumbstick;
+                LIndexTrigger = Mathf.Max(LIndexTrigger, XInput.Get(XInput.Trigger.LIndexTrigger));
+                RIndexTrigger = Mathf.Max(RIndexTrigger, XInput.Get(XInput.Trigger.RIndexTrigger));
+
+                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
+                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
             }
         }
-
-        public static class VRControllerHelper
-    {
-        public static SteamVR_Controller.Device GetController(HandType handType)
-        {
-            int index = -1;
-
-            // Get the device index based on the hand type
-            switch (handType)
-            {
-                case HandType.Left:
-                    index = SteamVR_Controller.GetDeviceIndex(SteamVR_Controller.DeviceRelation.Leftmost);
-                    break;
-                case HandType.Right:
-                    index = SteamVR_Controller.GetDeviceIndex(SteamVR_Controller.DeviceRelation.Rightmost);
-                    break;
-            }
-
-            // Return the controller device if a valid index was found
-            if (index != -1)
-            {
-                return SteamVR_Controller.Input(index);
-            }
-            return null;
-        }
-        }
-
 
         void StartFocusMode()
         {
@@ -320,8 +344,8 @@ namespace WIGUx.Modules.starbladeSim
             {
                 ControllerZ.Rotate(0, 0, mouseRotateZ);
                 CurrentControllerRotationZ = newRotationZ; // Update current rotation
-                inputDetected = true; 
- isCenteringRotation = false;
+                inputDetected = true;
+                isCenteringRotation = false;
             }
 
             // Check current rotation and new proposed rotation for Y axis
@@ -330,8 +354,8 @@ namespace WIGUx.Modules.starbladeSim
             {
                 ControllerY.Rotate(0, -mouseRotateY, 0);
                 CurrentControllerRotationY = newRotationY; // Update current rotation
-                inputDetected = true; 
- isCenteringRotation = false;
+                inputDetected = true;
+                isCenteringRotation = false;
             }
         }
 
@@ -347,8 +371,8 @@ namespace WIGUx.Modules.starbladeSim
             {
                 ToggleFireEmissive(true);
                 ToggleFireLight(true);
-                inputDetected = true; 
- isCenteringRotation = false;
+                inputDetected = true;
+                isCenteringRotation = false;
             }
 
             // Reset position on button release
@@ -356,8 +380,8 @@ namespace WIGUx.Modules.starbladeSim
             {
                 ToggleFireEmissive(false);
                 ToggleFireLight(false);
-                inputDetected = true; 
- isCenteringRotation = false;
+                inputDetected = true;
+                isCenteringRotation = false;
             }
         }
 
