@@ -101,7 +101,7 @@ namespace WIGUx.Modules.ddrSim
 
         void ReadData()
         {
-            // 1) Your original “zeroed” lamp list:
+            // 1) original “zeroed” lamp list:
             var currentLampStates = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
             {
                 { "foot 1p left",  0 }, { "foot 1p right", 0 },
@@ -146,7 +146,7 @@ namespace WIGUx.Modules.ddrSim
                 }
             }
 
-            // 4) Dispatch only those lamps to your existing logic
+            // 4) Dispatch only those lamps to the existing logic
             foreach (var kv in currentLampStates)
             {
                 // matches: void ProcessLampState(string lampKey, Dictionary<string,int> currentStates)

@@ -69,7 +69,8 @@ namespace WIGUx.Modules.hotd4specialMotionSim
 
         [SerializeField] private float stickCooldown = 1.5f;
         private float lastSeatRotationTime = -Mathf.Infinity;
-
+        private enum SeatDir { None, Up, Down, Left, Right }
+        private SeatDir lastSeatDir = SeatDir.None;
         [Header("Collider Triggers")]
         [SerializeField] private Collider cockpitCollider;
 
@@ -178,24 +179,60 @@ namespace WIGUx.Modules.hotd4specialMotionSim
                 primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
                 secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
             }
+
             // Calculate target yaw relative to starting rotation
             float baseYaw = seatMotorStartRotation.eulerAngles.y;
             float targetYaw = baseYaw;
-            if (primaryThumbstick.y > 0.5f)
-                targetYaw = baseYaw;               // Up: original
-            else if (primaryThumbstick.y < -0.5f)
-                targetYaw = baseYaw + 180f;        // Down
-            else if (primaryThumbstick.x < -0.5f)
-                targetYaw = baseYaw + 45f;         // Left
-            else if (primaryThumbstick.x > 0.5f)
-                targetYaw = baseYaw - 45f;         // Right
+
+            // --- DISCRETE RIGHT-STICK MAPPING (no stacking) ---
+            // NOTE: Per your spec:
+            //  Up    -> exact base (0)
+            //  Down  -> exact base + 180
+            //  Left  -> turn RIGHT  45 (i.e., base - 45)
+            //  Right -> turn LEFT   45 (i.e., base + 45)
+            SeatDir currentDir = SeatDir.None;
+
+            if (secondaryThumbstick.y > 0.5f)
+            {
+                currentDir = SeatDir.Up;
+                targetYaw = baseYaw;
+            }
+            else if (secondaryThumbstick.y < -0.5f)
+            {
+                currentDir = SeatDir.Down;
+                targetYaw = baseYaw + 180f;
+            }
+            else if (secondaryThumbstick.x < -0.5f)
+            {
+                currentDir = SeatDir.Left;       // left input → right 45°
+                targetYaw = baseYaw - 45f;
+            }
+            else if (secondaryThumbstick.x > 0.5f)
+            {
+                currentDir = SeatDir.Right;      // right input → left 45°
+                targetYaw = baseYaw + 45f;
+            }
             else
+            {
+                return; // No directional input → do nothing
+            }
+
+            // NEW: ignore repeats of the same direction (no re-processing)
+            if (currentDir == lastSeatDir)
                 return;
 
-            // Enforce 3s delay between rotations
+            // Keep angle in [0,360) just for safety/consistency
+            targetYaw = Mathf.Repeat(targetYaw, 360f);
+
+            // Enforce your existing cooldown window
+            if (Time.time - lastSeatRotationTime < stickCooldown)
+                return;
+
             lastSeatRotationTime = Time.time;
+            lastSeatDir = currentDir;
             StartCoroutine(RotateSeatMotorToAngle(targetYaw));
         }
+
         void StartFocusMode()
         {
             logger.Debug($"{gameObject.name} Starting Focus Mode...");

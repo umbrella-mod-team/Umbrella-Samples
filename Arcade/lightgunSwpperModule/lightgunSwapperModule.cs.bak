@@ -1,0 +1,454 @@
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using UnityEngine;
+using WIGU;
+
+
+namespace WIGUx.Modules.lightgunSwapperModule
+{
+    public class UGCLightgunSwapper : MonoBehaviour
+    {
+        static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
+
+        private GameSystem gameSystem;
+        private Flashlight flashlight;
+        private bool inFocusMode = false;
+        private string insertedGameName = string.Empty;
+        private string controlledGameName = string.Empty;
+        private bool isModelReplaced = false;
+        private Lightgun ugcLightgunPrefab;
+        private MonoBehaviour lightgunControllerRaw; // used for reflection
+        private GameObject defaultGunInstance;
+        private GameObject replacementGunInstance;
+        private GameSystemState systemState;
+        private bool isVRActive = false;
+        private GameObject playerCamera;   // Reference to the Player Camera
+        private GameObject playerVRSetup;   // Reference to the VR Camera
+        private bool isMouseDown = false;
+        private GameObject aimLine;
+
+
+        [DllImport("user32.dll")]
+        private static extern bool SetCursorPos(int X, int Y);
+
+        [DllImport("user32.dll")]
+        private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, IntPtr dwExtraInfo);
+
+        private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+        private const uint MOUSEEVENTF_LEFTUP   = 0x0004;
+
+        private const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
+        private const uint MOUSEEVENTF_RIGHTUP   = 0x0010;
+
+
+        void Start()
+        {
+            CheckInsertedGameName();
+            CheckControlledGameName();
+            gameSystem = GetComponent<GameSystem>();
+            // Find references to PlayerCamera and VR setup objects
+            playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
+
+            // Find and assign the whole VR rig try SteamVR first, then Oculus
+            playerVRSetup = GameObject.Find("Player/[SteamVRCameraRig]");
+            // If not found, try to find the Oculus VR rig
+            if (playerVRSetup == null)
+            {
+                playerVRSetup = GameObject.Find("OVRCameraRig");
+            }
+
+            // Check if objects are found
+            CheckObject(playerCamera, "PlayerCamera");
+            if (playerVRSetup != null)
+            {
+                CheckObject(playerVRSetup, playerVRSetup.name); // will print either [SteamVRCameraRig] or OVRCameraRig
+            }
+            else
+            {
+                //  logger.Debug($"{gameObject.name} No VR Devices found. No SteamVR or OVR present)");
+            }
+            isVRActive = (playerVRSetup != null);
+
+            flashlight = GetComponentInChildren<Flashlight>();
+            if (flashlight?.lightObject != null)
+                flashlight.lightObject.SetActive(true);
+
+            ugcLightgunPrefab = GetComponentInChildren<Lightgun>(true);
+            if (ugcLightgunPrefab != null)
+                ugcLightgunPrefab.gameObject.SetActive(false);
+        }
+
+        // 1) Update(): use existing focus/core gates, call TryComputeCursorXY → HandleMouseInjection
+        void Update()
+        {
+            CheckInsertedGameName();
+            CheckControlledGameName();
+
+            if (!inFocusMode && !string.IsNullOrEmpty(insertedGameName)
+                && !string.IsNullOrEmpty(controlledGameName)
+                && insertedGameName == controlledGameName)
+            {
+                StartFocusMode();
+            }
+            if (GameSystem.ControlledSystem == null && inFocusMode)
+            {
+                EndFocusMode();
+            }
+
+            if (!inFocusMode && flashlight?.lightObject != null && !flashlight.lightObject.activeSelf)
+                flashlight.lightObject.SetActive(true);
+
+            if (lightgunControllerRaw != null)
+            {
+                var handField = lightgunControllerRaw.GetType().GetField("handType", BindingFlags.NonPublic | BindingFlags.Instance);
+                var lastActiveField = typeof(LightgunController).GetField("LastActiveGun", BindingFlags.Public | BindingFlags.Static);
+                if (handField != null && lastActiveField != null)
+                {
+                    var currentHand = handField.GetValue(lightgunControllerRaw);
+                    var lastActive = lastActiveField.GetValue(null);
+                    if (!currentHand.Equals(lastActive))
+                    {
+                        lightgunControllerRaw = null;
+                        isModelReplaced = false;
+                    }
+                }
+            }
+
+            // capture†core only path
+            if (inFocusMode && TryGetLightgunController())
+            {
+                var targetField = lightgunControllerRaw.GetType().GetField("attachedTarget", BindingFlags.NonPublic | BindingFlags.Instance);
+                var attachedTarget = targetField?.GetValue(lightgunControllerRaw) as LightgunTarget;
+                logger.Debug($"[LightGun] capture gate: running={attachedTarget?.retroarch?.isRunning} core={attachedTarget?.retroarch?.game?.core}");
+                bool triggerPressed = IsTriggerPressed(HandType.Left) || IsTriggerPressed(HandType.Right);
+
+                if (attachedTarget?.retroarch?.isRunning == true
+                    && attachedTarget.retroarch.game?.core == "wgc_libretro")
+                {
+                    var hasLGField = typeof(GameSystem).GetField("ControlledHasLightgunInput", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (hasLGField != null)
+                    {
+                        hasLGField.SetValue(null, true);
+                    }
+                    /*
+                    if (aimLine == null)
+                    {
+                        aimLine = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                        Destroy(aimLine.GetComponent<Collider>());
+                        aimLine.GetComponent<Renderer>().material.color = Color.red;
+                        aimLine.SetActive(false);
+                    }
+                    */
+                    int x, y;
+                    bool aimHit = TryComputeCursorXY(out x, out y);
+                    if (aimHit)
+                    {
+                        HandleMouseInjection(x, y, triggerPressed);
+                    }
+                    else
+                    {
+                        logger.Debug("[LightGun] no hit (raycast MISS)");
+
+
+                        if (triggerPressed)
+                        {
+                            // Off-screen fire = reload every time
+                            mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, IntPtr.Zero);
+                            mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, IntPtr.Zero);
+                            logger.Debug("[LightGun] Right Mouse Click (reload)");
+
+                            // Ensure primary is not stuck
+                            if (isMouseDown)
+                            {
+                                mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, IntPtr.Zero);
+                                isMouseDown = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2) NEW: TryComputeCursorXY — mirrors stock LightgunController raycast parameters
+        private bool TryComputeCursorXY(out int x, out int y)
+        {
+            x = 0; y = 0;
+            if (lightgunControllerRaw == null) return false;
+
+            var aimField = lightgunControllerRaw.GetType().GetField("aim", BindingFlags.NonPublic | BindingFlags.Instance);
+            Transform aimTransform = aimField?.GetValue(lightgunControllerRaw) as Transform
+                                     ?? lightgunControllerRaw.transform;
+
+            Vector3 origin = aimTransform.position;
+            Vector3 direction = aimTransform.TransformDirection(Vector3.forward);
+
+            logger.Debug($"[LightGun] origin: {origin:F4} direction: {direction:F4}");
+
+            if (aimLine != null)
+            {
+                aimLine.SetActive(true);
+                Vector3 mid = origin + direction * 15f;
+                aimLine.transform.position = mid;
+                aimLine.transform.up = direction.normalized;
+                aimLine.transform.localScale = new Vector3(0.01f, 15f, 0.01f);
+            }
+
+            UnityEngine.RaycastHit hit;
+            int mask = (int)LayerDatabase.Instance.LightGunTarget;
+            bool ok = Physics.Raycast(origin, direction, out hit, 30f, mask, QueryTriggerInteraction.Collide);
+            if (!ok)
+            {
+                logger.Debug("[LightGun] Raycast MISS");
+                return false;
+            }
+
+            var targetField = lightgunControllerRaw.GetType().GetField("attachedTarget", BindingFlags.NonPublic | BindingFlags.Instance);
+            var attachedTarget = targetField?.GetValue(lightgunControllerRaw) as LightgunTarget;
+            var sc = attachedTarget?.screenController;
+
+            if (sc != null)
+            {
+                Vector2 uv = new Vector2(hit.textureCoord.x, 1f - hit.textureCoord.y);
+                uv = (uv - Vector2.one * 0.5f) * sc.UVScale + Vector2.one * 0.5f;
+                x = Mathf.RoundToInt(uv.x * Screen.width);
+                y = Mathf.RoundToInt(uv.y * Screen.height);
+            }
+            else
+            {
+                var sp = Camera.main.WorldToScreenPoint(hit.point);
+                x = Mathf.RoundToInt(sp.x);
+                y = Mathf.RoundToInt(Screen.height - sp.y);
+            }
+
+            x = Mathf.Clamp(x, 0, Screen.width - 1);
+            y = Mathf.Clamp(y, 0, Screen.height - 1);
+
+            logger.Debug($"[LightGun] coordance: {x},{y}");
+
+            return true;
+        }
+
+
+        private void HandleMouseInjection(int x, int y, bool triggerDown)
+        {
+            SetCursorPos(x, y);
+
+            if (triggerDown && !isMouseDown)
+            {
+                mouse_event(MOUSEEVENTF_LEFTDOWN, (uint)x, (uint)y, 0, IntPtr.Zero);
+                isMouseDown = true;
+                logger.Debug($"[LightGun] Left Mouse Click sent at coordance: {x},{y}");
+            }
+            else if (!triggerDown && isMouseDown)
+            {
+                mouse_event(MOUSEEVENTF_LEFTUP, (uint)x, (uint)y, 0, IntPtr.Zero);
+                isMouseDown = false;
+                logger.Debug("[LightGun] Left Mouse Click released");
+            }
+        }
+
+
+
+        public static bool IsTriggerPressed(HandType handType)
+        {
+            float t = 0f;
+
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
+            {
+                t = (handType == HandType.Left)
+                    ? OVRInput.Get(OVRInput.RawAxis1D.LIndexTrigger, OVRInput.Controller.Touch)
+                    : OVRInput.Get(OVRInput.RawAxis1D.RIndexTrigger, OVRInput.Controller.Touch);
+            }
+            else if (SteamVRInput.TouchMode)
+            {
+                t = SteamVRInput.GetAxis(SteamVRInput.TouchAxis.Trigger, handType);
+            }
+            else if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
+            {
+                t = SteamVRInput.GetTriggerValue(handType);
+            }
+            else
+            {
+                // fallback for mouse/gamepad/keyboard
+                if (XInput.Get(XInput.Button.A) || XInput.Get(XInput.Button.RIndexTrigger) ||
+                    Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0))
+                {
+                    t = 1f;
+                }
+            }
+
+            return t > 0.3f;
+        }
+
+        private bool TryGetLightgunController()
+        {
+            var lastActiveField = typeof(LightgunController).GetField("LastActiveGun", BindingFlags.Public | BindingFlags.Static);
+            var activeHand = lastActiveField?.GetValue(null);
+
+            var controllers = Resources.FindObjectsOfTypeAll<MonoBehaviour>()
+                .Where(mb => mb.GetType().Name == "LightgunController");
+
+            foreach (var ctrl in controllers)
+            {
+                var handField = ctrl.GetType().GetField("handType", BindingFlags.NonPublic | BindingFlags.Instance);
+                var handValue = handField?.GetValue(ctrl);
+                if (activeHand != null && handValue != null && handValue.Equals(activeHand))
+                {
+                    lightgunControllerRaw = ctrl;
+                    logger.Debug($"[LightGun] active controller (exact): {handValue}");
+                    return true;
+                }
+            }
+
+            var fallback = controllers.FirstOrDefault();
+            lightgunControllerRaw = fallback;
+            bool ok = fallback != null;
+            logger.Debug(ok ? "[LightGun] active controller (fallback): true" : "no controller found");
+            return ok;
+        }
+        /*
+        private void HandleModelSwap()
+        {
+            if (!inFocusMode || isModelReplaced) return;
+
+            if (ugcLightgunPrefab == null)
+            {
+                logger.Error("UGC Lightgun prefab not found! Cannot swap model.");
+                return;
+            }
+            if (!TryGetLightgunController())
+            {
+                logger.Error("Could not find active LightgunController.");
+                return;
+            }
+
+            var field = lightgunController.GetType().GetField("lightgun", BindingFlags.NonPublic | BindingFlags.Instance);
+            var currentGun = field?.GetValue(lightgunController) as MonoBehaviour;
+            if (currentGun == null)
+            {
+                logger.Error("Could not find current gun object on controller.");
+                return;
+            }
+
+            if (currentGun.gameObject.activeInHierarchy)
+            {
+                if (replacementGunInstance != null)
+                {
+                    Destroy(replacementGunInstance);
+                    replacementGunInstance = null;
+                }
+                if (defaultGunInstance != null)
+                {
+                    var oldRenderers = defaultGunInstance.GetComponentsInChildren<Renderer>(true);
+                    foreach (var r in oldRenderers)
+                        r.enabled = true;
+                }
+
+                defaultGunInstance = currentGun.gameObject;
+
+                var modelRenderers = defaultGunInstance.GetComponentsInChildren<Renderer>();
+                if (modelRenderers == null || modelRenderers.Length == 0)
+                {
+                    logger.Warning("No Renderer components found on original gun to hide!");
+                }
+                else
+                {
+                    foreach (var r in modelRenderers)
+                        r.enabled = false;
+                }
+
+                replacementGunInstance = Instantiate(ugcLightgunPrefab.gameObject, lightgunController.transform);
+                replacementGunInstance.transform.localPosition = defaultGunInstance.transform.localPosition;
+                replacementGunInstance.transform.localRotation = defaultGunInstance.transform.localRotation;
+                replacementGunInstance.transform.localScale = defaultGunInstance.transform.localScale;
+                replacementGunInstance.SetActive(true);
+
+                logger.Debug("Swapped in replacement gun model successfully.");
+                isModelReplaced = true;
+            }
+        }
+        */
+
+        private void StartFocusMode()
+        {
+            logger.Debug("Starting Focus Mode. Grab the Gun!");
+            inFocusMode = true;
+            flashlight?.lightObject?.SetActive(false);
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            PlayerController.SetLockedCursor(false, temp: true);
+        }
+
+        private void EndFocusMode()
+        {
+            logger.Debug("Ending Focus Mode.");
+            inFocusMode = false;
+
+
+            if (isMouseDown)
+            {
+                mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, IntPtr.Zero);
+                isMouseDown = false;
+            }
+
+
+            if (replacementGunInstance != null)
+            {
+                Destroy(replacementGunInstance);
+                replacementGunInstance = null;
+            }
+            if (defaultGunInstance != null)
+            {
+                var modelRenderers = defaultGunInstance.GetComponentsInChildren<Renderer>(true);
+                foreach (var r in modelRenderers)
+                    r.enabled = true;
+                defaultGunInstance.SetActive(true);
+            }
+            isModelReplaced = false;
+        }
+
+        void CheckObject(GameObject obj, string name)     // Check if object is found and log appropriate message
+        {
+            if (obj == null)
+            {
+                logger.Error($"{gameObject.name} {name} not found!");
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} {name} found.");
+            }
+        }
+
+        private void CheckInsertedGameName()
+        {
+            if (gameSystem != null && gameSystem.Game != null && !string.IsNullOrEmpty(gameSystem.Game.path))
+                insertedGameName = FileNameHelper.GetFileName(gameSystem.Game.path);
+            else
+                insertedGameName = string.Empty;
+        }
+
+        private void CheckControlledGameName()
+        {
+            if (GameSystem.ControlledSystem != null && GameSystem.ControlledSystem.Game != null
+                && !string.IsNullOrEmpty(GameSystem.ControlledSystem.Game.path))
+                controlledGameName = FileNameHelper.GetFileName(GameSystem.ControlledSystem.Game.path);
+            else
+                controlledGameName = string.Empty;
+        }
+
+        // Helper class to extract and sanitize file names.
+        public static class FileNameHelper
+        {
+            // Extracts the file name without the extension and replaces invalid file characters with underscores.
+            public static string GetFileName(string filePath)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string FileName = System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+                return FileName;
+            }
+        }
+    }
+}
