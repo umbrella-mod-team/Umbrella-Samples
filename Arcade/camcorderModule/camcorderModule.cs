@@ -19,7 +19,9 @@ namespace WIGUx.Modules.camcorderModule
         private RawImage overlayImage;
         private GameObject overlayCanvas;
         private bool overlayActive = false;
-
+        private GameObject playerCamera;   // Reference to the player camera
+        private GameObject playerVRSetup;   // Reference to the player
+        private GameObject currentAvatarRoot;
         private string screenMeshName = "screen_obj_5";
 
         // Hardcoded SpectatorOnly layer index
@@ -42,6 +44,27 @@ namespace WIGUx.Modules.camcorderModule
 
         void Start()
         {
+            // Find references to PlayerCamera and VR setup objects
+            playerCamera = PlayerVRSetup.PlayerCamera.gameObject;
+
+            // Find and assign the whole VR rig try SteamVR first, then Oculus
+            playerVRSetup = GameObject.Find("Player/[SteamVRCameraRig]");
+            // If not found, try to find the Oculus VR rig
+            if (playerVRSetup == null)
+            {
+                playerVRSetup = GameObject.Find("OVRCameraRig");
+            }
+
+            // Check if objects are found
+            CheckObject(playerCamera, "PlayerCamera");
+            if (playerVRSetup != null)
+            {
+                CheckObject(playerVRSetup, playerVRSetup.name); // will print either [SteamVRCameraRig] or OVRCameraRig
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} No VR Devices found. No SteamVR or OVR present)");
+            }
             // === Resolve spectator camera ===
             spectatorCamera = GetComponentInChildren<Camera>(true);
             if (spectatorCamera == null)
@@ -131,23 +154,57 @@ namespace WIGUx.Modules.camcorderModule
                 // 🚨 If prefab found, instantiate
                 if (prefab != null)
                 {
+                    // ✅ Clear any existing avatar first
+                    if (currentAvatarRoot != null)
+                    {
+                        Destroy(currentAvatarRoot);
+                        currentAvatarRoot = null;
+                        ugcBodyRef = null;
+                        ugcHeadRef = null;
+                        logger.Debug("[Camcorder] Destroyed previous avatar before spawning new one");
+                    }
+
                     avatarRoot = Instantiate(prefab);
                     avatarRoot.name = prefab.name;
+                    currentAvatarRoot = avatarRoot;  // track the latest
                     logger.Debug($"[Camcorder] Spawned avatar prefab {avatarRoot.name}");
-
+                    // Delay hiding until Body/Head have been reparented, so we only hide leftover static meshes
+                    StartCoroutine(HideAvatarRootAfterAttach(avatarRoot));
                     // Debug: list children so we know Body/Head exist
-                    foreach (Transform child in avatarRoot.transform)
-                        logger.Debug($"[Camcorder] Avatar root child: {child.name}");
+                    //   foreach (Transform child in avatarRoot.transform)
+                    //   logger.Debug($"[Camcorder] Avatar root child: {child.name}");
+
+                    // 🚫 Strip components that would make the avatar look like a prop to LevelSerializer
+                    foreach (var sel in avatarRoot.GetComponentsInChildren<Selectable>(true))
+                        Destroy(sel);
+
+                    foreach (var comp in avatarRoot.GetComponentsInChildren<CompoundObject>(true))
+                        Destroy(comp);
+
+                    foreach (var gm in avatarRoot.GetComponentsInChildren<GameMedium>(true))
+                        Destroy(gm);
+
+                    foreach (var sys in avatarRoot.GetComponentsInChildren<GameSystem>(true))
+                        Destroy(sys);
                 }
 
                 // === Attach Body/Head if we have them ===
-                if (avatarRoot != null)
+                if (avatarRoot != null && playerVRSetup != null) // 🚫 only attach if VR rig exists
                 {
                     var ugcBody = avatarRoot.transform.Find("Body");
                     var ugcHead = avatarRoot.transform.Find("Head");
 
                     var playerBody = GameObject.Find("Player/Body");
-                    var playerHead = GameObject.Find("Player/[SteamVRCameraRig]/Camera (eye)/Head");
+                    GameObject playerHead = null;
+
+                    if (playerVRSetup.name.Contains("SteamVRCameraRig"))
+                    {
+                        playerHead = GameObject.Find("Player/[SteamVRCameraRig]/Camera (eye)/Head");
+                    }
+                    else if (playerVRSetup.name.Contains("OVRCameraRig"))
+                    {
+                        playerHead = GameObject.Find("OVRCameraRig/TrackingSpace/CenterEyeAnchor");
+                    }
 
                     if (ugcBody != null && playerBody != null)
                     {
@@ -165,17 +222,35 @@ namespace WIGUx.Modules.camcorderModule
                     {
                         PreserveAndReparent(ugcHead.gameObject, playerHead);
                         ugcHeadRef = ugcHead.gameObject;
-                        logger.Debug("[Camcorder] Avatar Head attached to Player/Head");
+                        logger.Debug("[Camcorder] Avatar Head attached to Player Head");
                     }
                     else
                     {
                         if (ugcHead == null) logger.Error("[Camcorder] Avatar prefab missing 'Head'");
-                        if (playerHead == null) logger.Error("[Camcorder] Could not find Player/[SteamVRCameraRig]/Camera (eye)/Head");
+                        if (playerHead == null) logger.Error("[Camcorder] Could not find a VR Head attachment point");
                     }
                 }
                 else
                 {
-                    logger.Error($"[Camcorder] Could not find prefab inside any loaded bundle for {cfg.SelectedAvatarFile}");
+                    logger.Debug("[Camcorder] Skipping avatar attach — no VR rig detected.");
+                }
+                // 🧹 Final safety pass — hide any extra static Body under Player/Body (the frozen duplicate)
+                {
+                    var playerBodyAnchor = GameObject.Find("Player/Body");
+                    if (playerBodyAnchor != null && ugcBodyRef != null)
+                    {
+                        foreach (Transform child in playerBodyAnchor.transform)
+                        {
+                            // find duplicate "Body" object that isn't the working ugcBodyRef
+                            if (child.name.Equals("Body", StringComparison.OrdinalIgnoreCase) &&
+                                child.gameObject != ugcBodyRef)
+                            {
+                                logger.Debug($"[Camcorder] Hiding extra static Body '{child.name}' under Player/Body");
+                                foreach (var rend in child.GetComponentsInChildren<Renderer>(true))
+                                    rend.enabled = false; // hide duplicate renderers only
+                            }
+                        }
+                    }
                 }
             }
 
@@ -232,12 +307,23 @@ namespace WIGUx.Modules.camcorderModule
             if (ugcBodyRef != null)
             {
                 // re-cache VR head if needed
-                if (vrHead == null)
+                if (vrHead == null && playerVRSetup != null)
                 {
-                    var headGO = GameObject.Find("Player/[SteamVRCameraRig]/Camera (eye)/Head");
+                    GameObject headGO = null;
+
+                    if (playerVRSetup.name.Contains("SteamVRCameraRig"))
+                    {
+                        headGO = GameObject.Find("Player/[SteamVRCameraRig]/Camera (eye)/Head");
+                    }
+                    else if (playerVRSetup.name.Contains("OVRCameraRig"))
+                    {
+                        headGO = GameObject.Find("OVRCameraRig/TrackingSpace/CenterEyeAnchor");
+                    }
+
                     if (headGO != null)
                         vrHead = headGO.transform;
                 }
+
 
                 // HEIGHT
                 if (vrHead != null)
@@ -368,12 +454,38 @@ namespace WIGUx.Modules.camcorderModule
             SetLayerRecursively(ugcObj, SpectatorLayer);
             logger.Debug($"[Camcorder] Preserved + reparented {ugcObj.name} under {targetParent.name}, localScale={ugcObj.transform.localScale}");
         }
+        private System.Collections.IEnumerator HideAvatarRootAfterAttach(GameObject avatarRoot)
+        {
+            yield return new WaitForSeconds(0.5f); // wait so body/head are reparented first
 
+            if (avatarRoot == null) yield break;
+
+            foreach (Transform child in avatarRoot.transform)
+            {
+                foreach (var renderer in child.GetComponentsInChildren<Renderer>(true))
+                {
+                    renderer.enabled = false;
+                }
+                logger.Debug($"[Camcorder] Hid leftover static object '{child.name}' under avatarRoot");
+            }
+        }
+  
         private void SetLayerRecursively(GameObject obj, int layer)
         {
             obj.layer = layer;
             foreach (Transform child in obj.transform)
                 SetLayerRecursively(child.gameObject, layer);
+        }
+        void CheckObject(GameObject obj, string name)     // Check if object is found and log appropriate message
+        {
+            if (obj == null)
+            {
+                logger.Error($"{gameObject.name} {name} not found!");
+            }
+            else
+            {
+                logger.Debug($"{gameObject.name} {name} found.");
+            }
         }
     }
 }

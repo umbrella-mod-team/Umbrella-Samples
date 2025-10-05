@@ -225,12 +225,13 @@ namespace WIGUx.Modules.lightgunSwapperModule
                         allowMouse = true;
                     }
                 }
+                /*
                 else
                 {
                     // No retroarch target found → fallback for desktop/capture
                     allowMouse = true;
                 }
-
+                */
                 if (allowMouse)
                 {
                     int x, y;

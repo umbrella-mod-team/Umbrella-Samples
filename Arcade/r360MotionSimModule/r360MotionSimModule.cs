@@ -540,9 +540,28 @@ namespace WIGUx.Modules.r360MotionSim
 		private void MapButtons(ref bool inputDetected) // Pass by reference
 		{
 			if (!inFocusMode) return;
-		}
+            // Fire3/X button pressed (turn on lights)
+            if (XInput.GetDown(XInput.Button.X)
+                || OVRInput.GetDown(OVRInput.Button.Two) // Oculus "B"/"Y" (use .Two for canonical red B right)
+                || SteamVRInput.GetDown(SteamVRInput.TouchButton.B) // SteamVR top button on right controller
+            )
+            {
+                if (Danger_lampObject) ToggleEmissive(Danger_lampObject.gameObject.gameObject, true);
+                if (danger) ToggleLight(danger, true);
+            }
 
-		void ResetPositions()
+            // Fire3/X button released (turn off lights)
+            if (XInput.GetUp(XInput.Button.X)
+                || OVRInput.GetUp(OVRInput.Button.Two)
+                || SteamVRInput.GetUp(SteamVRInput.TouchButton.B)
+            )
+            {
+                if (Danger_lampObject) ToggleEmissive(Danger_lampObject.gameObject.gameObject, false);
+                if (danger) ToggleLight(danger, false);
+            }
+        }
+
+        void ResetPositions()
 		{
 			logger.Debug("Resetting Positions");
 			// Reset X to initial positions and rotations
