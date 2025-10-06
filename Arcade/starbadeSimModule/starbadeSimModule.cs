@@ -4,6 +4,7 @@ using WIGU;
 using System.Collections.Generic;
 using EmuVR.InputManager;
 using System.Collections;
+using System.IO;
 using System.Xml.Linq;
 
 
@@ -13,51 +14,8 @@ namespace WIGUx.Modules.starbladeSim
     {
         static IWiguLogger logger = ServiceProvider.Instance.GetService<IWiguLogger>();
 
-        [Header("Object Settings")]
-        private Transform TurretObject; // Reference to the left stick mirroring object
-
-        [Header("Input Settings")]
-        public string primaryThumbstickHorizontal = "Horizontal"; // Input axis for primary thumbstick horizontal
-        public string primaryThumbstickVertical = "Vertical"; // Input axis for primary thumbstick vertical
-        public string secondaryThumbstickHorizontal = "RightStickHorizontal"; // Input axis for secondary thumbstick horizontal
-        public string secondaryThumbstickVertical = "RightStickVertical"; // Input axis for secondary thumbstick forward/backward
-        public string leftTrigger = "LIndexTrigger";
-        public string rightTrigger = "RIndexTrigger";
-
-        [Header("Velocity Multiplier Settings")]        // Speeds for the animation of the in game flight stick or wheel
-        private float primaryThumbstickRotationMultiplier = 10f; // Multiplier for primary thumbstick rotation intensity
-        private float secondaryThumbstickRotationMultiplier = 25f; // Multiplier for secondary thumbstick rotation intensity
-        private float triggerRotationMultiplier = 20f; // Multiplier for trigger rotation intensity
-        private float adjustSpeed = 1.0f;  // Adjust this adjustment speed as needed a lower number will lead to smaller adustments
-        private readonly float rotationSmoothness = 5f;  //sets the smoothness of the rotation
-        private readonly float mouseSensitivityX = 350.5f;  // Velocity for mouse input
-        private readonly float mouseSensitivityY = 350.5f;  // Velocity for mouse input
-        private readonly float mouseSensitivityZ = 350.5f;  // Velocity for mouse input
-        private readonly float thumbstickVelocity = 50f;  // Velocity for keyboard input
-        private readonly float centeringVelocityX = 25f;  // Velocity for centering rotation
-        private readonly float centeringVelocityY = 25f;  // Velocity for centering rotation
-        private readonly float centeringVelocityZ = 25f;  // Velocity for centering rotation
-
-        [Header("Rotation Tracking")]        // Sets up the rotation varibles and sets them to 0 
-        private float currentRotationX = 0f;  // Current rotation for X-axis
-        private float currentRotationY = 0f;  // Current rotation for Y-axis
-        private float currentRotationZ = 0f;  // Current rotation for Z-axis
-
-        [Header("Rotation Limits")]        // Rotation Limits 
-        [SerializeField] float minRotationX = -15f;
-        [SerializeField] float maxRotationX = 15f;
-        [SerializeField] float minRotationY = -15f;
-        [SerializeField] float maxRotationY = 15f;
-        [SerializeField] float minRotationZ = -15f;
-        [SerializeField] float maxRotationZ = 15f;
-
-        [Header("Position Settings")]     // Initial positions setup
-        private Vector3 TurretStartPosition; // Initial Throttle positions for resetting
-
-        [Header("Rotation Settings")]     // Initial rotations setup
-        private Quaternion TurretStartRotation;  // Initial Throttle rotation for resetting
-
         [Header("Lights and Emissives")]     // Setup Emissive and Lights
+        private Transform GunObject;
         private Light firelight_light;
         public Light starblade1_light;
         public Light starblade2_light;
@@ -84,58 +42,34 @@ namespace WIGUx.Modules.starbladeSim
         private GameSystem gameSystem;  // Cached GameSystem for this cabinet.
         private string insertedGameName = string.Empty;
         private string controlledGameName = string.Empty;
-        private string configPath;
-        private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects                                                                                     
+        private Dictionary<GameObject, Transform> originalParents = new Dictionary<GameObject, Transform>();  // Dictionary to store original parents of objects
+        private bool lastTriggerState = false; // track last fire state
 
         void Start()
         {
-            // Find Throttle object in hierarchy
-            TurretObject = transform.Find("Turret");
-            if (TurretObject != null)
+            gameSystem = GetComponent<GameSystem>();
+            GunObject = transform.Find("Gun");
+            if (GunObject != null)
             {
-                logger.Debug($"{gameObject.name} Turret object found.");
-                TurretStartPosition = TurretObject.localPosition;
-                TurretStartRotation = TurretObject.localRotation;
+                logger.Debug($"{gameObject.name} Gun object found.");
 
                 LightLeftObject = transform.Find("lights/LightLeft");
                 if (LightLeftObject != null)
                 {
-                    logger.Debug("LightLeft object found.");
-                    // Ensure the light_left object is initially off
                     Renderer renderer = LightLeftObject.GetComponent<Renderer>();
-                    if (renderer != null)
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        logger.Debug("Renderer component is not found on LightLeft object.");
-                    }
+                    if (renderer != null) renderer.material.DisableKeyword("_EMISSION");
+                    logger.Debug("LightLeft object initialized.");
                 }
+
                 LightRightObject = transform.Find("lights/LightRight");
                 if (LightRightObject != null)
                 {
-                    logger.Debug("LightRight object found.");
-                    // Ensure the light_right object is initially off
                     Renderer renderer = LightRightObject.GetComponent<Renderer>();
-                    if (renderer != null)
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        logger.Debug("Renderer component is not found on LightRight object.");
-                    }
+                    if (renderer != null) renderer.material.DisableKeyword("_EMISSION");
+                    logger.Debug("LightRight object initialized.");
                 }
 
-                else
-                {
-                    logger.Debug($"{gameObject.name} Turret object not found.");
-                }
-
-                // Gets all Light components in the target object and its children
                 Light[] Lights = transform.GetComponentsInChildren<Light>();
-
                 // Log the names of the objects containing the Light components and filter out unwanted lights
                 foreach (Light light in Lights)
                 {
@@ -162,417 +96,184 @@ namespace WIGUx.Modules.starbladeSim
                             break;
                     }
                 }
-                // Find Turret object in hierarchy
-                TurretObject = transform.Find("Turret");
-                if (TurretObject != null)
+
+                FireEmissiveObject = GunObject.Find("FireEmissive");
+                if (FireEmissiveObject != null)
                 {
-                    logger.Debug($"{gameObject.name} Turret object found.");
-                    TurretStartPosition = TurretObject.localPosition;
-                    TurretStartRotation = TurretObject.localRotation;
-
-                    // Find the _firelight within ControllerZ
-                    // Find fireemissive object
-                    FireEmissiveObject = TurretObject.Find("FireEmissive");
-                    if (FireEmissiveObject != null)
-                    {
-                        logger.Debug("fireemissive object found.");
-                        // Ensure the fireemissive object is initially off
-                        Renderer renderer = FireEmissiveObject.GetComponent<Renderer>();
-                        if (renderer != null)
-                        {
-                            renderer.material.DisableKeyword("_EMISSION");
-                        }
-                        else
-                        {
-                            logger.Debug("Renderer component is not found on FireEmissive object.");
-                        }
-                    }
-                    else
-                    {
-                        logger.Debug("FireEmissive object not found under aburnerX.");
-                    }
-                    ToggleFireLight(false);
-                    ToggleFireEmissive(false);
-                    ToggleLight1(false);
-                    ToggleLight2(false);
-
-                }
-            }
-
-            void Update()
-            {
-
-                bool inputDetected = false;  // Initialize at the beginning of the Update method
-
-                if (GameSystem.ControlledSystem != null && !inFocusMode)
-                {
-                    string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-                    bool containsString = false;
-
-                    foreach (var gameString in compatibleGames)
-                    {
-                        if (controlledSystemGamePathString != null && controlledSystemGamePathString.Contains(gameString))
-                        {
-                            containsString = true;
-                            break;
-                        }
-                    }
-
-                    if (containsString)
-                    {
-                        StartFocusMode();
-                    }
+                    Renderer renderer = FireEmissiveObject.GetComponent<Renderer>();
+                    if (renderer != null) renderer.material.DisableKeyword("_EMISSION");
+                    logger.Debug("FireEmissive initialized.");
                 }
 
-                if (GameSystem.ControlledSystem == null && inFocusMode)
-                {
-                    EndFocusMode();
-                }
-
-                if (inFocusMode)
-                {
-                    HandleInput(ref inputDetected);  // Pass by reference
-                    HandleMouseRotation(ref inputDetected);
-                    MapThumbsticks(ref inputDetected);
-                }
+                // turn off all lights/emissives initially
+                if (firelight_light) ToggleLight(firelight_light, false);
+                if (starblade1_light) ToggleLight(starblade1_light, false);
+                if (starblade2_light) ToggleLight(starblade2_light, false);
+                if (FireEmissiveObject) ToggleEmissive(FireEmissiveObject.gameObject, false);
+                if (LightLeftObject) ToggleEmissive(LightLeftObject.gameObject, false);
+                if (LightRightObject) ToggleEmissive(LightRightObject.gameObject, false);
             }
         }
 
         private const float THUMBSTICK_DEADZONE = 0.13f; // Adjust as needed
 
-        private Vector2 ApplyDeadzone(Vector2 input, float deadzone)
+        void Update()
         {
-            input.x = Mathf.Abs(input.x) < deadzone ? 0f : input.x;
-            input.y = Mathf.Abs(input.y) < deadzone ? 0f : input.y;
-            return input;
+            CheckInsertedGameName();
+            CheckControlledGameName();
+
+            if (!string.IsNullOrEmpty(insertedGameName) && !string.IsNullOrEmpty(controlledGameName) && insertedGameName == controlledGameName && !inFocusMode)
+                StartFocusMode();
+
+            if (GameSystem.ControlledSystem == null && inFocusMode)
+                EndFocusMode();
+
+            if (inFocusMode)
+            {
+                bool triggerDown = IsTriggerPressed();
+                HandleFireInput(triggerDown);
+            }
         }
 
-        private void MapThumbsticks(ref bool inputDetected)
+        private bool IsTriggerPressed()
         {
-            if (!inFocusMode) return;
+            if (Input.GetMouseButton(0)) return true;
 
-            Vector2 primaryThumbstick = Vector2.zero;
-            Vector2 secondaryThumbstick = Vector2.zero;
-            float LIndexTrigger = 0f, RIndexTrigger = 0f;
-            float primaryHandTrigger = 0f, secondaryHandTrigger = 0f;
-
-            // === INPUT SELECTION WITH DEADZONE ===
-            // OVR CONTROLLERS (adds to VR input if both are present)
-            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
-            {
-                primaryThumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
-                secondaryThumbstick = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick);
-
-                LIndexTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-                RIndexTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
-                primaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger);
-                secondaryHandTrigger = OVRInput.Get(OVRInput.Axis1D.SecondaryHandTrigger);
-
-                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
-                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-            }
-
-            // STEAMVR CONTROLLERS (adds to VR input if both are present)
-            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
-            {
-                var leftController = SteamVRInput.GetController(HandType.Left);
-                var rightController = SteamVRInput.GetController(HandType.Right);
-                if (leftController != null) primaryThumbstick += leftController.GetAxis();
-                if (rightController != null) secondaryThumbstick += rightController.GetAxis();
-
-                LIndexTrigger = Mathf.Max(LIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Left));
-                RIndexTrigger = Mathf.Max(RIndexTrigger, SteamVRInput.GetTriggerValue(HandType.Right));
-
-                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
-                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
-            }
-
-            // XBOX CONTROLLER (adds to VR input if both are present)
             if (XInput.IsConnected)
             {
-                primaryThumbstick += XInput.Get(XInput.Axis.LThumbstick);
-                secondaryThumbstick += XInput.Get(XInput.Axis.RThumbstick);
+                float r = XInput.Get(XInput.Trigger.RIndexTrigger);
+                float l = XInput.Get(XInput.Trigger.LIndexTrigger);
+                if (r > 0.3f || l > 0.3f) return true;
+            }
 
-                // Optionally use Unity Input axes as backup:
-                primaryThumbstick += new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                secondaryThumbstick += new Vector2(Input.GetAxis("RightStickHorizontal"), Input.GetAxis("RightStickVertical"));
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.Oculus)
+            {
+                float l = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
+                float r = OVRInput.Get(OVRInput.Axis1D.SecondaryIndexTrigger);
+                if (l > 0.3f || r > 0.3f) return true;
+            }
 
-                LIndexTrigger = Mathf.Max(LIndexTrigger, XInput.Get(XInput.Trigger.LIndexTrigger));
-                RIndexTrigger = Mathf.Max(RIndexTrigger, XInput.Get(XInput.Trigger.RIndexTrigger));
+            if (PlayerVRSetup.VRMode == PlayerVRSetup.VRSDK.OpenVR)
+            {
+                float l = SteamVRInput.GetTriggerValue(HandType.Left);
+                float r = SteamVRInput.GetTriggerValue(HandType.Right);
+                if (l > 0.3f || r > 0.3f) return true;
+            }
 
-                primaryThumbstick = ApplyDeadzone(primaryThumbstick, THUMBSTICK_DEADZONE);
-                secondaryThumbstick = ApplyDeadzone(secondaryThumbstick, THUMBSTICK_DEADZONE);
+            return false;
+        }
+
+        private void HandleFireInput(bool triggerDown)
+        {
+            if (triggerDown && !lastTriggerState)
+            {
+                if (firelight_light) ToggleLight(firelight_light, true);
+                if (starblade1_light) ToggleLight(starblade1_light, true);
+                if (starblade2_light) ToggleLight(starblade2_light, true);
+                if (FireEmissiveObject) ToggleEmissive(FireEmissiveObject.gameObject, true);
+                lastTriggerState = true;
+                logger.Debug("[StarbladeSim] Trigger pressed → Fire ON");
+            }
+            else if (!triggerDown && lastTriggerState)
+            {
+                if (firelight_light) ToggleLight(firelight_light, false);
+                if (starblade1_light) ToggleLight(starblade1_light, false);
+                if (starblade2_light) ToggleLight(starblade2_light, false);
+                if (FireEmissiveObject) ToggleEmissive(FireEmissiveObject.gameObject, false);
+                lastTriggerState = false;
+                logger.Debug("[StarbladeSim] Trigger released → Fire OFF");
             }
         }
 
         void StartFocusMode()
         {
-            string controlledSystemGamePathString = GameSystem.ControlledSystem.Game.path != null ? GameSystem.ControlledSystem.Game.path.ToString() : null;
-            logger.Debug($"Controlled System Game path String: {controlledSystemGamePathString}");
-            logger.Debug("Compatible Rom Dectected, Prepaing  for launch... ");
-            logger.Debug("Star Blade Module starting...");
-            logger.Debug("It's been an honor!...");
-
-
             Coroutine = StartCoroutine(FlashLights());
             isFlashing = true;
-            inFocusMode = true;  // Set focus mode flag
+            inFocusMode = true;
+            logger.Debug("Star Blade FocusMode ON.");
         }
 
         void EndFocusMode()
         {
             StopCoroutine(Coroutine);
-            if (firelight1) ToggleLight(firelight1, false);
-            if (firelight2) ToggleLight(firelight2, false);
-            if (StartObject) ToggleEmissive(StartObject.gameObject, false);
-            if (Hazard) ToggleEmissive(Hazard.gameObject, false);
-            if (Fire2Object) ToggleEmissive(Fire2Object.gameObject, false);
+            if (firelight_light) ToggleLight(firelight_light, false);
+            if (starblade1_light) ToggleLight(starblade1_light, false);
+            if (starblade2_light) ToggleLight(starblade2_light, false);
+            if (FireEmissiveObject) ToggleEmissive(FireEmissiveObject.gameObject, false);
+            if (LightLeftObject) ToggleEmissive(LightLeftObject.gameObject, false);
+            if (LightRightObject) ToggleEmissive(LightRightObject.gameObject, false);
             Coroutine = null;
             isFlashing = false;
-
-            inFocusMode = false;  // Clear focus mode flag
+            inFocusMode = false;
         }
-        void HandleMouseRotation(ref bool inputDetected)
-        {
-            // Get mouse input for Y and X axes
-            float mouseRotateZ = Input.GetAxis("Mouse Y") * mouseSensitivityY * Time.deltaTime;
-            float mouseRotateY = Input.GetAxis("Mouse X") * mouseSensitivityX * Time.deltaTime;
-
-            // Check current rotation and new proposed rotation for Z axis
-            float newRotationZ = CurrentControllerRotationZ - mouseRotateZ;
-            if (newRotationZ >= -ControllerrotationLimitZ && newRotationZ <= ControllerrotationLimitZ)
-            {
-                ControllerZ.Rotate(0, 0, mouseRotateZ);
-                CurrentControllerRotationZ = newRotationZ; // Update current rotation
-                inputDetected = true;
-                isCenteringRotation = false;
-            }
-
-            // Check current rotation and new proposed rotation for Y axis
-            float newRotationY = CurrentControllerRotationY + mouseRotateY;
-            if (newRotationY >= -ControllerrotationLimitY && newRotationY <= ControllerrotationLimitY)
-            {
-                ControllerY.Rotate(0, -mouseRotateY, 0);
-                CurrentControllerRotationY = newRotationY; // Update current rotation
-                inputDetected = true;
-                isCenteringRotation = false;
-            }
-        }
-
-        //sexy new combined input handler
-        void HandleInput(ref bool inputDetected)
-        {
-            if (!inFocusMode) return;
-
-            Vector2 primaryThumbstick = Vector2.zero;
-            Vector2 secondaryThumbstick = Vector2.zero;
-            // Fire2
-            if (Input.GetButtonDown("Fire1"))
-            {
-                ToggleFireEmissive(true);
-                ToggleFireLight(true);
-                inputDetected = true;
-                isCenteringRotation = false;
-            }
-
-            // Reset position on button release
-            if (Input.GetButtonUp("Fire1"))
-            {
-                ToggleFireEmissive(false);
-                ToggleFireLight(false);
-                inputDetected = true;
-                isCenteringRotation = false;
-            }
-        }
-
-
-
-        // Check if object is found and log appropriate message
-        void CheckObject(GameObject obj, string name)
-        {
-            if (obj == null)
-            {
-                logger.Error($"{gameObject.name} {name} not found!");
-            }
-            else
-            {
-                logger.Debug($"{gameObject.name} {name} found.");
-            }
-        }
-
-        void ToggleFireEmissive(bool isActive)
-        {
-            if (fireemissiveObject != null)
-            {
-                Renderer renderer = fireemissiveObject.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    if (isActive)
-                    {
-                        renderer.material.EnableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    //     logger.Debug($"fireemissive object emission turned {(isActive ? "on" : "off")}.");
-                }
-                else
-                {
-                    logger.Debug("Renderer component is not found on fireemissive object.");
-                }
-            }
-            else
-            {
-                logger.Debug("fireemissive object is not assigned.");
-            }
-        }
-        void ToggleleftlightEmissive(bool isActive)
-        {
-            if (light_leftObject != null)
-            {
-                Renderer renderer = light_leftObject.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    if (isActive)
-                    {
-                        renderer.material.EnableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    //     logger.Debug($"_light_leftObject emission turned {(isActive ? "on" : "off")}.");
-                }
-                else
-                {
-                    logger.Debug("Renderer component is not found on light_leftObject.");
-                }
-            }
-            else
-            {
-                logger.Debug("light_leftObject is not assigned.");
-            }
-        }
-        void TogglerightlightEmissive(bool isActive)
-        {
-            if (light_rightObject != null)
-            {
-                Renderer renderer = light_rightObject.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    if (isActive)
-                    {
-                        renderer.material.EnableKeyword("_EMISSION");
-                    }
-                    else
-                    {
-                        renderer.material.DisableKeyword("_EMISSION");
-                    }
-                    //     logger.Debug($"_light_rightObject emission turned {(isActive ? "on" : "off")}.");
-                }
-                else
-                {
-                    logger.Debug("Renderer component is not found on light_rightObject.");
-                }
-            }
-            else
-            {
-                logger.Debug("light_rightObject is not assigned.");
-            }
-        }
-
-
-        void ToggleFireLight(bool isActive)
-        {
-            // Toggle the light directly if the component is valid
-            if (firelight != null)
-            {
-                firelight.enabled = isActive;
-            }
-            else
-            {
-                Debug.LogWarning("Attempted to toggle a null Light component.");
-            }
-        }
-
-        void ToggleLight(Light targetLight, bool isActive)
-        {
-            if (targetLight == null) return;
-
-            // Ensure the GameObject itself is active
-            if (targetLight.gameObject.activeSelf != isActive)
-                targetLight.gameObject.SetActive(isActive);
-
-            // Then toggle the component
-            targetLight.enabled = isActive;
-        }
-
+        // === FLASH LIGHTS DURING FOCUS MODE ===
         IEnumerator FlashLights()
         {
-            int currentIndex = 0; // Start with the first light in the array
+            logger.Debug("[StarbladeSim] FlashLights coroutine started.");
 
-            while (true)
+            while (inFocusMode)
             {
-                // Select the current light
-                Light light = Lights[currentIndex];
+                // turn ON lights
+                if (starblade1_light) ToggleLight(starblade1_light, true);
+                if (starblade2_light) ToggleLight(starblade2_light, true);
 
-                // Check if the light is not null
-                if (light != null)
-                {
-                    // Log the chosen light
-                    // logger.Debug($"Flashing {light.name}");
+                yield return new WaitForSeconds(flashDuration);
 
-                    // Turn on the chosen light
-                    if (starbladelight) ToggleLight(light, true);
+                // turn OFF lights
+                if (starblade1_light) ToggleLight(starblade1_light, false);
+                if (starblade2_light) ToggleLight(starblade2_light, false);
 
-                    // Toggle the corresponding emissive
-                    if (currentIndex == 0) // Light 1 (paired with left emissive)
-                    {
-                        ToggleleftlightEmissive(true);
-                        TogglerightlightEmissive(false);
-                    }
-                    else if (currentIndex == 1) // Light 2 (paired with right emissive)
-                    {
-                        ToggleleftlightEmissive(false);
-                        TogglerightlightEmissive(true);
-                    }
-
-                    // Wait for the flash duration
-                    yield return new WaitForSeconds(flashDuration);
-
-                    // Turn off the chosen light
-                    if (light) ToggleLight(light, false);
-
-                    // Turn off both emissives
-                    ToggleleftlightEmissive(false);
-                    TogglerightlightEmissive(false);
-
-                    // Wait for the next flash interval
-                    yield return new WaitForSeconds(flashInterval - flashDuration);
-                }
-                else
-                {
-                    logger.Debug("Light is null.");
-                }
-
-                // Move to the next light in the array
-                currentIndex = (currentIndex + 1) % Lights.Length;
+                yield return new WaitForSeconds(flashInterval);
             }
+
+            // ensure lights end OFF when focus mode stops
+            if (starblade1_light) ToggleLight(starblade1_light, false);
+            if (starblade2_light) ToggleLight(starblade2_light, false);
+
+            logger.Debug("[StarbladeSim] FlashLights coroutine ended.");
+        }
+
+        private void CheckInsertedGameName()
+        {
+            if (gameSystem != null && gameSystem.Game != null && !string.IsNullOrEmpty(gameSystem.Game.path))
+                insertedGameName = FileNameHelper.GetFileName(gameSystem.Game.path);
+            else
+                insertedGameName = string.Empty;
+        }
+
+        private void CheckControlledGameName()
+        {
+            if (GameSystem.ControlledSystem != null && GameSystem.ControlledSystem.Game != null && !string.IsNullOrEmpty(GameSystem.ControlledSystem.Game.path))
+                controlledGameName = FileNameHelper.GetFileName(GameSystem.ControlledSystem.Game.path);
+            else
+                controlledGameName = string.Empty;
+        }
+
+        void ToggleEmissive(GameObject targetObject, bool isActive)
+        {
+            if (targetObject == null) return;
+            Renderer renderer = targetObject.GetComponent<Renderer>();
+            if (renderer == null) return;
+            if (isActive) renderer.material.EnableKeyword("_EMISSION");
+            else renderer.material.DisableKeyword("_EMISSION");
         }
 
         void ToggleLight(Light targetLight, bool isActive)
         {
             if (targetLight == null) return;
-
-            // Ensure the GameObject itself is active
             if (targetLight.gameObject.activeSelf != isActive)
                 targetLight.gameObject.SetActive(isActive);
-
-            // Then toggle the component
             targetLight.enabled = isActive;
         }
 
+        public static class FileNameHelper
+        {
+            public static string GetFileName(string filePath)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string FileName = System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
+                return FileName;
+            }
+        }
     }
 }
-

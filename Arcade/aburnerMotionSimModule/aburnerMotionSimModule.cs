@@ -270,12 +270,11 @@ namespace WIGUx.Modules.aburnerMotionSim
                     Vector3 worldPos = playerCamera.transform.position;
                     Quaternion worldRot = playerCamera.transform.rotation;
                     playerCameraInitialWorldScale = playerCamera.transform.lossyScale;
-                    KeyEmulator.SendQandEKeypress();
                     playerCamera.transform.SetParent(cockpitCam.transform, false);
                     playerCamera.transform.position = worldPos;
                     playerCamera.transform.rotation = worldRot;
                     NormalizeWorldScale(playerCamera, cockpitCam.transform);
-
+                    StartCoroutine(AlignPlayerHeadToCamera(playerCamera, cockpitCam.transform));
                     logger.Debug($"{gameObject.name} Player is aboard and strapped in.");
                     isRiding = true; // Set riding state to true
                 }
@@ -286,12 +285,11 @@ namespace WIGUx.Modules.aburnerMotionSim
                     Vector3 worldPos = playerVRSetup.transform.position;
                     Quaternion worldRot = playerVRSetup.transform.rotation;
                     playerVRSetupInitialWorldScale = playerVRSetup.transform.lossyScale;
-                    KeyEmulator.SendQandEKeypress();
                     playerVRSetup.transform.SetParent(vrCam.transform, false);
                     playerVRSetup.transform.position = worldPos;
                     playerVRSetup.transform.rotation = worldRot;
                     NormalizeWorldScale(playerVRSetup, vrCam.transform);
-
+                    StartCoroutine(AlignPlayerHeadToCamera(playerVRSetup, vrCam.transform));
                     logger.Debug($"{gameObject.name} VR Player is aboard and strapped in!");
                     logger.Debug($"{gameObject.name} Sega After Burner Motion Sim starting...");
                     logger.Debug($"{gameObject.name} GET READY!!...");
@@ -546,6 +544,61 @@ namespace WIGUx.Modules.aburnerMotionSim
             );
         }
 
+        // === ALIGNMENT (VR + DESKTOP, unified, delayed) ===
+        // Waits a short delay for parenting to settle, then moves vrcam or cockpitcam so the player head/camera
+        // aligns with the "eyes" anchor height.
+        IEnumerator AlignPlayerHeadToCamera(GameObject player, Transform cameraTransform)
+        {
+            if (player == null || cameraTransform == null)
+            {
+             //   logger.Debug($"{gameObject.name} [Align] skipped — player or cameraTransform null");
+                yield break;
+            }
+
+            // "eyes" anchor is the parent of vrcam/cockpitcam, so use cameraTransform.parent
+            Transform eyesAnchor = cameraTransform.parent;
+            if (eyesAnchor == null)
+            {
+          //      logger.Debug($"{gameObject.name} [Align] no 'eyes' anchor found (cameraTransform has no parent).");
+                yield break;
+            }
+
+            // locate VR or desktop head inside the current camera branch, not globally
+            Transform head =
+                cameraTransform.Find("[SteamVRCameraRig]/Camera (eye)/Head") ??
+                cameraTransform.Find("OVRCameraRig/TrackingSpace/CenterEyeAnchor") ??
+                cameraTransform.Find("Camera (Main)") ??
+                cameraTransform.Find("Camera (eye)") ??
+                cameraTransform.Find("Camera");
+
+            // desktop fallback: use cached PlayerCamera if available
+            if (head == null && playerCamera != null)
+                head = playerCamera.transform;
+
+            if (head == null)
+            {
+            //    logger.Debug($"{gameObject.name} [Align] ❌ could not find head or player camera under {cameraTransform.name}.");
+                yield break;
+            }
+
+            // compute world offset between player's head and eyes anchor
+            Vector3 offset = head.position - eyesAnchor.position;
+
+            // move the camera anchor (vrcam or cockpitcam) so head/camera lines up with eyes
+            cameraTransform.position -= offset;
+
+            string mode;
+            if (head.name.Contains("CenterEyeAnchor"))
+                mode = "OVR";
+            else if (head.name.Contains("PlayerCamera") || head.name.Contains("Camera (Main)"))
+                mode = "Desktop";
+            else
+                mode = "SteamVR";
+
+           // logger.Debug($"{gameObject.name} [Align] ✅ adjusted {cameraTransform.name} by {-offset.y:F3} for {mode}");
+        }
+
+
         void SaveOriginalParent(GameObject obj)
         {
             if (obj != null && !originalParents.ContainsKey(obj))
@@ -700,7 +753,6 @@ namespace WIGUx.Modules.aburnerMotionSim
             // X ROTATION (Pitch, up/down on stick, XObject)
             if (primaryThumbstick.y != 0f)
             {
-                // Note: Your original had a negative sign; sample does NOT, but keeping yours for behavior parity.
                 float inputValue = primaryThumbstick.y * thumbstickVelocity * Time.deltaTime;
                 float targetX = Mathf.Clamp(currentRotationX + inputValue, minRotationX, maxRotationX);
                 float rotateX = targetX - currentRotationX;
@@ -968,30 +1020,6 @@ namespace WIGUx.Modules.aburnerMotionSim
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 string FileName = System.Text.RegularExpressions.Regex.Replace(fileName, "[\\/:*?\"<>|]", "_");
                 return FileName;
-            }
-        }
-        public static class KeyEmulator
-        {
-            // Virtual key codes for Q and E
-            const byte VK_Q = 0x51;
-            const byte VK_E = 0x45;
-            const uint KEYEVENTF_KEYDOWN = 0x0000;
-            const uint KEYEVENTF_KEYUP = 0x0002;
-
-            [DllImport("user32.dll")]
-            static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
-
-            public static void SendQandEKeypress()
-            {
-                // Send Q down
-                keybd_event(VK_Q, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
-                // Send E down
-                keybd_event(VK_E, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
-
-                // Send Q up
-                keybd_event(VK_Q, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-                // Send E up
-                keybd_event(VK_E, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
             }
         }
         void InitializeLights()

@@ -288,30 +288,7 @@ namespace WIGUx.Modules.daytonaSim
                 return FileName;
             }
         }
-        public static class KeyEmulator
-        {
-            // Virtual key codes for Q and E
-            const byte VK_Q = 0x51;
-            const byte VK_E = 0x45;
-            const uint KEYEVENTF_KEYDOWN = 0x0000;
-            const uint KEYEVENTF_KEYUP = 0x0002;
-
-            [DllImport("user32.dll")]
-            static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
-
-            public static void SendQandEKeypress()
-            {
-                // Send Q down
-                keybd_event(VK_Q, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
-                // Send E down
-                keybd_event(VK_E, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
-
-                // Send Q up
-                keybd_event(VK_Q, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-                // Send E up
-                keybd_event(VK_E, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-            }
-        }
+    
         void ReadData()
         {
             if (!File.Exists(filePath))

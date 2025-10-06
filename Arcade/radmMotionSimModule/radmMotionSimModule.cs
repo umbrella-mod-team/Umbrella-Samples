@@ -293,12 +293,11 @@ namespace WIGUx.Modules.radmMotionSim
                     Vector3 worldPos = playerCamera.transform.position;
                     Quaternion worldRot = playerCamera.transform.rotation;
                     playerCameraInitialWorldScale = playerCamera.transform.lossyScale;
-                    KeyEmulator.SendQandEKeypress();
                     playerCamera.transform.SetParent(cockpitCam.transform, false);
                     playerCamera.transform.position = worldPos;
                     playerCamera.transform.rotation = worldRot;
                     NormalizeWorldScale(playerCamera, cockpitCam.transform);
-
+                    StartCoroutine(AlignPlayerHeadToCamera(playerCamera, cockpitCam.transform));
                     logger.Debug($"{gameObject.name} Player is aboard and strapped in.");
                     isRiding = true; // Set riding state to true
                 }
@@ -309,12 +308,11 @@ namespace WIGUx.Modules.radmMotionSim
                     Vector3 worldPos = playerVRSetup.transform.position;
                     Quaternion worldRot = playerVRSetup.transform.rotation;
                     playerVRSetupInitialWorldScale = playerVRSetup.transform.lossyScale;
-                    KeyEmulator.SendQandEKeypress();
                     playerVRSetup.transform.SetParent(vrCam.transform, false);
                     playerVRSetup.transform.position = worldPos;
                     playerVRSetup.transform.rotation = worldRot;
                     NormalizeWorldScale(playerVRSetup, vrCam.transform);
-
+                    StartCoroutine(AlignPlayerHeadToCamera(playerVRSetup, vrCam.transform));
                     logger.Debug($"{gameObject.name} VR Player is aboard and strapped in!");
                     logger.Debug("Hanging Sonic on the Mirror...");
 					logger.Debug("Sega Rad Mobile Deluxe Motion Sim starting...");
@@ -768,30 +766,7 @@ namespace WIGUx.Modules.radmMotionSim
 				return FileName;
 			}
 		}
-        public static class KeyEmulator
-        {
-            // Virtual key codes for Q and E
-            const byte VK_Q = 0x51;
-            const byte VK_E = 0x45;
-            const uint KEYEVENTF_KEYDOWN = 0x0000;
-            const uint KEYEVENTF_KEYUP = 0x0002;
-
-            [DllImport("user32.dll")]
-            static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
-
-            public static void SendQandEKeypress()
-            {
-                // Send Q down
-                keybd_event(VK_Q, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
-                // Send E down
-                keybd_event(VK_E, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
-
-                // Send Q up
-                keybd_event(VK_Q, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-                // Send E up
-                keybd_event(VK_E, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-            }
-        }
+      
         void ToggleEmissiveRenderer(Renderer renderer, bool isOn)
 		{
 			if (isOn)
@@ -998,7 +973,59 @@ namespace WIGUx.Modules.radmMotionSim
             );
         }
 
+        // === ALIGNMENT (VR + DESKTOP, unified, delayed) ===
+        // moves vrcam or cockpitcam so the player head/camera
+        // aligns with the "eyes" anchor height.
+        IEnumerator AlignPlayerHeadToCamera(GameObject player, Transform cameraTransform)
+        {
+            if (player == null || cameraTransform == null)
+            {
+                //   logger.Debug($"{gameObject.name} [Align] skipped — player or cameraTransform null");
+                yield break;
+            }
 
+            // "eyes" anchor is the parent of vrcam/cockpitcam, so use cameraTransform.parent
+            Transform eyesAnchor = cameraTransform.parent;
+            if (eyesAnchor == null)
+            {
+                //      logger.Debug($"{gameObject.name} [Align] no 'eyes' anchor found (cameraTransform has no parent).");
+                yield break;
+            }
+
+            // locate VR or desktop head inside the current camera branch, not globally
+            Transform head =
+                cameraTransform.Find("[SteamVRCameraRig]/Camera (eye)/Head") ??
+                cameraTransform.Find("OVRCameraRig/TrackingSpace/CenterEyeAnchor") ??
+                cameraTransform.Find("Camera (Main)") ??
+                cameraTransform.Find("Camera (eye)") ??
+                cameraTransform.Find("Camera");
+
+            // desktop fallback: use cached PlayerCamera if available
+            if (head == null && playerCamera != null)
+                head = playerCamera.transform;
+
+            if (head == null)
+            {
+                //    logger.Debug($"{gameObject.name} [Align] ❌ could not find head or player camera under {cameraTransform.name}.");
+                yield break;
+            }
+
+            // compute world offset between player's head and eyes anchor
+            Vector3 offset = head.position - eyesAnchor.position;
+
+            // move the camera anchor (vrcam or cockpitcam) so head/camera lines up with eyes
+            cameraTransform.position -= offset;
+
+            string mode;
+            if (head.name.Contains("CenterEyeAnchor"))
+                mode = "OVR";
+            else if (head.name.Contains("PlayerCamera") || head.name.Contains("Camera (Main)"))
+                mode = "Desktop";
+            else
+                mode = "SteamVR";
+
+            // logger.Debug($"{gameObject.name} [Align] ✅ adjusted {cameraTransform.name} by {-offset.y:F3} for {mode}");
+        }
         // Save original parent of object in dictionary
         void SaveOriginalParent(GameObject obj)
 		{
